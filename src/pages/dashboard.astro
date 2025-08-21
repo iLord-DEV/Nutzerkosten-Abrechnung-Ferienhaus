@@ -1,0 +1,396 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Dashboard - Nutzerkosten">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Mein Dashboard
+          </h1>
+          <p class="mt-2 text-gray-600 dark:text-gray-400">
+            Willkommen, <span id="user-name">Benutzer</span>! Hier findest du deine persönlichen Aufenthalte und Kosten.
+          </p>
+        </div>
+        <div class="flex space-x-3">
+          <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            Abmelden
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Persönliche Übersichtskarten -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">🏠</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Meine Aufenthalte
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="my-aufenthalte">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">📊</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Gesamtübersicht verfügbar
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white">
+                  ✓
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">💰</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Meine Kosten 2024
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="my-kosten">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schnellaktionen für Benutzer -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- Meine Aktionen -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+            Meine Aktionen
+          </h3>
+          <div class="space-y-3">
+            <a href="/aufenthalte/neu" class="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
+              ➕ Neuen Aufenthalt erfassen
+            </a>
+            <a href="/statistiken" class="block w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
+              📊 Meine Statistiken anzeigen
+            </a>
+            <a href="/statistiken?gesamt=true" class="block w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
+              🏠 Gesamtübersicht aller Nutzer
+            </a>
+            <a href="/aufenthalte" class="block w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
+              📋 Alle meine Aufenthalte
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Letzte Aktivitäten -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+            Meine letzten Aktivitäten
+          </h3>
+          <div class="flow-root">
+            <ul role="list" class="-mb-8" id="my-aktivitaeten-liste">
+              <!-- Wird dynamisch geladen -->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Meine Aufenthalte -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          Meine Aufenthalte
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Ankunft
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Abreise
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Zählerstand
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Mitglieder
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Gäste
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Kosten
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="aufenthalte-tabelle">
+              <!-- Wird dynamisch geladen -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // Benutzer-Dashboard Funktionalität
+  let currentUser: any = null;
+
+  // Benutzer-Informationen laden
+  async function loadUserInfo() {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        currentUser = await response.json();
+        const userNameEl = document.getElementById('user-name');
+        if (userNameEl) {
+          userNameEl.textContent = currentUser.name;
+        }
+        
+        // Dashboard-Daten laden
+        loadDashboardData();
+        loadMyAufenthalte();
+        loadMyAktivitaeten();
+      } else {
+        // Nicht eingeloggt, zurück zum Login
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Benutzer-Informationen:', error);
+      window.location.href = '/login';
+    }
+  }
+
+  // Dashboard-Daten laden
+  async function loadDashboardData() {
+    try {
+      // Persönliche Statistiken laden
+      const statsResponse = await fetch(`/api/statistiken?jahr=2024`);
+      if (statsResponse.ok) {
+        const stats = await statsResponse.json();
+        
+        const myAufenthalteEl = document.getElementById('my-aufenthalte');
+        const myTankfuellungenEl = document.getElementById('my-tankfuellungen');
+        const myKostenEl = document.getElementById('my-kosten');
+        
+        if (myAufenthalteEl) myAufenthalteEl.textContent = stats.anzahlAufenthalte || '0';
+        if (myTankfuellungenEl) myTankfuellungenEl.textContent = '0'; // Normale Benutzer haben keine Tankfüllungen
+        if (myKostenEl) myKostenEl.textContent = `€ ${(stats.gesamtKosten || 0).toFixed(2)}`;
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Dashboard-Daten:', error);
+    }
+  }
+
+  // Meine Aufenthalte laden
+  async function loadMyAufenthalte() {
+    try {
+      const response = await fetch('/api/aufenthalte');
+      if (response.ok) {
+        const aufenthalte = await response.json();
+        const myAufenthalte = aufenthalte.filter((a: any) => a.userId === currentUser.id);
+        
+        renderAufenthalteTabelle(myAufenthalte);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Aufenthalte:', error);
+    }
+  }
+
+  // Aufenthalte-Tabelle rendern
+  function renderAufenthalteTabelle(aufenthalte: any[]) {
+    const tbody = document.getElementById('aufenthalte-tabelle');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    
+    if (aufenthalte.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+            Noch keine Aufenthalte erfasst
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    aufenthalte.forEach((aufenthalt: any) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${new Date(aufenthalt.ankunft).toLocaleDateString('de-DE')}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${new Date(aufenthalt.abreise).toLocaleDateString('de-DE')}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${aufenthalt.zaehlerstandStart}h - ${aufenthalt.zaehlerstandEnde}h
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${aufenthalt.anzahlMitglieder}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${aufenthalt.anzahlGaeste}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          € ${calculateKosten(aufenthalt).toFixed(2)}
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  // Kosten für einen Aufenthalt berechnen (vereinfacht)
+  function calculateKosten(aufenthalt: any) {
+    const stunden = (aufenthalt.zaehlerstandEnde - aufenthalt.zaehlerstandStart);
+    const oelkosten = stunden * 5.5 * 1.25; // 5.5 L/h, 1.25€/L
+    const uebernachtungskosten = (aufenthalt.anzahlMitglieder * 15 + aufenthalt.anzahlGaeste * 25) * 
+      Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
+    
+    return oelkosten + uebernachtungskosten;
+  }
+
+  // Meine Aktivitäten laden
+  async function loadMyAktivitaeten() {
+    try {
+      const aufenthalteResponse = await fetch('/api/aufenthalte');
+      const tankfuellungenResponse = await fetch('/api/tankfuellungen');
+      
+      if (aufenthalteResponse.ok && tankfuellungenResponse.ok) {
+        const aufenthalte = await aufenthalteResponse.json();
+        const tankfuellungen = await tankfuellungenResponse.json();
+        
+        const myAufenthalte = aufenthalte.filter((a: any) => a.userId === currentUser.id);
+        // Normale Benutzer haben keine Tankfüllungen
+        const myTankfuellungen: any[] = [];
+        
+        renderAktivitaeten(myAufenthalte, myTankfuellungen);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Aktivitäten:', error);
+    }
+  }
+
+  // Aktivitäten rendern
+  function renderAktivitaeten(aufenthalte: any[], tankfuellungen: any[]) {
+    const ul = document.getElementById('my-aktivitaeten-liste');
+    if (!ul) return;
+
+    ul.innerHTML = '';
+    
+    const alleAktivitaeten = [
+      ...aufenthalte.map((a: any) => ({
+        type: 'aufenthalt',
+        datum: new Date(a.ankunft),
+        text: `Aufenthalt: ${new Date(a.ankunft).toLocaleDateString('de-DE')} - ${new Date(a.abreise).toLocaleDateString('de-DE')}`
+      })),
+      ...tankfuellungen.map((t: any) => ({
+        type: 'tankfuellung',
+        datum: new Date(t.datum),
+        text: `Tankfüllung: ${t.liter}L für €${t.preisProLiter}/L`
+      }))
+    ];
+
+    // Nach Datum sortieren (neueste zuerst)
+    alleAktivitaeten.sort((a: any, b: any) => b.datum.getTime() - a.datum.getTime());
+
+    // Nur die letzten 5 anzeigen
+    alleAktivitaeten.slice(0, 5).forEach((aktivitaet: any) => {
+      const li = document.createElement('li');
+      li.className = 'relative pb-8';
+      
+      const icon = aktivitaet.type === 'aufenthalt' ? '🏠' : '⛽';
+      
+      li.innerHTML = `
+        <div class="relative flex space-x-3">
+          <div>
+            <span class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white dark:ring-gray-800">
+              <span class="text-white text-sm">${icon}</span>
+            </div>
+          </div>
+          <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">${aktivitaet.text}</p>
+            </div>
+            <div class="text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
+              <time>${aktivitaet.datum.toLocaleDateString('de-DE')}</time>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      ul.appendChild(li);
+    });
+
+    if (alleAktivitaeten.length === 0) {
+      ul.innerHTML = `
+        <li class="text-center text-gray-500 dark:text-gray-400 py-4">
+          Noch keine Aktivitäten
+        </li>
+      `;
+    }
+  }
+
+  // Logout-Funktion
+  async function logout() {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Logout-Fehler:', error);
+    }
+  }
+
+  // Event-Listener
+  document.addEventListener('DOMContentLoaded', () => {
+    loadUserInfo();
+    
+    // Logout-Button
+    document.getElementById('logout-btn')?.addEventListener('click', logout);
+  });
+</script>

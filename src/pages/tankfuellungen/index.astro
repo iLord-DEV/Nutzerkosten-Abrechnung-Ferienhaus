@@ -1,0 +1,419 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// Zugriffskontrolle: Nur Admins
+const sessionCookie = Astro.cookies.get('session');
+if (!sessionCookie) {
+  return Astro.redirect('/login');
+}
+
+const session = JSON.parse(sessionCookie.value);
+if (session.role !== 'ADMIN') {
+  return Astro.redirect('/dashboard');
+}
+---
+
+<Layout title="Tankfüllungen - Nutzerkosten">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="sm:flex sm:items-center mb-8">
+      <div class="sm:flex-auto">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+          Tankfüllungen
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+          Verwalten Sie alle Tankfüllungen und überwachen Sie den Ölverbrauch
+        </p>
+      </div>
+      <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <a href="/tankfuellungen/neu" class="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 sm:w-auto">
+          ⛽ Neue Tankfüllung
+        </a>
+      </div>
+    </div>
+
+    <!-- Verbrauchsübersicht -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">⛽</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Aktueller Verbrauch
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="aktueller-verbrauch">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">📊</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Trend
+                </dt>
+                <dd class="text-lg font-medium text-green-600 dark:text-green-400" id="verbrauchs-trend">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">⚠️</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Status
+                </dt>
+                <dd class="text-lg font-medium text-yellow-600 dark:text-yellow-400" id="verbrauchs-status">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verbrauchsverlauf Chart -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          Verbrauchsverlauf
+        </h3>
+        <div class="h-64 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+          <canvas id="verbrauchs-chart" class="w-full h-full"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tankfüllungen-Tabelle -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Datum
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Zählerstand
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Liter
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Preis/Liter
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Gesamtkosten
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Verbrauch
+                </th>
+
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Aktionen
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="tankfuellungen-tbody">
+              <!-- Wird dynamisch geladen -->
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Lade-Animation -->
+        <div id="loading" class="text-center py-8">
+          <div class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Lade Tankfüllungen...
+          </div>
+        </div>
+        
+        <!-- Keine Daten -->
+        <div id="no-data" class="hidden text-center py-8">
+          <div class="text-gray-500 dark:text-gray-400">
+            <span class="text-4xl">⛽</span>
+            <p class="mt-2 text-lg font-medium">Keine Tankfüllungen gefunden</p>
+            <p class="mt-1">Erstellen Sie Ihre erste Tankfüllung.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { Chart, registerables } from 'chart.js';
+  Chart.register(...registerables);
+
+  let currentTankfuellungen: Array<{
+    id: number;
+    datum: string;
+    liter: number;
+    preisProLiter: number;
+    zaehlerstand: number;
+  }> = [];
+  
+  let verbrauchsChart: Chart | null = null;
+
+  // Tankfüllungen aus der API laden
+  async function loadTankfuellungen() {
+    try {
+      showLoading(true);
+      const response = await fetch('/api/tankfuellungen');
+      if (response.ok) {
+        currentTankfuellungen = await response.json();
+        renderTankfuellungen(currentTankfuellungen);
+        updateVerbrauchsUebersicht(currentTankfuellungen);
+        renderVerbrauchsChart(currentTankfuellungen);
+      } else {
+        console.error('Fehler beim Laden der Tankfüllungen');
+        showNoData();
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Tankfüllungen:', error);
+      showNoData();
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  // Tankfüllungen rendern
+  function renderTankfuellungen(tankfuellungen: typeof currentTankfuellungen) {
+    const tbody = document.getElementById('tankfuellungen-tbody');
+    if (!tbody) return;
+
+    if (tankfuellungen.length === 0) {
+      showNoData();
+      return;
+    }
+
+    tbody.innerHTML = '';
+    
+    tankfuellungen.forEach((tankfuellung: typeof currentTankfuellungen[0], index: number) => {
+      const row = document.createElement('tr');
+      const datum = new Date(tankfuellung.datum).toLocaleDateString('de-DE');
+      const gesamtKosten = tankfuellung.liter * tankfuellung.preisProLiter;
+      
+      // Verbrauch berechnen (Differenz zur nächsten Tankfüllung)
+      let verbrauch = '-';
+      if (index < tankfuellungen.length - 1) {
+        const naechste = tankfuellungen[index + 1];
+        const stundenDifferenz = naechste.zaehlerstand - tankfuellung.zaehlerstand;
+        if (stundenDifferenz > 0) {
+          verbrauch = `${(tankfuellung.liter / stundenDifferenz).toFixed(1)} L/h`;
+        }
+      }
+
+      row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${datum}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${tankfuellung.zaehlerstand.toFixed(1)} h
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${tankfuellung.liter} L
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          € ${tankfuellung.preisProLiter.toFixed(2)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          € ${gesamtKosten.toFixed(2)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${verbrauch}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <a href="/tankfuellungen/${tankfuellung.id}/edit" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4">
+            Bearbeiten
+          </a>
+          <button onclick="deleteTankfuellung(${tankfuellung.id})" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+            Löschen
+          </button>
+        </td>
+      `;
+      
+      tbody.appendChild(row);
+    });
+  }
+
+  // Verbrauchsübersicht aktualisieren
+  function updateVerbrauchsUebersicht(tankfuellungen: typeof currentTankfuellungen) {
+    if (tankfuellungen.length < 2) return;
+
+    // Aktueller Verbrauch (letzte 2 Tankfüllungen)
+    const letzte = tankfuellungen[tankfuellungen.length - 1];
+    const vorletzte = tankfuellungen[tankfuellungen.length - 2];
+    const stundenDifferenz = letzte.zaehlerstand - vorletzte.zaehlerstand;
+    const verbrauch = stundenDifferenz > 0 ? (vorletzte.liter / stundenDifferenz).toFixed(1) : '-';
+
+    // Trend berechnen
+    let trend = 'Stabil';
+    let trendColor = 'text-gray-600 dark:text-gray-400';
+    
+    if (tankfuellungen.length >= 3) {
+      const drittletzte = tankfuellungen[tankfuellungen.length - 3];
+      const verbrauchAlt = (drittletzte.liter / (vorletzte.zaehlerstand - drittletzte.zaehlerstand)).toFixed(1);
+      const verbrauchNeu = parseFloat(verbrauch);
+      const verbrauchAltNum = parseFloat(verbrauchAlt);
+      
+      if (verbrauchNeu < verbrauchAltNum * 0.9) {
+        trend = '↘️ Abnehmend';
+        trendColor = 'text-green-600 dark:text-green-400';
+      } else if (verbrauchNeu > verbrauchAltNum * 1.1) {
+        trend = '↗️ Zunehmend';
+        trendColor = 'text-red-600 dark:text-red-400';
+      }
+    }
+
+    // Status aktualisieren
+    const aktuellerVerbrauchEl = document.getElementById('aktueller-verbrauch');
+    const verbrauchsTrendEl = document.getElementById('verbrauchs-trend');
+    const verbrauchsStatusEl = document.getElementById('verbrauchs-status');
+
+    if (aktuellerVerbrauchEl) aktuellerVerbrauchEl.textContent = `${verbrauch} L/h`;
+    if (verbrauchsTrendEl) {
+      verbrauchsTrendEl.textContent = trend;
+      verbrauchsTrendEl.className = `text-lg font-medium ${trendColor}`;
+    }
+    if (verbrauchsStatusEl) verbrauchsStatusEl.textContent = verbrauch !== '-' ? 'Normal' : 'Unbekannt';
+  }
+
+  // Verbrauchs-Chart rendern
+  function renderVerbrauchsChart(tankfuellungen: typeof currentTankfuellungen) {
+    const canvas = document.getElementById('verbrauchs-chart') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    // Chart zerstören falls vorhanden
+    if (verbrauchsChart) {
+      verbrauchsChart.destroy();
+    }
+
+    // Daten für Chart vorbereiten
+    const labels = tankfuellungen.map((t: typeof currentTankfuellungen[0]) => new Date(t.datum).toLocaleDateString('de-DE')).reverse();
+    const data = tankfuellungen.map((t: typeof currentTankfuellungen[0], i: number) => {
+      if (i === 0) return null;
+      const vorherige = tankfuellungen[i - 1];
+      const stundenDifferenz = t.zaehlerstand - vorherige.zaehlerstand;
+      return stundenDifferenz > 0 ? (vorherige.liter / stundenDifferenz) : null;
+    }).reverse();
+
+    // Null-Werte filtern
+    const filteredData = data.filter((d: number | null) => d !== null);
+    const filteredLabels = labels.filter((_: string, i: number) => data[i] !== null);
+
+    verbrauchsChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: filteredLabels,
+        datasets: [{
+          label: 'Verbrauch (L/h)',
+          data: filteredData,
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.1,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Verbrauch (L/h)'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Datum'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Tankfüllung löschen
+  async function deleteTankfuellung(id: number) {
+    if (!confirm('Möchten Sie diese Tankfüllung wirklich löschen?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/tankfuellungen/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        loadTankfuellungen(); // Neu laden
+      } else {
+        alert('Fehler beim Löschen der Tankfüllung');
+      }
+    } catch (error) {
+      console.error('Fehler beim Löschen:', error);
+      alert('Ein Fehler ist aufgetreten');
+    }
+  }
+
+  // Lade-Animation anzeigen/verstecken
+  function showLoading(show: boolean) {
+    const loading = document.getElementById('loading');
+    if (loading) {
+      loading.classList.toggle('hidden', !show);
+    }
+  }
+
+  // Keine Daten anzeigen
+  function showNoData() {
+    const noData = document.getElementById('no-data');
+    if (noData) {
+      noData.classList.remove('hidden');
+    }
+  }
+
+  // Event-Listener
+  document.addEventListener('DOMContentLoaded', () => {
+    loadTankfuellungen();
+  });
+</script>

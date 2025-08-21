@@ -1,0 +1,263 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Admin Dashboard - Nutzerkosten">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Admin Dashboard
+          </h1>
+          <p class="mt-2 text-gray-600 dark:text-gray-400">
+            Willkommen, <span id="admin-name">Administrator</span>! Hier können Sie alle Verwaltungsaufgaben durchführen.
+          </p>
+        </div>
+        <div class="flex space-x-3">
+          <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            Abmelden
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin-Übersichtskarten -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">👥</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Benutzer
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="user-count">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">🏠</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Aktive Aufenthalte
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="active-aufenthalte">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">⛽</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Tankfüllungen (Jahr)
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="tankfuellungen-count">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">💰</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Gesamtkosten
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="gesamt-kosten">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin-Aktionen -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- Schnellaktionen -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+            Schnellaktionen
+          </h3>
+          <div class="space-y-3">
+            <a href="/aufenthalte/neu" class="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
+              ➕ Neuen Aufenthalt erfassen
+            </a>
+            <a href="/tankfuellungen/neu" class="block w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
+              ⛽ Neue Tankfüllung eintragen
+            </a>
+            <a href="/admin/benutzer" class="block w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
+              👥 Benutzer verwalten
+            </a>
+            <a href="/admin/preise" class="block w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
+              💰 Preise konfigurieren
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- System-Status -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+            System-Status
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Datenbank</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                Verbunden
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">API-Endpunkte</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                Aktiv
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Überlappungserkennung</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                Aktiv
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Verbrauchsberechnung</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                Aktiv
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Letzte Aktivitäten -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          Letzte Aktivitäten
+        </h3>
+        <div class="flow-root">
+          <ul role="list" class="-mb-8" id="aktivitaeten-liste">
+            <!-- Wird dynamisch geladen -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // Admin-Dashboard Funktionalität
+  let currentUser = null;
+
+  // Benutzer-Informationen laden
+  async function loadUserInfo() {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        currentUser = await response.json();
+        const adminNameEl = document.getElementById('admin-name');
+        if (adminNameEl) {
+          adminNameEl.textContent = currentUser.name;
+        }
+      } else {
+        // Nicht eingeloggt, zurück zum Login
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Benutzer-Informationen:', error);
+      window.location.href = '/login';
+    }
+  }
+
+  // Dashboard-Daten laden
+  async function loadDashboardData() {
+    try {
+      // Statistiken laden
+      const statsResponse = await fetch('/api/statistiken?jahr=2024');
+      if (statsResponse.ok) {
+        const stats = await statsResponse.json();
+        
+        const userCountEl = document.getElementById('user-count');
+        const activeAufenthalteEl = document.getElementById('active-aufenthalte');
+        const tankfuellungenCountEl = document.getElementById('tankfuellungen-count');
+        const gesamtKostenEl = document.getElementById('gesamt-kosten');
+        
+        if (userCountEl) userCountEl.textContent = '3'; // Aus den Testdaten
+        if (activeAufenthalteEl) activeAufenthalteEl.textContent = stats.anzahlAufenthalte || '0';
+        if (tankfuellungenCountEl) tankfuellungenCountEl.textContent = stats.anzahlTankfuellungen || '0';
+        if (gesamtKostenEl) gesamtKostenEl.textContent = `€ ${(stats.gesamtKosten || 0).toFixed(2)}`;
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Dashboard-Daten:', error);
+    }
+  }
+
+  // Logout-Funktion
+  async function logout() {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Logout-Fehler:', error);
+    }
+  }
+
+  // Event-Listener
+  document.addEventListener('DOMContentLoaded', () => {
+    loadUserInfo();
+    loadDashboardData();
+    
+    // Logout-Button
+    document.getElementById('logout-btn')?.addEventListener('click', logout);
+  });
+</script>

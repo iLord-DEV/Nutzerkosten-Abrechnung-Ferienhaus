@@ -1,0 +1,227 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// Zugriffskontrolle: Nur Admins
+const sessionCookie = Astro.cookies.get('session');
+if (!sessionCookie) {
+  return Astro.redirect('/login');
+}
+
+const session = JSON.parse(sessionCookie.value);
+if (session.role !== 'ADMIN') {
+  return Astro.redirect('/dashboard');
+}
+---
+
+<Layout title="Neue Tankfüllung - Nutzerkosten">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Neue Tankfüllung erfassen
+          </h1>
+          <p class="mt-2 text-gray-600 dark:text-gray-400">
+            Erfassen Sie eine neue Tankfüllung für die Verbrauchsberechnung.
+          </p>
+        </div>
+        <a href="/tankfuellungen" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+          ← Zurück zur Übersicht
+        </a>
+      </div>
+    </div>
+
+    <div class="max-w-2xl">
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <form id="tankfuellung-form">
+            <div class="grid grid-cols-1 gap-6">
+              <!-- Datum -->
+              <div>
+                <label for="datum" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Datum der Tankfüllung *
+                </label>
+                <input
+                  type="date"
+                  id="datum"
+                  name="datum"
+                  required
+                  class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <!-- Zählerstand -->
+              <div>
+                <label for="zaehlerstand" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Zählerstand (Stunden) *
+                </label>
+                <input
+                  type="number"
+                  id="zaehlerstand"
+                  name="zaehlerstand"
+                  step="0.1"
+                  required
+                  class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Aktueller Zählerstand der Heizung in Betriebsstunden
+                </p>
+              </div>
+
+              <!-- Getankte Liter -->
+              <div>
+                <label for="liter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Getankte Liter *
+                </label>
+                <input
+                  type="number"
+                  id="liter"
+                  name="liter"
+                  step="0.1"
+                  required
+                  class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <!-- Preis pro Liter -->
+              <div>
+                <label for="preisProLiter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Preis pro Liter (€) *
+                </label>
+                <input
+                  type="number"
+                  id="preisProLiter"
+                  name="preisProLiter"
+                  step="0.01"
+                  required
+                  class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+
+
+              <!-- Vorschau der Kosten -->
+              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  Kostenübersicht
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Gesamtkosten:</span>
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white" id="gesamt-kosten">
+                      € 0.00
+                    </div>
+                  </div>
+                  <div>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Verbrauch pro Stunde:</span>
+                    <div class="text-sm text-gray-900 dark:text-white" id="verbrauch-pro-stunde">
+                      -
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onclick="window.location.href='/tankfuellungen'"
+                  class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Tankfüllung speichern
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  let currentTankfuellung: any = null;
+
+
+
+  // Kosten berechnen
+  function calculateCosts() {
+    const literEl = document.getElementById('liter') as HTMLInputElement;
+    const preisProLiterEl = document.getElementById('preisProLiter') as HTMLInputElement;
+    
+    const liter = parseFloat(literEl?.value || '0');
+    const preisProLiter = parseFloat(preisProLiterEl?.value || '0');
+    
+    if (liter && preisProLiter) {
+      const gesamtKosten = liter * preisProLiter;
+      const gesamtKostenEl = document.getElementById('gesamt-kosten');
+      if (gesamtKostenEl) {
+        gesamtKostenEl.textContent = `€ ${gesamtKosten.toFixed(2)}`;
+      }
+    }
+  }
+
+  // Formular absenden
+  async function handleSubmit(event: Event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target as HTMLFormElement);
+    const datum = formData.get('datum') as string;
+    const zaehlerstand = formData.get('zaehlerstand') as string;
+    const liter = formData.get('liter') as string;
+    const preisProLiter = formData.get('preisProLiter') as string;
+    
+    const data = {
+      datum: datum, // Datum als String senden (YYYY-MM-DD)
+      zaehlerstand: parseFloat(zaehlerstand),
+      liter: parseFloat(liter),
+      preisProLiter: parseFloat(preisProLiter),
+    };
+
+    try {
+      const response = await fetch('/api/tankfuellungen', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert('Tankfüllung erfolgreich gespeichert!');
+        window.location.href = '/tankfuellungen';
+      } else {
+        const error = await response.json();
+        alert(`Fehler: ${error.error || 'Unbekannter Fehler'}`);
+      }
+    } catch (error) {
+      console.error('Fehler beim Speichern:', error);
+      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+    }
+  }
+
+  // Event-Listener
+  document.addEventListener('DOMContentLoaded', () => {
+    // Kosten bei Änderungen neu berechnen
+    document.getElementById('liter')?.addEventListener('input', calculateCosts);
+    document.getElementById('preisProLiter')?.addEventListener('input', calculateCosts);
+    
+    // Formular absenden
+    document.getElementById('tankfuellung-form')?.addEventListener('submit', handleSubmit);
+    
+    // Aktuelles Datum setzen
+    const datumInput = document.getElementById('datum') as HTMLInputElement;
+    if (datumInput) {
+      const now = new Date();
+      const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      datumInput.value = localDate;
+    }
+  });
+</script>

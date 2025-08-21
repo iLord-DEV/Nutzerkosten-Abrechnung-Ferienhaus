@@ -1,16 +1,275 @@
 ---
-
+import Layout from '../layouts/Layout.astro';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout title="Dashboard - Nutzerkosten">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        Willkommen bei der Nutzerkosten-Abrechnung
+      </h1>
+      <p class="mt-2 text-gray-600 dark:text-gray-400">
+        Verwalten Sie die Kosten für Ihren gemeinsamen Öltank in der Wohngemeinschaft
+      </p>
+    </div>
+
+    <!-- Übersichtskarten -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">🏠</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Aktive Aufenthalte
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white">
+                  3
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">⛽</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Tankfüllungen (Jahr)
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white">
+                  2
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">💰</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Monatliche Kosten
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white">
+                  € 245,80
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">📊</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Verbrauch/Stunde
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white">
+                  5.2 L
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schnellaktionen -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          Schnellaktionen
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="quick-actions">
+          <a href="/aufenthalte/neu" class="relative rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 dark:hover:border-gray-500 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">➕</span>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">
+                Neuer Aufenthalt
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Aufenthalt erfassen
+              </p>
+            </div>
+          </a>
+
+          <a href="/statistiken" class="relative rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 dark:hover:border-gray-500 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">📊</span>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">
+                Statistiken anzeigen
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Verbrauchsanalysen
+              </p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Letzte Aktivitäten -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          Letzte Aktivitäten
+        </h3>
+        <div class="flow-root">
+          <ul role="list" class="-mb-8">
+            <li>
+              <div class="relative pb-8">
+                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700" aria-hidden="true"></span>
+                <div class="relative flex space-x-3">
+                  <div>
+                    <span class="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center ring-8 ring-white dark:ring-gray-800">
+                      <span class="text-white text-sm font-medium">⛽</span>
+                    </span>
+                  </div>
+                  <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                    <div>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Neue Tankfüllung: <span class="font-medium text-gray-900 dark:text-white">150 Liter</span> getankt
+                      </p>
+                    </div>
+                    <div class="text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
+                      <time datetime="2024-01-15">vor 2 Stunden</time>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+            <li>
+              <div class="relative pb-8">
+                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700" aria-hidden="true"></span>
+                <div class="relative flex space-x-3">
+                  <div>
+                    <span class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white dark:ring-gray-800">
+                      <span class="text-white text-sm font-medium">🏠</span>
+                    </span>
+                  </div>
+                  <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                    <div>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Neuer Aufenthalt: <span class="font-medium text-gray-900 dark:text-white">Max Mustermann</span> angemeldet
+                      </p>
+                    </div>
+                    <div class="text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
+                      <time datetime="2024-01-14">vor 1 Tag</time>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+            <li>
+              <div class="relative">
+                <div class="relative flex space-x-3">
+                  <div>
+                    <span class="h-8 w-8 rounded-full bg-yellow-500 flex items-center justify-center ring-8 ring-white dark:ring-gray-800">
+                      <span class="text-white text-sm font-medium">💰</span>
+                    </span>
+                  </div>
+                  <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                    <div>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Monatsabrechnung: <span class="font-medium text-gray-900 dark:text-white">Dezember 2024</span> abgeschlossen
+                      </p>
+                    </div>
+                    <div class="text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
+                      <time datetime="2024-01-01">vor 2 Wochen</time>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // Schnellaktionen je nach Benutzerrolle anpassen
+  async function updateQuickActions() {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const user = await response.json();
+        const quickActions = document.getElementById('quick-actions');
+        
+        if (quickActions && user.role === 'ADMIN') {
+          // Admin sieht auch den Tankfüllungen-Button
+          const tankfuellungButton = `
+            <a href="/tankfuellungen/neu" class="relative rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 dark:hover:border-gray-500 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                  <span class="text-white text-sm font-medium">⛽</span>
+                </div>
+              </div>
+              <div class="flex-1 min-w-0">
+                <span class="absolute inset-0" aria-hidden="true"></span>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                  Tankfüllung eintragen
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  Neue Tankfüllung erfassen
+                </p>
+              </div>
+            </a>
+          `;
+          
+          // Tankfüllungen-Button zwischen Aufenthalte und Statistiken einfügen
+          const statistikButton = quickActions.querySelector('a[href="/statistiken"]');
+          if (statistikButton) {
+            statistikButton.insertAdjacentHTML('beforebegin', tankfuellungButton);
+          }
+        }
+      }
+    } catch (error) {
+      // Nicht eingeloggt oder Fehler - normale Anzeige beibehalten
+    }
+  }
+
+  // Script beim Laden der Seite ausführen
+  document.addEventListener('DOMContentLoaded', updateQuickActions);
+</script>

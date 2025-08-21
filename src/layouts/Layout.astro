@@ -1,0 +1,146 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex items-center">
+            <a href="/" class="text-xl font-bold text-gray-900 dark:text-white">
+              🏠 Nutzerkosten
+            </a>
+          </div>
+          <div class="flex items-center space-x-4">
+            <div id="nav-links">
+              <a href="/aufenthalte" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                Aufenthalte
+              </a>
+              <a href="/statistiken" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                Statistiken
+              </a>
+            </div>
+            <div id="auth-buttons">
+              <a href="/login" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                Anmelden
+              </a>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <slot />
+    </main>
+
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
+      <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+        <p class="text-center text-gray-500 dark:text-gray-400 text-sm">
+          © 2024 Nutzerkosten-Abrechnung. Alle Rechte vorbehalten.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<script>
+  // Navigation-Authentifizierung
+  async function updateNavigation() {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const user = await response.json();
+        const authButtons = document.getElementById('auth-buttons');
+        const navLinks = document.getElementById('nav-links');
+        
+        // Navigation je nach Rolle anpassen
+        if (navLinks) {
+          if (user.role === 'ADMIN') {
+            navLinks.innerHTML = `
+              <a href="/aufenthalte" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                Aufenthalte
+              </a>
+              <a href="/tankfuellungen" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                Tankfüllungen
+              </a>
+              <a href="/statistiken" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                Statistiken
+              </a>
+            `;
+          } else {
+            navLinks.innerHTML = `
+              <a href="/aufenthalte" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                Aufenthalte
+              </a>
+              <a href="/statistiken" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                Statistiken
+              </a>
+            `;
+          }
+        }
+        
+        // Auth-Buttons anpassen
+        if (authButtons) {
+          if (user.role === 'ADMIN') {
+            authButtons.innerHTML = `
+              <a href="/admin/dashboard" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                Admin Dashboard
+              </a>
+              <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                Abmelden
+              </button>
+            `;
+          } else {
+            authButtons.innerHTML = `
+              <span class="text-gray-600 dark:text-gray-300 px-3 py-2 text-sm">
+                Hallo, ${user.name}
+              </span>
+              <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                Abmelden
+              </button>
+            `;
+          }
+        }
+      }
+    } catch (error) {
+      // Nicht eingeloggt, Login-Button bleibt sichtbar
+    }
+  }
+
+  async function logout() {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Logout-Fehler:', error);
+    }
+  }
+
+  // Navigation beim Laden aktualisieren
+  document.addEventListener('DOMContentLoaded', updateNavigation);
+</script>
+
+<style>
+  @import '../styles/global.css';
+</style>

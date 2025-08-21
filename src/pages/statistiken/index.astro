@@ -1,0 +1,618 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Statistiken - Nutzerkosten">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        Statistiken & Analysen
+      </h1>
+      <p class="mt-2 text-gray-600 dark:text-gray-400">
+        Detaillierte Auswertungen zu Verbrauch, Kosten und Trends
+      </p>
+    </div>
+
+    <!-- Filter -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <div>
+            <label for="jahr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Jahr
+            </label>
+            <select id="jahr" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+            </select>
+          </div>
+          <div>
+            <label for="zeitraum" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Zeitraum
+            </label>
+            <select id="zeitraum" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+              <option value="monatlich">Monatlich</option>
+              <option value="quartal">Quartal</option>
+              <option value="jahresvergleich">Jahresvergleich</option>
+            </select>
+          </div>
+          <div>
+            <label for="kategorie" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Kategorie
+            </label>
+            <select id="kategorie" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+              <option value="alle">Alle Kosten</option>
+              <option value="oel">Nur Ölkosten</option>
+              <option value="uebernachtung">Nur Übernachtungskosten</option>
+            </select>
+          </div>
+          <div>
+            <label for="person" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Person
+            </label>
+            <select id="person" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+              <option value="">Alle Personen</option>
+              <!-- Wird dynamisch geladen -->
+            </select>
+          </div>
+        </div>
+        <div class="mt-4 flex justify-end">
+          <button id="filter-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            🔍 Filter anwenden
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Übersichtskarten -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">⛽</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Gesamtverbrauch
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="gesamt-verbrauch">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">💰</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Gesamtkosten
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="gesamt-kosten">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">📊</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Durchschnitt/Stunde
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="durchschnitt-verbrauch">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">🏠</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Aufenthalte
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="anzahl-aufenthalte">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- Monatlicher Verbrauch -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+            Monatlicher Verbrauch
+          </h3>
+          <div class="h-64">
+            <canvas id="verbrauch-chart" width="400" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kostenverteilung -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+            Kostenverteilung
+          </h3>
+          <div class="h-64">
+            <canvas id="kosten-chart" width="400" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Jahresvergleich -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          Jahresvergleich
+        </h3>
+        <div class="h-64">
+          <canvas id="jahresvergleich-chart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personenvergleich -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          Kosten pro Person
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Person
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Aufenthalte
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Verbrauchte Stunden
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Ölkosten
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Übernachtungskosten
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Gesamtkosten
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Anteil
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-8 w-8">
+                      <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                        <span class="text-white text-xs font-medium">M</span>
+                      </div>
+                    </div>
+                    <div class="ml-3">
+                      <div class="text-sm font-medium text-gray-900 dark:text-white">
+                        Max Mustermann
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  8
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  320 h
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  € 2,112
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  € 960
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                  € 3,072
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  37.2%
+                </td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-8 w-8">
+                      <div class="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
+                        <span class="text-white text-xs font-medium">A</span>
+                      </div>
+                    </div>
+                    <div class="ml-3">
+                      <div class="text-sm font-medium text-gray-900 dark:text-white">
+                        Anna Schmidt
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  6
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  240 h
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  € 1,584
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  € 720
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                  € 2,304
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  27.9%
+                </td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-8 w-8">
+                      <div class="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center">
+                        <span class="text-white text-xs font-medium">T</span>
+                      </div>
+                    </div>
+                    <div class="ml-3">
+                      <div class="text-sm font-medium text-gray-900 dark:text-white">
+                        Tom Weber
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  10
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  690 h
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  € 4,554
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  € 1,200
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                  € 5,754
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  34.9%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export-Optionen -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          Daten exportieren
+        </h3>
+        <div class="flex space-x-4">
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            📊 PDF-Report
+          </button>
+          <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            📈 Excel-Export
+          </button>
+          <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            📋 CSV-Daten
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { Chart, registerables } from 'chart.js';
+  Chart.register(...registerables);
+
+  let verbrauchChart: Chart | null = null;
+  let kostenChart: Chart | null = null;
+  let jahresvergleichChart: Chart | null = null;
+  let users: Array<{id: number, name: string, email: string, role: string}> = [];
+
+  // Benutzer laden
+  async function loadUsers() {
+    try {
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        users = await response.json();
+        renderUserSelect();
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Benutzer:', error);
+    }
+  }
+
+  // Benutzer-Select rendern
+  function renderUserSelect() {
+    const select = document.getElementById('person') as HTMLSelectElement;
+    if (select) {
+      select.innerHTML = '<option value="">Alle Personen</option>';
+      users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.name; // Namen statt ID senden
+        option.textContent = user.name;
+        select.appendChild(option);
+      });
+    }
+  }
+
+  // Statistiken laden
+  async function loadStatistiken() {
+    const jahr = (document.getElementById('jahr') as HTMLSelectElement)?.value || '2024';
+    const person = (document.getElementById('person') as HTMLSelectElement)?.value || '';
+    
+    try {
+      const response = await fetch(`/api/statistiken?jahr=${jahr}${person ? `&person=${person}` : ''}`);
+      if (response.ok) {
+        const data = await response.json();
+        updateUebersichtskarten(data);
+        updateCharts(data);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Statistiken:', error);
+    }
+  }
+
+  // Übersichtskarten aktualisieren
+  function updateUebersichtskarten(data: any) {
+    const gesamtVerbrauchEl = document.getElementById('gesamt-verbrauch');
+    const gesamtKostenEl = document.getElementById('gesamt-kosten');
+    const durchschnittVerbrauchEl = document.getElementById('durchschnitt-verbrauch');
+    const anzahlAufenthalteEl = document.getElementById('anzahl-aufenthalte');
+
+    if (gesamtVerbrauchEl) gesamtVerbrauchEl.textContent = `${data.gesamtVerbrauch?.toFixed(1) || 0} h`;
+    if (gesamtKostenEl) gesamtKostenEl.textContent = `€ ${data.gesamtKosten?.toFixed(2) || 0}`;
+    if (durchschnittVerbrauchEl) durchschnittVerbrauchEl.textContent = `${data.durchschnittVerbrauchProStunde?.toFixed(1) || 0} L/h`;
+    if (anzahlAufenthalteEl) anzahlAufenthalteEl.textContent = data.anzahlAufenthalte || 0;
+  }
+
+  // Charts aktualisieren
+  function updateCharts(data: any) {
+    updateVerbrauchChart(data);
+    updateKostenChart(data);
+    updateJahresvergleichChart(data);
+  }
+
+  // Verbrauch-Chart aktualisieren
+  function updateVerbrauchChart(data: any) {
+    const ctx = document.getElementById('verbrauch-chart') as HTMLCanvasElement;
+    if (!ctx) return;
+
+    if (verbrauchChart) {
+      verbrauchChart.destroy();
+    }
+
+    const monatlicheDaten = data.monatlicheVerbrauch || Array(12).fill(0);
+    
+    verbrauchChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
+        datasets: [{
+          label: 'Verbrauch (Stunden)',
+          data: monatlicheDaten,
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+            },
+            ticks: {
+              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
+            }
+          },
+          x: {
+            grid: {
+              color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+            },
+            ticks: {
+              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Kosten-Chart aktualisieren
+  function updateKostenChart(data: any) {
+    const ctx = document.getElementById('kosten-chart') as HTMLCanvasElement;
+    if (!ctx) {
+      return;
+    }
+
+    if (kostenChart) {
+      kostenChart.destroy();
+    }
+
+    const oelKosten = data.oelKosten || 0;
+    const uebernachtungKosten = data.uebernachtungKosten || 0;
+    
+    kostenChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Ölkosten', 'Übernachtungskosten'],
+        datasets: [{
+          data: [oelKosten, uebernachtungKosten],
+          backgroundColor: [
+            'rgb(59, 130, 246)',
+            'rgb(34, 197, 94)'
+          ],
+          borderWidth: 2,
+          borderColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Jahresvergleich-Chart aktualisieren
+  function updateJahresvergleichChart(data: any) {
+    const ctx = document.getElementById('jahresvergleich-chart') as HTMLCanvasElement;
+    if (!ctx) return;
+
+    if (jahresvergleichChart) {
+      jahresvergleichChart.destroy();
+    }
+
+    // Hier würden wir Daten für mehrere Jahre laden
+    // Für jetzt zeigen wir nur das aktuelle Jahr
+    const jahr = (document.getElementById('jahr') as HTMLSelectElement)?.value || '2024';
+    const gesamtKosten = data.gesamtKosten || 0;
+    
+    jahresvergleichChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: [jahr],
+        datasets: [{
+          label: 'Gesamtkosten (€)',
+          data: [gesamtKosten],
+          backgroundColor: ['rgba(59, 130, 246, 0.8)'],
+          borderColor: ['rgb(59, 130, 246)'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+            },
+            ticks: {
+              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
+            }
+          },
+          x: {
+            grid: {
+              color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+            },
+            ticks: {
+              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Event-Listener
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadUsers();
+    await loadStatistiken();
+    
+    // Filter-Button
+    const filterBtn = document.getElementById('filter-btn');
+    if (filterBtn) {
+      filterBtn.addEventListener('click', loadStatistiken);
+    }
+    
+    // Jahr-Änderung
+    const jahrSelect = document.getElementById('jahr');
+    if (jahrSelect) {
+      jahrSelect.addEventListener('click', loadStatistiken);
+    }
+    
+    // Person-Änderung
+    const personSelect = document.getElementById('person');
+    if (personSelect) {
+      personSelect.addEventListener('change', loadStatistiken);
+    }
+  });
+
+</script>

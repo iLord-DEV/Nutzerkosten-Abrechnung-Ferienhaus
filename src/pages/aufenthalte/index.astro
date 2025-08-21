@@ -1,0 +1,407 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// Zugriffskontrolle
+const sessionCookie = Astro.cookies.get('session');
+if (!sessionCookie) {
+  return Astro.redirect('/login');
+}
+
+const session = JSON.parse(sessionCookie.value);
+---
+
+<Layout title="Aufenthalte - Nutzerkosten">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="sm:flex sm:items-center mb-8">
+      <div class="sm:flex-auto">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+          {session.role === 'ADMIN' ? 'Alle Aufenthalte' : 'Meine Aufenthalte'}
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+          {session.role === 'ADMIN' 
+            ? 'Übersicht aller Aufenthalte und Überlappungsberechnung.' 
+            : 'Übersicht deiner Aufenthalte und Kostenberechnung.'}
+        </p>
+      </div>
+      <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <a href="/aufenthalte/neu" class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto">
+          ➕ Neuer Aufenthalt
+        </a>
+      </div>
+    </div>
+
+    <!-- Filter und Suche -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-6">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label for="jahr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Jahr
+            </label>
+            <select id="jahr" class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+            </select>
+          </div>
+          <div>
+            <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Status
+            </label>
+            <select id="status" class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              <option value="">Alle</option>
+              <option value="aktiv">Aktiv</option>
+              <option value="abgeschlossen">Abgeschlossen</option>
+            </select>
+          </div>
+          {session.role === 'ADMIN' && (
+            <div>
+              <label for="suche" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Suche
+              </label>
+              <input type="text" id="suche" placeholder="Name oder E-Mail..." class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+          )}
+          <div class="flex items-end">
+            <button id="filter-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+              🔍 Filtern
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Überlappungs-Info -->
+    <div id="ueberlappungs-info" class="hidden bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-md p-4 mb-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <span class="text-yellow-400">⚠️</span>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+            Überlappungen gefunden
+          </h3>
+          <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+            <p id="ueberlappungs-details">
+              Es wurden Überlappungen zwischen Aufenthalten gefunden. Die Kosten werden entsprechend aufgeteilt.
+            </p>
+          </div>
+        </div>
+        <div class="ml-auto pl-3">
+          <button id="hide-ueberlappungs" class="text-yellow-400 hover:text-yellow-500">
+            <span class="sr-only">Schließen</span>
+            ✕
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aufenthalte-Tabelle -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Benutzer
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Ankunft
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Abreise
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Zählerstand
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Personen
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Kosten
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Aktionen
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="aufenthalte-tbody">
+              <!-- Wird dynamisch geladen -->
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Lade-Animation -->
+        <div id="loading" class="text-center py-8">
+          <div class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Lade Aufenthalte...
+          </div>
+        </div>
+        
+        <!-- Keine Daten -->
+        <div id="no-data" class="hidden text-center py-8">
+          <div class="text-gray-500 dark:text-gray-400">
+            <span class="text-4xl">📭</span>
+            <p class="mt-2 text-lg font-medium">Keine Aufenthalte gefunden</p>
+            <p class="mt-1">Erstellen Sie Ihren ersten Aufenthalt.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  let currentAufenthalte: Array<{
+    id: number;
+    userId: number;
+    ankunft: string;
+    abreise: string;
+    zaehlerstandStart: number;
+    zaehlerstandEnde: number;
+    anzahlMitglieder: number;
+    anzahlGaeste: number;
+    jahr: number;
+    user: { name: string; email: string; role: string };
+  }> = [];
+  
+  let currentPreise: {
+    oelpreisProLiter?: number;
+    uebernachtungMitglied?: number;
+    uebernachtungGast?: number;
+    verbrauchProStunde?: number;
+  } = {};
+
+  // Aufenthalte aus der API laden
+  async function loadAufenthalte() {
+    try {
+      showLoading(true);
+      const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
+      const jahr = jahrSelect ? jahrSelect.value : '2024';
+      
+      const response = await fetch(`/api/aufenthalte?jahr=${jahr}`);
+      if (response.ok) {
+        currentAufenthalte = await response.json();
+        renderAufenthalte(currentAufenthalte);
+        checkUeberlappungen(currentAufenthalte);
+      } else {
+        console.error('Fehler beim Laden der Aufenthalte');
+        showNoData();
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Aufenthalte:', error);
+      showNoData();
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  // Preise laden
+  async function loadPreise(jahr: string) {
+    try {
+      const response = await fetch(`/api/preise?jahr=${jahr}`);
+      if (response.ok) {
+        currentPreise = await response.json();
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Preise:', error);
+    }
+  }
+
+  // Aufenthalte rendern
+  function renderAufenthalte(aufenthalte: typeof currentAufenthalte) {
+    const tbody = document.getElementById('aufenthalte-tbody');
+    if (!tbody) return;
+
+    if (aufenthalte.length === 0) {
+      showNoData();
+      return;
+    }
+
+    tbody.innerHTML = '';
+    
+    aufenthalte.forEach((aufenthalt: typeof currentAufenthalte[0]) => {
+      const row = document.createElement('tr');
+      const ankunft = new Date(aufenthalt.ankunft).toLocaleDateString('de-DE');
+      const abreise = new Date(aufenthalt.abreise).toLocaleDateString('de-DE');
+      const zaehlerStart = aufenthalt.zaehlerstandStart;
+      const zaehlerEnde = aufenthalt.zaehlerstandEnde;
+      const verbrauchteStunden = zaehlerEnde - zaehlerStart;
+      
+      // Kosten berechnen
+      const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.25);
+      const anzahlNaechte = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
+      const uebernachtungKosten = anzahlNaechte * (
+        aufenthalt.anzahlMitglieder * (currentPreise.uebernachtungMitglied || 15) +
+        aufenthalt.anzahlGaeste * (currentPreise.uebernachtungGast || 25)
+      );
+      const gesamtKosten = oelKosten + uebernachtungKosten;
+
+      row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 h-10 w-10">
+              <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                <span class="text-white text-sm font-medium">${aufenthalt.user.name.charAt(0)}</span>
+              </div>
+            </div>
+            <div class="ml-4">
+              <div class="text-sm font-medium text-gray-900 dark:text-white">
+                ${aufenthalt.user.name}
+              </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                ${aufenthalt.user.email}
+              </div>
+            </div>
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${ankunft}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${abreise}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${zaehlerStart.toFixed(1)} h → ${zaehlerEnde.toFixed(1)} h
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${aufenthalt.anzahlMitglieder} + ${aufenthalt.anzahlGaeste} Gäste
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          € ${gesamtKosten.toFixed(2)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <a href="/aufenthalte/${aufenthalt.id}/edit" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4">
+            Bearbeiten
+          </a>
+          <button onclick="deleteAufenthalt(${aufenthalt.id})" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+            Löschen
+          </button>
+        </td>
+      `;
+      
+      tbody.appendChild(row);
+    });
+  }
+
+  // Überlappungen prüfen
+  function checkUeberlappungen(aufenthalte: typeof currentAufenthalte) {
+    const ueberlappungen: Array<{
+      aufenthalt1: typeof currentAufenthalte[0];
+      aufenthalt2: typeof currentAufenthalte[0];
+      ueberlappung: number;
+    }> = [];
+    
+    for (let i = 0; i < aufenthalte.length; i++) {
+      for (let j = i + 1; j < aufenthalte.length; j++) {
+        const a1 = aufenthalte[i];
+        const a2 = aufenthalte[j];
+        
+        // Zählerstand-basierte Überlappung
+        if (a1.zaehlerstandEnde > a2.zaehlerstandStart && a1.zaehlerstandStart < a2.zaehlerstandEnde) {
+          ueberlappungen.push({
+            aufenthalt1: a1,
+            aufenthalt2: a2,
+            ueberlappung: Math.min(a1.zaehlerstandEnde, a2.zaehlerstandEnde) - Math.max(a1.zaehlerstandStart, a2.zaehlerstandStart)
+          });
+        }
+      }
+    }
+    
+    if (ueberlappungen.length > 0) {
+      showUeberlappungsInfo(ueberlappungen);
+    }
+  }
+
+  // Überlappungs-Info anzeigen
+  function showUeberlappungsInfo(ueberlappungen: Array<{
+    aufenthalt1: typeof currentAufenthalte[0];
+    aufenthalt2: typeof currentAufenthalte[0];
+    ueberlappung: number;
+  }>) {
+    const info = document.getElementById('ueberlappungs-info');
+    const details = document.getElementById('ueberlappungs-details');
+    
+    if (info && details) {
+      const ueberlappungsText = ueberlappungen.map((u: {
+        aufenthalt1: typeof currentAufenthalte[0];
+        aufenthalt2: typeof currentAufenthalte[0];
+        ueberlappung: number;
+      }) => 
+        `${u.aufenthalt1.user.name} & ${u.aufenthalt2.user.name} (${u.ueberlappung.toFixed(1)}h)`
+      ).join(', ');
+      
+      details.innerHTML = `Überlappungen gefunden: <strong>${ueberlappungsText}</strong>. Kosten werden entsprechend aufgeteilt.`;
+      info.classList.remove('hidden');
+    }
+  }
+
+  // Überlappungs-Info verstecken
+  function hideUeberlappungsInfo() {
+    const info = document.getElementById('ueberlappungs-info');
+    if (info) {
+      info.classList.add('hidden');
+    }
+  }
+
+  // Aufenthalt löschen
+  async function deleteAufenthalt(id: number) {
+    if (!confirm('Möchten Sie diesen Aufenthalt wirklich löschen?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/aufenthalte/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        loadAufenthalte(); // Neu laden
+      } else {
+        alert('Fehler beim Löschen des Aufenthalts');
+      }
+    } catch (error) {
+      console.error('Fehler beim Löschen:', error);
+      alert('Ein Fehler ist aufgetreten');
+    }
+  }
+
+  // Lade-Animation anzeigen/verstecken
+  function showLoading(show: boolean) {
+    const loading = document.getElementById('loading');
+    if (loading) {
+      loading.classList.toggle('hidden', !show);
+    }
+  }
+
+  // Keine Daten anzeigen
+  function showNoData() {
+    const noData = document.getElementById('no-data');
+    if (noData) {
+      noData.classList.remove('hidden');
+    }
+  }
+
+  // Event-Listener
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadPreise('2024');
+    await loadAufenthalte();
+    
+    // Filter-Event-Listener
+    const jahrSelect = document.getElementById('jahr');
+    const statusSelect = document.getElementById('status');
+    const filterBtn = document.getElementById('filter-btn');
+    
+    if (jahrSelect) jahrSelect.addEventListener('change', loadAufenthalte);
+    if (statusSelect) statusSelect.addEventListener('change', loadAufenthalte);
+    if (filterBtn) filterBtn.addEventListener('click', loadAufenthalte);
+    
+    // Überlappungs-Info verstecken
+    const hideBtn = document.getElementById('hide-ueberlappungs');
+    if (hideBtn) hideBtn.addEventListener('click', hideUeberlappungsInfo);
+  });
+</script>
