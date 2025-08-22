@@ -5,7 +5,7 @@ import Layout from '../layouts/Layout.astro';
 <Layout title="Dashboard - Nutzerkosten">
   <div class="px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white" id="welcome-title">
         Willkommen bei der Nutzerkosten-Abrechnung
       </h1>
       <p class="mt-2 text-gray-600 dark:text-gray-400">
@@ -37,7 +37,7 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hidden" id="tankfuellungen-card">
         <div class="p-5">
           <div class="flex items-center">
             <div class="flex-shrink-0">
@@ -50,7 +50,7 @@ import Layout from '../layouts/Layout.astro';
                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
                   Tankfüllungen (Jahr)
                 </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white">
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="tankfuellungen-count">
                   2
                 </dd>
               </dl>
@@ -229,47 +229,109 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
-  // Schnellaktionen je nach Benutzerrolle anpassen
-  async function updateQuickActions() {
+  // Benutzerinfo laden und Seite personalisieren
+  async function loadUserInfo() {
     try {
       const response = await fetch('/api/auth/me');
       if (response.ok) {
         const user = await response.json();
-        const quickActions = document.getElementById('quick-actions');
         
-        if (quickActions && user.role === 'ADMIN') {
-          // Admin sieht auch den Tankfüllungen-Button
-          const tankfuellungButton = `
-            <a href="/tankfuellungen/neu" class="relative rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 dark:hover:border-gray-500 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-              <div class="flex-shrink-0">
-                <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                  <span class="text-white text-sm font-medium">⛽</span>
-                </div>
-              </div>
-              <div class="flex-1 min-w-0">
-                <span class="absolute inset-0" aria-hidden="true"></span>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  Tankfüllung eintragen
-                </p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  Neue Tankfüllung erfassen
-                </p>
-              </div>
-            </a>
-          `;
-          
-          // Tankfüllungen-Button zwischen Aufenthalte und Statistiken einfügen
-          const statistikButton = quickActions.querySelector('a[href="/statistiken"]');
-          if (statistikButton) {
-            statistikButton.insertAdjacentHTML('beforebegin', tankfuellungButton);
-          }
-        }
+        // 1. Begrüßung mit Vornamen personalisieren
+        updateWelcomeMessage(user);
+        
+        // 2. Schnellaktionen je nach Rolle anpassen
+        updateQuickActions(user);
+        
+        // 3. Tankfüllungen-Kachel nur für Admins anzeigen
+        updateTankfuellungenCard(user);
+        
+        // 4. Dashboard-Daten laden
+        loadDashboardData(user);
       }
     } catch (error) {
       // Nicht eingeloggt oder Fehler - normale Anzeige beibehalten
     }
   }
+  
+  // Willkommensnachricht personalisieren
+  function updateWelcomeMessage(user) {
+    const welcomeTitle = document.getElementById('welcome-title');
+    if (welcomeTitle && user.name) {
+      // Vorname extrahieren (erster Teil vor dem Leerzeichen)
+      const firstName = user.name.split(' ')[0];
+      welcomeTitle.textContent = `Willkommen ${firstName}!`;
+    }
+  }
+  
+  // Schnellaktionen je nach Benutzerrolle anpassen
+  function updateQuickActions(user) {
+    const quickActions = document.getElementById('quick-actions');
+    
+    if (quickActions && user.role === 'ADMIN') {
+      // Admin sieht auch den Tankfüllungen-Button
+      const tankfuellungButton = `
+        <a href="/tankfuellungen/neu" class="relative rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 dark:hover:border-gray-500 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+              <span class="text-white text-sm font-medium">⛽</span>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <span class="absolute inset-0" aria-hidden="true"></span>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              Tankfüllung eintragen
+            </p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Neue Tankfüllung erfassen
+            </p>
+          </div>
+        </a>
+      `;
+      
+      // Tankfüllungen-Button zwischen Aufenthalte und Statistiken einfügen
+      const statistikButton = quickActions.querySelector('a[href="/statistiken"]');
+      if (statistikButton) {
+        statistikButton.insertAdjacentHTML('beforebegin', tankfuellungButton);
+      }
+    }
+  }
+  
+  // Tankfüllungen-Kachel nur für Admins anzeigen
+  function updateTankfuellungenCard(user) {
+    const tankfuellungenCard = document.getElementById('tankfuellungen-card');
+    if (tankfuellungenCard) {
+      if (user.role === 'ADMIN') {
+        tankfuellungenCard.classList.remove('hidden');
+      } else {
+        tankfuellungenCard.classList.add('hidden');
+      }
+    }
+  }
+  
+  // Dashboard-Daten laden
+  async function loadDashboardData(user) {
+    try {
+      // Tankfüllungen für aktuelles Jahr laden (nur für Admins)
+      if (user.role === 'ADMIN') {
+        const tankResponse = await fetch('/api/tankfuellungen');
+        if (tankResponse.ok) {
+          const tankfuellungen = await tankResponse.json();
+          const currentYear = new Date().getFullYear();
+          const tankfuellungenThisYear = tankfuellungen.filter(tank => 
+            new Date(tank.datum).getFullYear() === currentYear
+          );
+          
+          const tankCountElement = document.getElementById('tankfuellungen-count');
+          if (tankCountElement) {
+            tankCountElement.textContent = tankfuellungenThisYear.length;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Dashboard-Daten:', error);
+    }
+  }
 
   // Script beim Laden der Seite ausführen
-  document.addEventListener('DOMContentLoaded', updateQuickActions);
+  document.addEventListener('DOMContentLoaded', loadUserInfo);
 </script>

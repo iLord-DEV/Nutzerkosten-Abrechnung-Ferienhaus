@@ -317,7 +317,7 @@ const session = JSON.parse(sessionCookie.value);
       if (response.ok) {
         const aufenthalte = await response.json();
         const ueberlappungen = aufenthalte.filter((a: any) => 
-          a.zaehlerstandEnde > start && a.zaehlerstandStart < ende
+          a.zaehlerAbreise > start && a.zaehlerAnkunft < ende
         );
 
         if (ueberlappungen.length > 0) {
@@ -385,8 +385,8 @@ const session = JSON.parse(sessionCookie.value);
       userId: userId,
       ankunft: new Date(ankunft).toISOString(),
       abreise: new Date(abreise).toISOString(),
-      zaehlerstandStart: zaehlerStart,
-      zaehlerstandEnde: zaehlerEnde,
+              zaehlerAnkunft: zaehlerStart,
+        zaehlerAbreise: zaehlerEnde,
       anzahlMitglieder: anzahlMitglieder,
       anzahlGaeste: anzahlGaeste,
       jahr: new Date(ankunft).getFullYear()

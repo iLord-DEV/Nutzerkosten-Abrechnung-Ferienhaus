@@ -47,7 +47,7 @@ import Layout from '../../layouts/Layout.astro';
               <option value="uebernachtung">Nur Übernachtungskosten</option>
             </select>
           </div>
-          <div>
+          <div id="person-filter" class="hidden">
             <label for="person" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Person
             </label>
@@ -375,9 +375,31 @@ import Layout from '../../layouts/Layout.astro';
       if (response.ok) {
         users = await response.json();
         renderUserSelect();
+        checkUserRole();
       }
     } catch (error) {
       console.error('Fehler beim Laden der Benutzer:', error);
+    }
+  }
+
+  // Benutzerrolle prüfen und Person-Filter entsprechend ein-/ausblenden
+  async function checkUserRole() {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const user = await response.json();
+        const personFilter = document.getElementById('person-filter');
+        
+        if (personFilter) {
+          if (user.role === 'ADMIN') {
+            personFilter.classList.remove('hidden');
+          } else {
+            personFilter.classList.add('hidden');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Prüfen der Benutzerrolle:', error);
     }
   }
 

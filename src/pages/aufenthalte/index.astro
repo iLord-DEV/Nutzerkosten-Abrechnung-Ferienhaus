@@ -161,8 +161,8 @@ const session = JSON.parse(sessionCookie.value);
     userId: number;
     ankunft: string;
     abreise: string;
-    zaehlerstandStart: number;
-    zaehlerstandEnde: number;
+    zaehlerAnkunft: number;
+    zaehlerAbreise: number;
     anzahlMitglieder: number;
     anzahlGaeste: number;
     jahr: number;
@@ -183,17 +183,22 @@ const session = JSON.parse(sessionCookie.value);
       const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
       const jahr = jahrSelect ? jahrSelect.value : '2024';
       
+      console.log('🔍 Lade Aufenthalte für Jahr:', jahr);
       const response = await fetch(`/api/aufenthalte?jahr=${jahr}`);
+      console.log('📡 API Response Status:', response.status);
+      
       if (response.ok) {
         currentAufenthalte = await response.json();
+        console.log('📊 Aufenthalte geladen:', currentAufenthalte.length);
+        console.log('📋 Erste 2 Aufenthalte:', currentAufenthalte.slice(0, 2));
         renderAufenthalte(currentAufenthalte);
         checkUeberlappungen(currentAufenthalte);
       } else {
-        console.error('Fehler beim Laden der Aufenthalte');
+        console.error('❌ Fehler beim Laden der Aufenthalte');
         showNoData();
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Aufenthalte:', error);
+      console.error('❌ Fehler beim Laden der Aufenthalte:', error);
       showNoData();
     } finally {
       showLoading(false);
@@ -214,10 +219,15 @@ const session = JSON.parse(sessionCookie.value);
 
   // Aufenthalte rendern
   function renderAufenthalte(aufenthalte: typeof currentAufenthalte) {
+    console.log('🎨 renderAufenthalte aufgerufen mit', aufenthalte.length, 'Aufenthalten');
     const tbody = document.getElementById('aufenthalte-tbody');
-    if (!tbody) return;
+    if (!tbody) {
+      console.error('❌ tbody Element nicht gefunden');
+      return;
+    }
 
     if (aufenthalte.length === 0) {
+      console.log('📭 Keine Aufenthalte vorhanden');
       showNoData();
       return;
     }
@@ -228,8 +238,8 @@ const session = JSON.parse(sessionCookie.value);
       const row = document.createElement('tr');
       const ankunft = new Date(aufenthalt.ankunft).toLocaleDateString('de-DE');
       const abreise = new Date(aufenthalt.abreise).toLocaleDateString('de-DE');
-      const zaehlerStart = aufenthalt.zaehlerstandStart;
-      const zaehlerEnde = aufenthalt.zaehlerstandEnde;
+      const zaehlerStart = aufenthalt.zaehlerAnkunft;
+      const zaehlerEnde = aufenthalt.zaehlerAbreise;
       const verbrauchteStunden = zaehlerEnde - zaehlerStart;
       
       // Kosten berechnen
@@ -302,11 +312,11 @@ const session = JSON.parse(sessionCookie.value);
         const a2 = aufenthalte[j];
         
         // Zählerstand-basierte Überlappung
-        if (a1.zaehlerstandEnde > a2.zaehlerstandStart && a1.zaehlerstandStart < a2.zaehlerstandEnde) {
+        if (a1.zaehlerAbreise > a2.zaehlerAnkunft && a1.zaehlerAnkunft < a2.zaehlerAbreise) {
           ueberlappungen.push({
             aufenthalt1: a1,
             aufenthalt2: a2,
-            ueberlappung: Math.min(a1.zaehlerstandEnde, a2.zaehlerstandEnde) - Math.max(a1.zaehlerstandStart, a2.zaehlerstandStart)
+            ueberlappung: Math.min(a1.zaehlerAbreise, a2.zaehlerAbreise) - Math.max(a1.zaehlerAnkunft, a2.zaehlerAnkunft)
           });
         }
       }
@@ -403,5 +413,6 @@ const session = JSON.parse(sessionCookie.value);
     // Überlappungs-Info verstecken
     const hideBtn = document.getElementById('hide-ueberlappungs');
     if (hideBtn) hideBtn.addEventListener('click', hideUeberlappungsInfo);
+
   });
 </script>

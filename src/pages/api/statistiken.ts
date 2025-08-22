@@ -29,16 +29,22 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Basis-Query für Aufenthalte
     const whereClause: any = { jahr: parseInt(jahr) };
     
-    // Person-Filter hat Priorität über personId
+    // Person-Filter nur für Admins oder bei Gesamtübersicht
     if (personName && personName !== '') {
-      // Erst alle User laden, um die ID zu finden
-      const users = await prisma.user.findMany({
-        where: { name: personName },
-        select: { id: true }
-      });
-      
-      if (users.length > 0) {
-        whereClause.userId = users[0].id;
+      if (session.role === 'ADMIN' || showGesamtuebersicht) {
+        // Admins können nach Namen filtern, normale Benutzer nur bei Gesamtübersicht
+        const users = await prisma.user.findMany({
+          where: { name: personName },
+          select: { id: true }
+        });
+        
+        if (users.length > 0) {
+          whereClause.userId = users[0].id;
+        }
+      } else {
+        // Normale Benutzer können nicht nach anderen Nutzern filtern
+        // Sie sehen immer nur ihre eigenen Daten
+        whereClause.userId = session.userId;
       }
     } else if (personId && !showGesamtuebersicht) {
       // Fallback auf personId wenn kein personName gesetzt ist

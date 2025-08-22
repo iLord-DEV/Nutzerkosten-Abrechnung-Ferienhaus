@@ -102,7 +102,7 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
               <a href="/admin/dashboard" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                 Admin Dashboard
               </a>
-              <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+              <button id="logout-btn-nav" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                 Abmelden
               </button>
             `;
@@ -111,7 +111,7 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
               <span class="text-gray-600 dark:text-gray-300 px-3 py-2 text-sm">
                 Hallo, ${user.name}
               </span>
-              <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+              <button id="logout-btn-nav" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                 Abmelden
               </button>
             `;
@@ -123,22 +123,27 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
     }
   }
 
-  async function logout() {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
-      
-      if (response.ok) {
-        window.location.href = '/';
-      }
-    } catch (error) {
-      console.error('Logout-Fehler:', error);
-    }
-  }
+
 
   // Navigation beim Laden aktualisieren
   document.addEventListener('DOMContentLoaded', updateNavigation);
+  
+  // Logout-Button Event-Listener hinzufügen
+  document.addEventListener('click', async (event) => {
+    if (event.target && event.target.id === 'logout-btn-nav') {
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+        });
+        
+        if (response.ok) {
+          window.location.href = '/';
+        }
+      } catch (error) {
+        console.error('Logout-Fehler:', error);
+      }
+    }
+  });
 </script>
 
 <style>

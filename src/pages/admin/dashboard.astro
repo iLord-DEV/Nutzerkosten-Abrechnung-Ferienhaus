@@ -14,11 +14,7 @@ import Layout from '../../layouts/Layout.astro';
             Willkommen, <span id="admin-name">Administrator</span>! Hier können Sie alle Verwaltungsaufgaben durchführen.
           </p>
         </div>
-        <div class="flex space-x-3">
-          <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-            Abmelden
-          </button>
-        </div>
+
       </div>
     </div>
 
@@ -256,8 +252,6 @@ import Layout from '../../layouts/Layout.astro';
   document.addEventListener('DOMContentLoaded', () => {
     loadUserInfo();
     loadDashboardData();
-    
-    // Logout-Button
-    document.getElementById('logout-btn')?.addEventListener('click', logout);
+
   });
 </script>

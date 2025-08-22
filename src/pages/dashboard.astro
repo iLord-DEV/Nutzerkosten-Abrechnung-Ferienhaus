@@ -14,11 +14,7 @@ import Layout from '../layouts/Layout.astro';
             Willkommen, <span id="user-name">Benutzer</span>! Hier findest du deine persönlichen Aufenthalte und Kosten.
           </p>
         </div>
-        <div class="flex space-x-3">
-          <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-            Abmelden
-          </button>
-        </div>
+
       </div>
     </div>
 
@@ -264,7 +260,7 @@ import Layout from '../layouts/Layout.astro';
           ${new Date(aufenthalt.abreise).toLocaleDateString('de-DE')}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${aufenthalt.zaehlerstandStart}h - ${aufenthalt.zaehlerstandEnde}h
+          ${aufenthalt.zaehlerAnkunft}h - ${aufenthalt.zaehlerAbreise}h
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
           ${aufenthalt.anzahlMitglieder}
@@ -282,7 +278,7 @@ import Layout from '../layouts/Layout.astro';
 
   // Kosten für einen Aufenthalt berechnen (vereinfacht)
   function calculateKosten(aufenthalt: any) {
-    const stunden = (aufenthalt.zaehlerstandEnde - aufenthalt.zaehlerstandStart);
+            const stunden = (aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft);
     const oelkosten = stunden * 5.5 * 1.25; // 5.5 L/h, 1.25€/L
     const uebernachtungskosten = (aufenthalt.anzahlMitglieder * 15 + aufenthalt.anzahlGaeste * 25) * 
       Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
@@ -371,26 +367,11 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
-  // Logout-Funktion
-  async function logout() {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
-      
-      if (response.ok) {
-        window.location.href = '/login';
-      }
-    } catch (error) {
-      console.error('Logout-Fehler:', error);
-    }
-  }
+
 
   // Event-Listener
   document.addEventListener('DOMContentLoaded', () => {
     loadUserInfo();
-    
-    // Logout-Button
-    document.getElementById('logout-btn')?.addEventListener('click', logout);
+
   });
 </script>

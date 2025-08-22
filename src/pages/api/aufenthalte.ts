@@ -3,21 +3,45 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const GET: APIRoute = async ({ cookies }) => {
+export const GET: APIRoute = async ({ cookies, url }) => {
   try {
     // Session prüfen
     const sessionCookie = cookies.get('session');
-    if (!sessionCookie) {
+    if (!sessionCookie || !sessionCookie.value || sessionCookie.value.trim() === '') {
       return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const session = JSON.parse(sessionCookie.value);
+    let session;
+    try {
+      session = JSON.parse(sessionCookie.value);
+      // Prüfen, ob die Session gültige Daten enthält
+      if (!session.userId || !session.role || !session.email) {
+        return new Response(JSON.stringify({ error: 'Ungültige Session' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Ungültige Session' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // URL-Parameter auslesen
+    const searchParams = url.searchParams;
+    const jahr = searchParams.get('jahr');
     
     // Basis-Query
     let whereClause: any = {};
+    
+    // Jahr-Filter hinzufügen
+    if (jahr) {
+      whereClause.jahr = parseInt(jahr);
+    }
     
     // Normale Benutzer sehen nur ihre eigenen Aufenthalte
     if (session.role !== 'ADMIN') {
@@ -62,14 +86,29 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Session prüfen
     const sessionCookie = cookies.get('session');
-    if (!sessionCookie) {
+    if (!sessionCookie || !sessionCookie.value || sessionCookie.value.trim() === '') {
       return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const session = JSON.parse(sessionCookie.value);
+    let session;
+    try {
+      session = JSON.parse(sessionCookie.value);
+      // Prüfen, ob die Session gültige Daten enthält
+      if (!session.userId || !session.role || !session.email) {
+        return new Response(JSON.stringify({ error: 'Ungültige Session' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Ungültige Session' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     const body = await request.json();
     
     // Normale Benutzer können nur Aufenthalte für sich selbst erstellen
@@ -82,8 +121,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         userId: body.userId,
         ankunft: new Date(body.ankunft),
         abreise: new Date(body.abreise),
-        zaehlerstandStart: parseFloat(body.zaehlerStart),
-        zaehlerstandEnde: parseFloat(body.zaehlerEnde),
+        zaehlerAnkunft: parseFloat(body.zaehlerStart),
+        zaehlerAbreise: parseFloat(body.zaehlerEnde),
         anzahlMitglieder: parseInt(body.anzahlMitglieder),
         anzahlGaeste: parseInt(body.anzahlGaeste),
         jahr: new Date(body.ankunft).getFullYear(),

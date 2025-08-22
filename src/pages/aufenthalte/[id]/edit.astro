@@ -1,0 +1,213 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+
+// Zugriffskontrolle
+const sessionCookie = Astro.cookies.get('session');
+if (!sessionCookie) {
+  return Astro.redirect('/login');
+}
+
+const session = JSON.parse(sessionCookie.value);
+const { id } = Astro.params;
+
+// Aufenthalt laden
+let aufenthalt = null;
+try {
+  const response = await fetch(`${Astro.url.origin}/api/aufenthalte/${id}`);
+  if (response.ok) {
+    aufenthalt = await response.json();
+    
+    // Normale Benutzer können nur ihre eigenen Aufenthalte bearbeiten
+    if (session.role !== 'ADMIN' && aufenthalt.userId !== session.userId) {
+      return Astro.redirect('/aufenthalte');
+    }
+  } else {
+    return Astro.redirect('/aufenthalte');
+  }
+} catch (error) {
+  return Astro.redirect('/aufenthalte');
+}
+
+if (!aufenthalt) {
+  return Astro.redirect('/aufenthalte');
+}
+---
+
+<Layout title="Aufenthalt bearbeiten - Nutzerkosten">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        Aufenthalt bearbeiten
+      </h1>
+      <p class="mt-2 text-gray-600 dark:text-gray-400">
+        Bearbeiten Sie die Details des Aufenthalts
+      </p>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <form id="edit-form" class="space-y-6">
+          <input type="hidden" id="aufenthalt-id" value={aufenthalt.id}>
+          
+          <!-- Benutzer-Auswahl (nur für Admins) -->
+          {session.role === 'ADMIN' && (
+            <div>
+              <label for="userId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Benutzer
+              </label>
+              <select id="userId" required class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <!-- Wird dynamisch geladen -->
+              </select>
+            </div>
+          )}
+
+          <!-- Ankunft -->
+          <div>
+            <label for="ankunft" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Ankunft
+            </label>
+            <input type="datetime-local" id="ankunft" required 
+                   value={new Date(aufenthalt.ankunft).toISOString().slice(0, 16)}
+                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+
+          <!-- Abreise -->
+          <div>
+            <label for="abreise" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Abreise
+            </label>
+            <input type="datetime-local" id="abreise" required 
+                   value={new Date(aufenthalt.abreise).toISOString().slice(0, 16)}
+                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+
+          <!-- Zählerstand bei Ankunft -->
+          <div>
+            <label for="zaehlerStart" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Zählerstand bei Ankunft (Stunden)
+            </label>
+            <input type="number" id="zaehlerStart" step="0.1" required 
+                   value={aufenthalt.zaehlerAnkunft}
+                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+
+          <!-- Zählerstand bei Abreise -->
+          <div>
+            <label for="zaehlerEnde" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Zählerstand bei Abreise (Stunden)
+            </label>
+            <input type="number" id="zaehlerEnde" step="0.1" required 
+                   value={aufenthalt.zaehlerAbreise}
+                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+
+          <!-- Anzahl Mitglieder -->
+          <div>
+            <label for="anzahlMitglieder" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Anzahl Mitglieder
+            </label>
+            <input type="number" id="anzahlMitglieder" min="1" required 
+                   value={aufenthalt.anzahlMitglieder}
+                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+
+          <!-- Anzahl Gäste -->
+          <div>
+            <label for="anzahlGaeste" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Anzahl Gäste
+            </label>
+            <input type="number" id="anzahlGaeste" min="0" required 
+                   value={aufenthalt.anzahlGaeste}
+                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex justify-end space-x-3">
+            <a href="/aufenthalte" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md text-sm font-medium">
+              Abbrechen
+            </a>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+              Speichern
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  let users: Array<{ id: number; name: string; email: string }> = [];
+
+  // Benutzer laden (nur für Admins)
+  async function loadUsers() {
+    if (document.getElementById('userId')) {
+      try {
+        const response = await fetch('/api/users');
+        if (response.ok) {
+          users = await response.json();
+          renderUserSelect();
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Benutzer:', error);
+      }
+    }
+  }
+
+  // Benutzer-Select rendern
+  function renderUserSelect() {
+    const select = document.getElementById('userId') as HTMLSelectElement;
+    if (select) {
+      select.innerHTML = '';
+      users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id.toString();
+        option.textContent = user.name;
+        if (user.id === parseInt(document.getElementById('aufenthalt-id')?.value || '0')) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+    }
+  }
+
+  // Formular absenden
+  document.getElementById('edit-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+      id: (document.getElementById('aufenthalt-id') as HTMLInputElement).value,
+      userId: (document.getElementById('userId') as HTMLSelectElement)?.value || '',
+      ankunft: (document.getElementById('ankunft') as HTMLInputElement).value,
+      abreise: (document.getElementById('abreise') as HTMLInputElement).value,
+      zaehlerStart: (document.getElementById('zaehlerStart') as HTMLInputElement).value,
+      zaehlerEnde: (document.getElementById('zaehlerEnde') as HTMLInputElement).value,
+      anzahlMitglieder: (document.getElementById('anzahlMitglieder') as HTMLInputElement).value,
+      anzahlGaeste: (document.getElementById('anzahlGaeste') as HTMLInputElement).value,
+    };
+
+    try {
+      const response = await fetch(`/api/aufenthalte/${formData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        alert('Aufenthalt erfolgreich aktualisiert!');
+        window.location.href = '/aufenthalte';
+      } else {
+        const error = await response.json();
+        alert(`Fehler beim Aktualisieren: ${error.error || 'Unbekannter Fehler'}`);
+      }
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren:', error);
+      alert('Ein Fehler ist aufgetreten');
+    }
+  });
+
+  // Benutzer beim Laden der Seite laden
+  document.addEventListener('DOMContentLoaded', loadUsers);
+</script>

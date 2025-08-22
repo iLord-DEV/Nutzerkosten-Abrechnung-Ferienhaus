@@ -98,12 +98,15 @@ import Layout from '../layouts/Layout.astro';
         // Erfolgreicher Login
         console.log('Login erfolgreich:', data.user);
         
-        // Weiterleitung basierend auf der Rolle
-        if (data.user.role === 'ADMIN') {
-          window.location.href = '/admin/dashboard';
-        } else {
-          window.location.href = '/dashboard';
-        }
+        // Kurz warten, damit der Cookie gesetzt wird
+        setTimeout(() => {
+          // Weiterleitung basierend auf der Rolle
+          if (data.user.role === 'ADMIN') {
+            window.location.href = '/admin/dashboard';
+          } else {
+            window.location.href = '/dashboard';
+          }
+        }, 100);
       } else {
         // Fehler anzeigen
         alert(data.error || 'Login fehlgeschlagen');
