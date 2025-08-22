@@ -39,8 +39,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     cookies.set('session', JSON.stringify(sessionData), {
       path: '/',
-      httpOnly: true,
+      httpOnly: true, // Für Sicherheit
       secure: false, // Für lokale Entwicklung
+      sameSite: 'lax', // Für lokale Entwicklung
       maxAge: 60 * 60 * 24, // 24 Stunden
     });
 

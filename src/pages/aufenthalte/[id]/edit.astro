@@ -13,18 +13,32 @@ const { id } = Astro.params;
 // Aufenthalt laden
 let aufenthalt = null;
 try {
-  const response = await fetch(`${Astro.url.origin}/api/aufenthalte/${id}`);
-  if (response.ok) {
-    aufenthalt = await response.json();
-    
-    // Normale Benutzer können nur ihre eigenen Aufenthalte bearbeiten
-    if (session.role !== 'ADMIN' && aufenthalt.userId !== session.userId) {
-      return Astro.redirect('/aufenthalte');
-    }
-  } else {
+  // Direkt aus der Datenbank laden, ohne API-Call
+  const { PrismaClient } = await import('@prisma/client');
+  const prisma = new PrismaClient();
+  
+  aufenthalt = await prisma.aufenthalt.findUnique({
+    where: { id: parseInt(id) },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      },
+    },
+  });
+  
+  await prisma.$disconnect();
+  
+  // Normale Benutzer können nur ihre eigenen Aufenthalte bearbeiten
+  if (session.role !== 'ADMIN' && aufenthalt.userId !== session.userId) {
     return Astro.redirect('/aufenthalte');
   }
 } catch (error) {
+  console.error('Fehler beim Laden des Aufenthalts:', error);
   return Astro.redirect('/aufenthalte');
 }
 
