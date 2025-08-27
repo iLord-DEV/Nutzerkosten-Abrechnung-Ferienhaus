@@ -49,12 +49,15 @@ model Tankfuellung {
 }
 
 model Preise {
-  jahr                      Int   @id
+  jahr                      Int      @id
   oelpreisProLiter          Float
   uebernachtungMitglied     Float // Preis pro Nacht für WG-Mitglieder
   uebernachtungGast         Float // Preis pro Nacht für Gäste
   verbrauchProStunde        Float @default(5.5) // Liter Öl pro Brennerstunde (Fallback)
   istBerechnet              Boolean @default(false) // true wenn aus Tankdaten berechnet
+  gueltigAb                 DateTime? // Ab wann gelten diese Übernachtungspreise (optional)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 }
 
 model JahresAbschluss {

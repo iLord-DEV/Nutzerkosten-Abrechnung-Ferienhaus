@@ -81,7 +81,7 @@ async function main() {
   const preise2024 = await prisma.preise.create({
     data: {
       jahr: 2024,
-      oelpreisProLiter: 1.25,
+              oelpreisProLiter: 1.01,
       uebernachtungMitglied: 15,
       uebernachtungGast: 25,
       verbrauchProStunde: 5.5, // Fallback

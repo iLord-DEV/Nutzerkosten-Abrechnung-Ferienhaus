@@ -1,0 +1,538 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { PrismaClient } from '@prisma/client';
+
+let uebernachtungspreise = [];
+let preise = [];
+
+try {
+  const prisma = new PrismaClient();
+  
+  // Hole alle Preise mit Übernachtungspreisen (gueltigAb gesetzt), sortiert nach Gültigkeitsdatum
+  uebernachtungspreise = await prisma.preise.findMany({
+    where: {
+      gueltigAb: {
+        not: null
+      }
+    },
+    orderBy: {
+      gueltigAb: 'desc'
+    }
+  });
+
+  // Hole nur die echten jährlichen Ölpreise (ohne gueltigAb), sortiert nach Jahr (neueste zuerst)
+  preise = await prisma.preise.findMany({
+    where: {
+      gueltigAb: null
+    },
+    orderBy: {
+      jahr: 'desc'
+    }
+  });
+
+  await prisma.$disconnect();
+} catch (error) {
+  console.error('Fehler beim Laden der Daten:', error);
+  // Fallback: Leere Arrays verwenden
+}
+---
+
+<Layout title="Preise verwalten">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        Preise verwalten
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        Hier können Sie die Übernachtungspreise und Ölpreise verwalten. 
+        Der letzte erstellte Übernachtungspreis gilt ab dem angegebenen Datum für alle zukünftigen Aufenthalte.
+      </p>
+    </div>
+
+    <!-- Übernachtungspreise -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+            Aktuell gültige Übernachtungspreise
+          </h2>
+          <button
+            onclick="window.openCreatePriceModal()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          >
+            Neuen Preis hinzufügen
+          </button>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Gültig ab
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Mitglied (€/Nacht)
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Gast (€/Nacht)
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Erstellt
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Aktionen
+              </th>
+            </tr>
+          </thead>
+          <tbody id="preiseTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <!-- Wird durch JavaScript gefüllt -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Ölpreise & Verbrauchswerte -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+            Ölpreise & Verbrauchswerte
+          </h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Diese werden automatisch aus Tankfüllungen berechnet
+          </p>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Jahr
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Ölpreis (€/L)
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Verbrauch (L/h)
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Status
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Übernachtungspreise
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {preise.map(preis => (
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  {preis.jahr}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  € {preis.oelpreisProLiter.toFixed(2)}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  {preis.verbrauchProStunde.toFixed(1)} L/h
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    preis.istBerechnet 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                  }`}>
+                    {preis.istBerechnet ? 'Berechnet' : 'Fallback'}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  Fallback: 5€/10€
+                </td>
+              </tr>
+            ))}
+            {preise.length === 0 && (
+              <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Keine Preise vorhanden. Fallback-Werte gelten: 1.01€/L, 5.5 L/h, 5€/10€
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal für neuen Preis -->
+  <div id="createPriceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          Neuen Übernachtungspreis hinzufügen
+        </h3>
+        <form id="createPriceForm">
+          <div class="mb-4">
+            <label for="gueltigAb" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Gültig ab
+            </label>
+            <input 
+              type="date" 
+              id="gueltigAb" 
+              name="gueltigAb" 
+              required 
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+          </div>
+          <div class="mb-4">
+            <label for="uebernachtungMitglied" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Preis Mitglied (€/Nacht)
+            </label>
+            <input 
+              type="number" 
+              id="uebernachtungMitglied" 
+              name="uebernachtungMitglied" 
+              step="0.01" 
+              min="0" 
+              value="5" 
+              required 
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+          </div>
+          <div class="mb-6">
+            <label for="uebernachtungGast" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Preis Gast (€/Nacht)
+            </label>
+            <input 
+              type="number" 
+              id="uebernachtungGast" 
+              name="uebernachtungGast" 
+              step="0.01" 
+              min="0" 
+              value="10" 
+              required 
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button
+              type="button"
+              onclick="window.closeCreatePriceModal()"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Speichern
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal für Preis bearbeiten -->
+  <div id="editPriceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          Übernachtungspreis bearbeiten
+        </h3>
+        <form id="editPriceForm">
+          <input type="hidden" id="editPriceId" name="id">
+          <div class="mb-4">
+            <label for="editGueltigAb" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Gültig ab
+            </label>
+            <input 
+              type="date" 
+              id="editGueltigAb" 
+              name="gueltigAb" 
+              required 
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+          </div>
+          <div class="mb-4">
+            <label for="editUebernachtungMitglied" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Preis Mitglied (€/Nacht)
+            </label>
+            <input 
+              type="number" 
+              id="editUebernachtungMitglied" 
+              name="uebernachtungMitglied" 
+              step="0.01" 
+              min="0" 
+              required 
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+          </div>
+          <div class="mb-6">
+            <label for="editUebernachtungGast" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Preis Gast (€/Nacht)
+            </label>
+            <input 
+              type="number" 
+              id="editUebernachtungGast" 
+              name="uebernachtungGast" 
+              step="0.01" 
+              min="0" 
+              required 
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button
+              type="button"
+              onclick="window.closeEditPriceModal()"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Aktualisieren
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // Globale Variablen
+  let allPreise = [];
+
+  // Funktionen global verfügbar machen
+  window.openCreatePriceModal = openCreatePriceModal;
+  window.closeCreatePriceModal = closeCreatePriceModal;
+  window.openEditPriceModal = openEditPriceModal;
+  window.closeEditPriceModal = closeEditPriceModal;
+  window.editPrice = editPrice;
+  window.deletePrice = deletePrice;
+
+  // Modal öffnen/schließen
+  function openCreatePriceModal() {
+    document.getElementById('createPriceModal').classList.remove('hidden');
+    // Heute als Standarddatum setzen
+    document.getElementById('gueltigAb').value = new Date().toISOString().split('T')[0];
+  }
+
+  function closeCreatePriceModal() {
+    document.getElementById('createPriceModal').classList.add('hidden');
+    document.getElementById('createPriceForm').reset();
+  }
+
+  function openEditPriceModal() {
+    document.getElementById('editPriceModal').classList.remove('hidden');
+  }
+
+  function closeEditPriceModal() {
+    document.getElementById('editPriceModal').classList.add('hidden');
+  }
+
+  // Preise laden
+  async function loadPreise() {
+    try {
+      const response = await fetch('/api/preise');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const allePreise = await response.json();
+      // Nur die aktuell gültigen Preise anzeigen (mit gueltigAb)
+      allPreise = allePreise.filter(preis => preis.gueltigAb);
+      console.log('📊 Geladene gültige Preise:', allPreise);
+      renderPreise();
+    } catch (error) {
+      console.error('❌ Fehler beim Laden der Preise:', error);
+    }
+  }
+
+  // Preise rendern
+  function renderPreise() {
+    const tbody = document.getElementById('preiseTableBody');
+    if (!tbody) return;
+
+    if (allPreise.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+            Keine Preise konfiguriert. Fallback-Werte gelten: 5€ (Mitglieder), 10€ (Gäste)
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = allPreise.map(preis => `
+      <tr>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${preis.gueltigAb ? new Date(preis.gueltigAb).toLocaleDateString('de-DE') : 'Jährlich'}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          € ${preis.uebernachtungMitglied.toFixed(2)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          € ${preis.uebernachtungGast.toFixed(2)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          ${preis.createdAt ? new Date(preis.createdAt).toLocaleDateString('de-DE') : 'Unbekannt'}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+          <button
+            onclick="window.editPrice(${preis.jahr})"
+            class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+          >
+            Bearbeiten
+          </button>
+          <button
+            onclick="window.deletePrice(${preis.jahr})"
+            class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+          >
+            Löschen
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // Neuen Preis erstellen
+  document.getElementById('createPriceForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = {
+      gueltigAb: formData.get('gueltigAb'),
+      uebernachtungMitglied: parseFloat(formData.get('uebernachtungMitglied')),
+      uebernachtungGast: parseFloat(formData.get('uebernachtungGast'))
+    };
+
+    try {
+      const response = await fetch('/api/preise', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jahr: new Date(data.gueltigAb).getFullYear(),
+          oelpreisProLiter: 1.01, // Fallback
+          uebernachtungMitglied: data.uebernachtungMitglied,
+          uebernachtungGast: data.uebernachtungGast,
+          verbrauchProStunde: 5.5, // Fallback
+          istBerechnet: false,
+          gueltigAb: data.gueltigAb
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Erstellen des Preises');
+      }
+
+      alert('✅ Preis erfolgreich erstellt!');
+      closeCreatePriceModal();
+      loadPreise();
+    } catch (error) {
+      console.error('❌ Fehler:', error);
+      alert(`❌ Fehler: ${error.message}`);
+    }
+  });
+
+  // Preis bearbeiten
+  async function editPrice(jahr) {
+    const preis = allPreise.find(p => p.jahr === jahr);
+    if (!preis) return;
+
+    // Formular mit aktuellen Werten füllen
+    document.getElementById('editPriceId').value = preis.jahr;
+    document.getElementById('editGueltigAb').value = preis.gueltigAb.split('T')[0];
+    document.getElementById('editUebernachtungMitglied').value = preis.uebernachtungMitglied;
+    document.getElementById('editUebernachtungGast').value = preis.uebernachtungGast;
+
+    openEditPriceModal();
+  }
+
+  // Preis aktualisieren
+  document.getElementById('editPriceForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = {
+      id: parseInt(formData.get('id')),
+      gueltigAb: formData.get('gueltigAb'),
+      uebernachtungMitglied: parseFloat(formData.get('uebernachtungMitglied')),
+      uebernachtungGast: parseFloat(formData.get('uebernachtungGast'))
+    };
+
+    try {
+      const response = await fetch(`/api/preise?jahr=${new Date(data.gueltigAb).getFullYear()}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          uebernachtungMitglied: data.uebernachtungMitglied,
+          uebernachtungGast: data.uebernachtungGast,
+          gueltigAb: data.gueltigAb
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Aktualisieren des Preises');
+      }
+
+      alert('✅ Preis erfolgreich aktualisiert!');
+      closeEditPriceModal();
+      loadPreise();
+    } catch (error) {
+      console.error('❌ Fehler:', error);
+      alert(`❌ Fehler: ${error.message}`);
+    }
+  });
+
+  // Preis löschen
+  async function deletePrice(jahr) {
+    if (!confirm('Sind Sie sicher, dass Sie diesen Preis löschen möchten?')) {
+      return;
+    }
+
+    try {
+      const preis = allPreise.find(p => p.jahr === jahr);
+      if (!preis) return;
+      
+      const response = await fetch(`/api/preise?jahr=${preis.jahr}`, {
+        method: 'DELETE'
+      });
+
+      if (response.status === 404) {
+        alert('ℹ️ Preis wurde bereits gelöscht oder existiert nicht.');
+        loadPreise();
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Löschen des Preises');
+      }
+
+      alert('✅ Preis erfolgreich gelöscht!');
+      loadPreise();
+    } catch (error) {
+      console.error('❌ Fehler:', error);
+      alert(`❌ Fehler: ${error.message}`);
+    }
+  }
+
+  // Seite laden
+  document.addEventListener('DOMContentLoaded', () => {
+    loadPreise();
+  });
+</script>

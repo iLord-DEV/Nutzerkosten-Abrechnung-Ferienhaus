@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// GET: Alle Preise abrufen
+// GET: Alle Übernachtungspreise abrufen
 export const GET: APIRoute = async ({ request }) => {
   try {
     const url = new URL(request.url);
@@ -11,7 +11,7 @@ export const GET: APIRoute = async ({ request }) => {
 
     if (datum) {
       // Hole den gültigen Preis für ein bestimmtes Datum
-      const preis = await prisma.preise.findFirst({
+      const preis = await prisma.uebernachtungspreise.findFirst({
         where: {
           gueltigAb: {
             lte: new Date(datum)
@@ -39,10 +39,10 @@ export const GET: APIRoute = async ({ request }) => {
       });
     }
 
-    // Hole alle Preise
-    const preise = await prisma.preise.findMany({
+    // Hole alle Übernachtungspreise
+    const preise = await prisma.uebernachtungspreise.findMany({
       orderBy: {
-        jahr: 'desc'
+        gueltigAb: 'desc'
       }
     });
 
@@ -51,15 +51,15 @@ export const GET: APIRoute = async ({ request }) => {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Fehler beim Abrufen der Preise:', error);
-    return new Response(JSON.stringify({ error: 'Fehler beim Abrufen der Preise' }), {
+    console.error('Fehler beim Abrufen der Übernachtungspreise:', error);
+    return new Response(JSON.stringify({ error: 'Fehler beim Abrufen der Übernachtungspreise' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
 };
 
-// POST: Neuen Preis erstellen
+// POST: Neuen Übernachtungspreis erstellen
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
@@ -72,25 +72,11 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // Generiere eine eindeutige ID basierend auf dem Datum
-    const jahr = new Date(gueltigAb).getFullYear();
-    const monat = new Date(gueltigAb).getMonth() + 1;
-    const tag = new Date(gueltigAb).getDate();
-    const eindeutigeId = jahr * 10000 + monat * 100 + tag; // z.B. 20250101
-    
-    console.log('Debug - Erstelle Preis mit:', { gueltigAb, jahr: eindeutigeId, uebernachtungMitglied, uebernachtungGast });
-    
-    const neuerPreis = await prisma.preise.create({
+    const neuerPreis = await prisma.uebernachtungspreise.create({
       data: {
-        jahr: eindeutigeId,
-        oelpreisProLiter: 1.01, // Fallback
-        uebernachtungMitglied,
-        uebernachtungGast,
-        verbrauchProStunde: 5.5, // Fallback
-        istBerechnet: false,
         gueltigAb: new Date(gueltigAb),
-        createdAt: new Date(),
-        updatedAt: new Date()
+        uebernachtungMitglied,
+        uebernachtungGast
       }
     });
 
@@ -99,41 +85,33 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Fehler beim Erstellen des Preises:', error);
-    return new Response(JSON.stringify({ error: 'Fehler beim Erstellen des Preises' }), {
+    console.error('Fehler beim Erstellen des Übernachtungspreises:', error);
+    return new Response(JSON.stringify({ error: 'Fehler beim Erstellen des Übernachtungspreises' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
 };
 
-// PUT: Preis aktualisieren
-export const PUT: APIRoute = async ({ request, url }) => {
+// PUT: Übernachtungspreis aktualisieren
+export const PUT: APIRoute = async ({ request }) => {
   try {
-    const jahr = url.searchParams.get('jahr');
-    if (!jahr) {
-      return new Response(JSON.stringify({ error: 'Jahr ist erforderlich' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
     const body = await request.json();
-    const { gueltigAb, uebernachtungMitglied, uebernachtungGast } = body;
+    const { id, gueltigAb, uebernachtungMitglied, uebernachtungGast } = body;
 
-    if (!gueltigAb || uebernachtungMitglied === undefined || uebernachtungGast === undefined) {
+    if (!id || !gueltigAb || uebernachtungMitglied === undefined || uebernachtungGast === undefined) {
       return new Response(JSON.stringify({ error: 'Alle Felder sind erforderlich' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    const aktualisierterPreis = await prisma.preise.update({
-      where: { jahr: parseInt(jahr) },
+    const aktualisierterPreis = await prisma.uebernachtungspreise.update({
+      where: { id: parseInt(id) },
       data: {
+        gueltigAb: new Date(gueltigAb),
         uebernachtungMitglied,
-        uebernachtungGast,
-        gueltigAb: new Date(gueltigAb)
+        uebernachtungGast
       }
     });
 
@@ -142,56 +120,58 @@ export const PUT: APIRoute = async ({ request, url }) => {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Fehler beim Aktualisieren des Preises:', error);
-    return new Response(JSON.stringify({ error: 'Fehler beim Aktualisieren des Preises' }), {
+    console.error('Fehler beim Aktualisieren des Übernachtungspreises:', error);
+    return new Response(JSON.stringify({ error: 'Fehler beim Aktualisieren des Übernachtungspreises' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
 };
 
-// DELETE: Preis löschen
-export const DELETE: APIRoute = async ({ request, url }) => {
+// DELETE: Übernachtungspreis löschen
+export const DELETE: APIRoute = async ({ request }) => {
   try {
-    const jahr = url.searchParams.get('jahr');
-    if (!jahr) {
-      return new Response(JSON.stringify({ error: 'Jahr ist erforderlich' }), {
+    const url = new URL(request.url);
+    const id = url.pathname.split('/').pop();
+
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'Preis-ID ist erforderlich' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
     // Prüfe ob der Preis existiert
-    const preis = await prisma.preise.findUnique({
-      where: { jahr: parseInt(jahr) }
+    const preis = await prisma.uebernachtungspreise.findUnique({
+      where: { id: parseInt(id) }
     });
 
     if (!preis) {
-      return new Response(JSON.stringify({ error: 'Preis nicht gefunden' }), {
+      return new Response(JSON.stringify({ error: 'Übernachtungspreis nicht gefunden' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    await prisma.preise.delete({
-      where: { jahr: parseInt(jahr) }
+    await prisma.uebernachtungspreise.delete({
+      where: { id: parseInt(id) }
     });
 
-    return new Response(JSON.stringify({ message: 'Preis erfolgreich gelöscht' }), {
+    return new Response(JSON.stringify({ message: 'Übernachtungspreis erfolgreich gelöscht' }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Fehler beim Löschen des Preises:', error);
+    console.error('Fehler beim Löschen des Übernachtungspreises:', error);
     
     if (error.code === 'P2025') {
-      return new Response(JSON.stringify({ error: 'Preis nicht gefunden' }), {
+      return new Response(JSON.stringify({ error: 'Übernachtungspreis nicht gefunden' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Fehler beim Löschen des Preises' }), {
+    return new Response(JSON.stringify({ error: 'Fehler beim Löschen des Übernachtungspreises' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });

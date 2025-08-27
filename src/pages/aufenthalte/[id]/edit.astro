@@ -144,6 +144,18 @@ if (!aufenthalt) {
               Speichern
             </button>
           </div>
+          
+          <!-- Benachrichtigungs-Bereich -->
+          <div id="notification" class="hidden mt-4 p-4 rounded-md">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <span id="notification-icon" class="text-lg"></span>
+              </div>
+              <div class="ml-3">
+                <p id="notification-message" class="text-sm font-medium"></p>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
     </div>
@@ -152,6 +164,56 @@ if (!aufenthalt) {
 
 <script>
   let users: Array<{ id: number; name: string; email: string }> = [];
+
+  // Benachrichtigung anzeigen
+  function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info') {
+    const notification = document.getElementById('notification');
+    const notificationMessage = document.getElementById('notification-message');
+    const notificationIcon = document.getElementById('notification-icon');
+    
+    if (!notification || !notificationMessage || !notificationIcon) return;
+    
+    // Nachricht setzen
+    notificationMessage.textContent = message;
+    
+    // Icon und Farbe je nach Typ setzen
+    let icon = '';
+    let bgColor = '';
+    let textColor = '';
+    
+    switch (type) {
+      case 'success':
+        icon = '✅';
+        bgColor = 'bg-green-50 dark:bg-green-900/20';
+        textColor = 'text-green-800 dark:text-green-200';
+        break;
+      case 'error':
+        icon = '❌';
+        bgColor = 'bg-red-50 dark:bg-red-900/20';
+        textColor = 'text-red-800 dark:text-red-200';
+        break;
+      case 'info':
+      default:
+        icon = 'ℹ️';
+        bgColor = 'bg-blue-50 dark:bg-blue-900/20';
+        textColor = 'text-blue-800 dark:text-blue-200';
+        break;
+    }
+    
+    notificationIcon.textContent = icon;
+    notification.className = `mt-4 p-4 rounded-md ${bgColor}`;
+    notificationMessage.className = `text-sm font-medium ${textColor}`;
+    
+    // Benachrichtigung anzeigen
+    notification.classList.remove('hidden');
+    
+    // Bei Erfolg nach 2 Sekunden weiterleiten
+    if (type === 'success') {
+      setTimeout(() => {
+        window.location.href = '/aufenthalte';
+      }, 2000);
+    }
+  }
 
   // Benutzer laden (nur für Admins)
   async function loadUsers() {
@@ -166,6 +228,28 @@ if (!aufenthalt) {
         console.error('Fehler beim Laden der Benutzer:', error);
       }
     }
+  }
+
+  // Alle Caches leeren
+  function clearAllCaches() {
+    // localStorage leeren (falls vorhanden)
+    localStorage.clear();
+    
+    // SessionStorage leeren (falls vorhanden)
+    sessionStorage.clear();
+    
+    // Browser-Cache für diese Domain leeren
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          caches.delete(name);
+        });
+      });
+    }
+    
+    // Force reload der Seite um alle JavaScript-Variablen zu leeren
+    // Da wir sowieso weiterleiten, ist das hier nicht nötig
+    // Aber wir stellen sicher, dass alle Caches geleert werden
   }
 
   // Benutzer-Select rendern
@@ -210,15 +294,17 @@ if (!aufenthalt) {
       });
 
       if (response.ok) {
-        alert('Aufenthalt erfolgreich aktualisiert!');
-        window.location.href = '/aufenthalte';
+        // Alle Caches leeren, bevor zur Übersicht weitergeleitet wird
+        clearAllCaches();
+        showNotification('Aufenthalt erfolgreich aktualisiert! Sie werden weitergeleitet...', 'success');
+        // Weiterleitung erfolgt automatisch nach 2 Sekunden in showNotification
       } else {
         const error = await response.json();
-        alert(`Fehler beim Aktualisieren: ${error.error || 'Unbekannter Fehler'}`);
+        showNotification(`Fehler beim Aktualisieren: ${error.error || 'Unbekannter Fehler'}`, 'error');
       }
     } catch (error) {
       console.error('Fehler beim Aktualisieren:', error);
-      alert('Ein Fehler ist aufgetreten');
+      showNotification('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.', 'error');
     }
   });
 

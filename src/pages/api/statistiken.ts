@@ -120,7 +120,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       gesamtVerbrauch += verbrauchteStunden;
 
       // Ölkosten
-      const oelKosten = verbrauchteStunden * (preise?.verbrauchProStunde || 5.5) * (preise?.oelpreisProLiter || 1.25);
+      const oelKosten = verbrauchteStunden * (preise?.verbrauchProStunde || 5.5) * (preise?.oelpreisProLiter || 1.01);
       
       // Übernachtungskosten
       const anzahlNaechte = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));

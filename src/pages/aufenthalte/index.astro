@@ -136,6 +136,68 @@ const session = JSON.parse(sessionCookie.value);
             <p class="mt-1">Erstellen Sie Ihren ersten Aufenthalt.</p>
           </div>
         </div>
+        
+        <!-- Toast-Benachrichtigung -->
+        <div id="toast" class="hidden fixed top-4 right-4 z-50 max-w-sm w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5">
+          <div class="p-4">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <div id="toast-icon" class="h-6 w-6">
+                  <!-- Icon wird dynamisch gesetzt -->
+                </div>
+              </div>
+              <div class="ml-3 w-0 flex-1 pt-0.5">
+                <p id="toast-message" class="text-sm font-medium text-gray-900 dark:text-white">
+                  <!-- Nachricht wird dynamisch gesetzt -->
+                </p>
+              </div>
+              <div class="ml-4 flex-shrink-0 flex">
+                <button id="toast-close" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <span class="sr-only">Schließen</span>
+                  <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Bestätigungs-Modal -->
+        <div id="confirm-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+          <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-auto">
+              <div class="px-6 pt-6 pb-4">
+                <div class="flex items-start">
+                  <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <div class="ml-4 flex-1">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                      Aufenthalt löschen
+                    </h3>
+                    <div class="mt-2">
+                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Möchten Sie diesen Aufenthalt wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-end space-x-3">
+                <button id="cancel-delete" type="button" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                  Abbrechen
+                </button>
+                <button id="confirm-delete" type="button" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                  Löschen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -164,6 +226,180 @@ const session = JSON.parse(sessionCookie.value);
   
   let allUeberlappungsAufenthalte: any[] = [];
 
+  // Toast-Benachrichtigung anzeigen
+  function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    const toastIcon = document.getElementById('toast-icon');
+    
+    if (!toast || !toastMessage || !toastIcon) return;
+    
+    // Nachricht setzen
+    toastMessage.textContent = message;
+    
+    // Icon und Farbe je nach Typ setzen
+    let iconHtml = '';
+    let bgColor = '';
+    
+    switch (type) {
+      case 'success':
+        iconHtml = '✅';
+        bgColor = 'bg-green-500';
+        break;
+      case 'error':
+        iconHtml = '❌';
+        bgColor = 'bg-red-500';
+        break;
+      case 'info':
+      default:
+        iconHtml = 'ℹ️';
+        bgColor = 'bg-blue-500';
+        break;
+    }
+    
+    toastIcon.innerHTML = iconHtml;
+    toastIcon.className = `h-6 w-6 ${bgColor} rounded-full flex items-center justify-center text-white`;
+    
+    // Toast anzeigen
+    toast.classList.remove('hidden');
+    
+    // Automatisch nach 5 Sekunden ausblenden
+    setTimeout(() => {
+      hideToast();
+    }, 5000);
+  }
+  
+  // Toast-Benachrichtigung ausblenden
+  function hideToast() {
+    const toast = document.getElementById('toast');
+    if (toast) {
+      toast.classList.add('hidden');
+    }
+  }
+  
+  // Bestätigungs-Modal anzeigen
+  function showConfirmModal(aufenthaltId: number) {
+    const modal = document.getElementById('confirm-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      
+      // Event-Listener für Bestätigung
+      const confirmBtn = document.getElementById('confirm-delete');
+      const cancelBtn = document.getElementById('cancel-delete');
+      
+      if (confirmBtn) {
+        confirmBtn.onclick = () => {
+          hideConfirmModal();
+          performDelete(aufenthaltId);
+        };
+      }
+      
+      if (cancelBtn) {
+        cancelBtn.onclick = () => {
+          hideConfirmModal();
+        };
+      }
+      
+      // Modal schließen bei Klick auf Hintergrund
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          hideConfirmModal();
+        }
+      };
+    }
+  }
+  
+  // Bestätigungs-Modal ausblenden
+  function hideConfirmModal() {
+    const modal = document.getElementById('confirm-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+  
+  // Tatsächliches Löschen durchführen
+  async function performDelete(id: number) {
+    console.log('🗑️ Führe Löschung durch für ID:', id);
+    
+    try {
+      const response = await fetch(`/api/aufenthalte/${id}`, {
+        method: 'DELETE',
+      });
+      
+      console.log('📡 DELETE Response Status:', response.status);
+      
+      if (response.ok) {
+        console.log('✅ Löschen erfolgreich, leere Caches...');
+        clearAllCaches();
+        showToast('Aufenthalt erfolgreich gelöscht!', 'success');
+        loadAufenthalte();
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+        console.error('❌ Löschen fehlgeschlagen:', errorData);
+        showToast('Fehler beim Löschen: ' + (errorData.error || 'Unbekannter Fehler'), 'error');
+      }
+    } catch (error) {
+      console.error('❌ Netzwerk-Fehler beim Löschen:', error);
+      showToast('Netzwerk-Fehler beim Löschen', 'error');
+    }
+  }
+  
+  // Direkte Löschung für den Button
+  async function deleteAufenthaltDirectly(id: number) {
+    console.log('🗑️ Direkte Löschung für ID:', id);
+    
+    try {
+      const response = await fetch(`/api/aufenthalte/${id}`, {
+        method: 'DELETE',
+      });
+      
+      console.log('📡 DELETE Response Status:', response.status);
+      
+      if (response.ok) {
+        console.log('✅ Löschen erfolgreich, leere Caches...');
+        clearAllCaches();
+        showToast('Aufenthalt erfolgreich gelöscht!', 'success');
+        loadAufenthalte();
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+        console.error('❌ Löschen fehlgeschlagen:', errorData);
+        showToast('Fehler beim Löschen: ' + (errorData.error || 'Unbekannter Fehler'), 'error');
+      }
+    } catch (error) {
+      console.error('❌ Netzwerk-Fehler beim Löschen:', error);
+      showToast('Netzwerk-Fehler beim Löschen', 'error');
+    }
+  }
+
+  // Alle Caches leeren
+  function clearAllCaches() {
+    // JavaScript-Variablen zurücksetzen
+    currentAufenthalte = [];
+    allUeberlappungsAufenthalte = [];
+    currentPreise = {};
+    
+    // localStorage leeren (falls vorhanden)
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
+    
+    // SessionStorage leeren (falls vorhanden)
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.clear();
+    }
+    
+    // Browser-Cache für diese Domain leeren
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          caches.delete(name);
+        });
+      });
+    }
+    
+    console.log('🧹 Alle Caches wurden geleert');
+  }
+
   // Überlappungsaufenthalte laden
   async function loadUeberlappungsAufenthalte(jahr: string) {
     try {
@@ -189,15 +425,21 @@ const session = JSON.parse(sessionCookie.value);
   
   // Überlappungsinfo für einen Aufenthalt ermitteln
   function getUeberlappungsInfo(aufenthalt: any, alleUeberlappungen: any[]) {
-    return alleUeberlappungen.filter(overlap => {
+    return alleUeberlappungen.filter((overlap: any) => {
       // Überlappung prüfen: Zählerstände überschneiden sich
       const a1Start = aufenthalt.zaehlerAnkunft;
       const a1Ende = aufenthalt.zaehlerAbreise;
       const a2Start = overlap.zaehlerAnkunft;
       const a2Ende = overlap.zaehlerAbreise;
       
-      // Überlappung liegt vor wenn: a1Ende > a2Start UND a1Start < a2Ende
-      return a1Ende > a2Start && a1Start < a2Ende;
+      // Echte Überlappung liegt vor wenn: a1Ende > a2Start UND a1Start < a2Ende
+      // UND der Überlappungsbereich ist größer als 0.1 Stunden
+      const overlapStart = Math.max(a1Start, a2Start);
+      const overlapEnd = Math.min(a1Ende, a2Ende);
+      const overlapHours = overlapEnd - overlapStart;
+      
+      // Nur echte Überlappungen mit mindestens 0.1 Stunden
+      return overlapHours >= 0.1;
     });
   }
 
@@ -245,6 +487,21 @@ const session = JSON.parse(sessionCookie.value);
     }
   }
 
+  // Ölpreis für ein spezifisches Datum laden
+  async function getOelpreisFuerDatum(datum: Date): Promise<number> {
+    try {
+      const datumString = datum.toISOString().split('T')[0]; // YYYY-MM-DD Format
+      const response = await fetch(`/api/preise?jahr=${datum.getFullYear()}&datum=${datumString}`);
+      if (response.ok) {
+        const preise = await response.json();
+        return preise.oelpreisProLiter || 1.01; // Fallback auf 1.01€
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des Ölpreises für Datum:', error);
+    }
+    return 1.01; // Fallback bei Fehlern
+  }
+
   // Aufenthalte rendern
   function renderAufenthalte(aufenthalte: typeof currentAufenthalte) {
     console.log('🎨 renderAufenthalte aufgerufen mit', aufenthalte.length, 'Aufenthalten');
@@ -270,8 +527,10 @@ const session = JSON.parse(sessionCookie.value);
       const zaehlerEnde = aufenthalt.zaehlerAbreise;
       const verbrauchteStunden = zaehlerEnde - zaehlerStart;
       
-      // Kosten berechnen
-      const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.25);
+      // Kosten berechnen - Ölpreis für das Aufenthaltsdatum ermitteln
+      const aufenthaltsDatum = new Date(aufenthalt.ankunft);
+      // Für die Anzeige verwenden wir den aktuellen Preis, die korrekte Berechnung erfolgt später
+      const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
       const anzahlNaechte = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
       const uebernachtungKosten = anzahlNaechte * (
         aufenthalt.anzahlMitglieder * (currentPreise.uebernachtungMitglied || 15) +
@@ -331,7 +590,83 @@ const session = JSON.parse(sessionCookie.value);
           <a href="/aufenthalte/${aufenthalt.id}/edit" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4">
             Bearbeiten (ID: ${aufenthalt.id})
           </a>
-          <button onclick="(function(id) { if(confirm('Möchten Sie diesen Aufenthalt wirklich löschen?')) { fetch('/api/aufenthalte/' + id, { method: 'DELETE' }).then(r => { if(r.ok) { window.location.reload(); } else { alert('Fehler beim Löschen'); } }).catch(e => { console.error('Fehler:', e); alert('Fehler beim Löschen'); }); } })(${aufenthalt.id})" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+          <button onclick="(function(aufenthaltId) { 
+            // Schönes Modal anzeigen
+            const modal = document.getElementById('confirm-modal');
+            if (modal) {
+              modal.classList.remove('hidden');
+              
+              // Event-Listener für Bestätigung
+              const confirmBtn = document.getElementById('confirm-delete');
+              const cancelBtn = document.getElementById('cancel-delete');
+              
+              if (confirmBtn) {
+                confirmBtn.onclick = async () => {
+                  modal.classList.add('hidden');
+                  // Löschung direkt durchführen
+                  console.log('🗑️ Löschung bestätigt für ID:', aufenthaltId);
+                  
+                  try {
+                    const response = await fetch('/api/aufenthalte/' + aufenthaltId, {
+                      method: 'DELETE',
+                    });
+                    
+                    console.log('📡 DELETE Response Status:', response.status);
+                    
+                    if (response.ok) {
+                      console.log('✅ Löschen erfolgreich, leere Caches...');
+                      // Caches leeren
+                      if (typeof clearAllCaches === 'function') {
+                        clearAllCaches();
+                      }
+                      // Toast anzeigen
+                      if (typeof showToast === 'function') {
+                        showToast('Aufenthalt erfolgreich gelöscht!', 'success');
+                      }
+                      // Aufenthalte neu laden
+                      if (typeof loadAufenthalte === 'function') {
+                        loadAufenthalte();
+                      } else {
+                        window.location.reload();
+                      }
+                    } else {
+                      const errorData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+                      console.error('❌ Löschen fehlgeschlagen:', errorData);
+                      if (typeof showToast === 'function') {
+                        showToast('Fehler beim Löschen: ' + (errorData.error || 'Unbekannter Fehler'), 'error');
+                      }
+                    }
+                  } catch (error) {
+                    console.error('❌ Netzwerk-Fehler beim Löschen:', error);
+                    if (typeof showToast === 'function') {
+                      showToast('Netzwerk-Fehler beim Löschen', 'error');
+                    }
+                  }
+                };
+              }
+              
+              if (cancelBtn) {
+                cancelBtn.onclick = () => {
+                  modal.classList.add('hidden');
+                };
+              }
+              
+              // Modal schließen bei Klick auf Hintergrund
+              modal.onclick = (e) => {
+                if (e.target === modal) {
+                  modal.classList.add('hidden');
+                }
+              };
+            } else {
+              // Fallback falls Modal nicht gefunden wird
+              if (confirm('Möchten Sie diesen Aufenthalt wirklich löschen?')) {
+                // Einfache Löschung ohne Modal
+                fetch('/api/aufenthalte/' + aufenthaltId, { method: 'DELETE' })
+                  .then(r => { if(r.ok) window.location.reload(); })
+                  .catch(e => console.error('Fehler:', e));
+              }
+            }
+          })(${aufenthalt.id})" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
             Löschen
           </button>
         </td>
@@ -349,13 +684,22 @@ const session = JSON.parse(sessionCookie.value);
   }
 
   // Ursprüngliche Kosten berechnen (vor Einsparungen)
-  function calculateOriginalCosts(aufenthalt: any): number {
+  async function calculateOriginalCosts(aufenthalt: any): Promise<number> {
     const zaehlerStart = aufenthalt.zaehlerAnkunft;
     const zaehlerEnde = aufenthalt.zaehlerAbreise;
+    
+    // Validierung: Zählerende muss größer als Zählerstart sein
+    if (zaehlerEnde <= zaehlerStart) {
+      console.warn(`⚠️ Ungültige Zählerstände für Aufenthalt ${aufenthalt.id}: Start=${zaehlerStart}, Ende=${zaehlerEnde}`);
+      return 0; // Keine Kosten bei ungültigen Zählerständen
+    }
+    
     const verbrauchteStunden = zaehlerEnde - zaehlerStart;
     
-    // Ölkosten
-    const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.25);
+    // Ölkosten - korrekten Ölpreis für das Aufenthaltsdatum ermitteln
+    const aufenthaltsDatum = new Date(aufenthalt.ankunft);
+    const oelpreis = await getOelpreisFuerDatum(aufenthaltsDatum);
+    const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * oelpreis;
     
     // Übernachtungskosten
     const anzahlNaechte = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
@@ -377,17 +721,31 @@ const session = JSON.parse(sessionCookie.value);
       // Überlappungsbereich berechnen
       const overlapStart = Math.max(aufenthalt.zaehlerAnkunft, overlap.zaehlerAnkunft);
       const overlapEnd = Math.min(aufenthalt.zaehlerAbreise, overlap.zaehlerAbreise);
+      
+      // Validierung: Überlappung muss mindestens 0.1 Stunden haben
+      if (overlapEnd <= overlapStart) {
+        console.warn(`⚠️ Keine echte Überlappung: Start=${overlapStart}, Ende=${overlapEnd}`);
+        return; // Keine Einsparung bei ungültiger Überlappung
+      }
+      
       const overlapHours = overlapEnd - overlapStart;
       
-      if (overlapHours > 0) {
+      // Nur Einsparungen bei echten Überlappungen (mindestens 0.1 Stunden)
+      if (overlapHours >= 0.1) {
         // Ölkosten-Einsparung: Überlappungsstunden werden aufgeteilt
-        const oelKostenProStunde = (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.25);
-        const oelSavings = overlapHours * oelKostenProStunde * 0.5; // 50% Einsparung durch Aufteilung
+        // Für die Einsparungsberechnung verwenden wir den aktuellen Preis, da es sich um die gleiche Zeit handelt
+        const oelKostenProStunde = (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
+        // Bei 2 Personen teilen sich beide die Kosten der Überlappungsstunden
+        // Jede Person spart 50% der Kosten der Überlappungsstunden
+        const oelSavings = overlapHours * oelKostenProStunde * 0.5;
         
         // Übernachtungskosten-Einsparung: Gemeinsame Nutzung der Infrastruktur
-        const uebernachtungSavings = overlapHours / 24 * 5; // Kleine Einsparung pro Tag
+        // Kleine Einsparung pro Überlappungsstunde
+        const uebernachtungSavings = overlapHours / 24 * 5;
         
         totalSavings += oelSavings + uebernachtungSavings;
+        
+        console.log(`💰 Einsparung für ${aufenthalt.user.name} mit ${overlap.user.name}: ${overlapHours.toFixed(1)}h = €${(oelSavings + uebernachtungSavings).toFixed(2)}`);
       }
     });
     
@@ -415,8 +773,13 @@ const session = JSON.parse(sessionCookie.value);
             const endZaehler = Math.min(aufenthalt.zaehlerAbreise, overlap.zaehlerAbreise);
             const overlapHours = endZaehler - startZaehler;
             
-            return `${overlap.user.name} (${startZaehler.toFixed(1)}h - ${endZaehler.toFixed(1)}h, ${overlapHours.toFixed(1)}h)`;
-          }).join('<br>');
+            // Nur echte Überlappungen anzeigen (mindestens 0.1 Stunden)
+            if (overlapHours >= 0.1) {
+              return `${overlap.user.name} (${startZaehler.toFixed(1)}h - ${endZaehler.toFixed(1)}h, ${overlapHours.toFixed(1)}h)`;
+            } else {
+              return `${overlap.user.name} (nur geteilter Zeitpunkt: ${overlapHours.toFixed(1)}h)`;
+            }
+          }).filter((text: string) => text).join('<br>');
           
           overlapDiv.innerHTML = `
             <span class="text-orange-600 dark:text-orange-400 text-xs">
@@ -448,14 +811,15 @@ const session = JSON.parse(sessionCookie.value);
       // Gesamtkosten berechnen und anzeigen (Kosten - Einsparungen)
       if (totalCostsDiv) {
         const savings = calculateSavings(aufenthalt, overlaps);
-        const originalCosts = calculateOriginalCosts(aufenthalt);
-        const totalCosts = originalCosts - savings;
-        
-        totalCostsDiv.innerHTML = `
-          <span class="text-blue-600 dark:text-blue-400 text-sm font-medium">
-            € ${totalCosts.toFixed(2)}
-          </span>
-        `;
+        calculateOriginalCosts(aufenthalt).then(originalCosts => {
+          const totalCosts = originalCosts - savings;
+          
+          totalCostsDiv.innerHTML = `
+            <span class="text-blue-600 dark:text-blue-400 text-sm font-medium">
+              € ${totalCosts.toFixed(2)}
+            </span>
+          `;
+        });
       }
     } catch (error) {
       console.error('❌ Fehler beim Laden der Überlappungsinfo:', error);
@@ -470,23 +834,40 @@ const session = JSON.parse(sessionCookie.value);
 
   // Aufenthalt löschen
   async function deleteAufenthalt(id: number) {
-    if (!confirm('Möchten Sie diesen Aufenthalt wirklich löschen?')) {
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/api/aufenthalte/${id}`, {
-        method: 'DELETE',
-      });
+    // Schönes Modal anzeigen
+    const modal = document.getElementById('confirm-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
       
-      if (response.ok) {
-        loadAufenthalte(); // Neu laden
-      } else {
-        alert('Fehler beim Löschen des Aufenthalts');
+      // Event-Listener für Bestätigung
+      const confirmBtn = document.getElementById('confirm-delete');
+      const cancelBtn = document.getElementById('cancel-delete');
+      
+      if (confirmBtn) {
+        confirmBtn.onclick = () => {
+          modal.classList.add('hidden');
+          performDelete(id);
+        };
       }
-    } catch (error) {
-      console.error('Fehler beim Löschen:', error);
-      alert('Ein Fehler ist aufgetreten');
+      
+      if (cancelBtn) {
+        cancelBtn.onclick = () => {
+          modal.classList.add('hidden');
+        };
+      }
+      
+      // Modal schließen bei Klick auf Hintergrund
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden');
+        }
+      };
+    } else {
+      // Fallback falls Modal nicht gefunden wird
+      if (!confirm('Möchten Sie diesen Aufenthalt wirklich löschen?')) {
+        return;
+      }
+      performDelete(id);
     }
   }
 
@@ -538,6 +919,19 @@ const session = JSON.parse(sessionCookie.value);
       }
       
       console.log('🎯 Alle Event-Listener gesetzt!');
+      
+      // Cache leeren beim Verlassen der Seite
+      window.addEventListener('beforeunload', clearAllCaches);
+      
+      // Cache leeren beim Neuladen der Seite
+      window.addEventListener('unload', clearAllCaches);
+      
+      // Toast-Close-Button Event-Listener
+      const toastClose = document.getElementById('toast-close');
+      if (toastClose) {
+        toastClose.addEventListener('click', hideToast);
+      }
+      
     } catch (error) {
       console.error('❌ Fehler bei der Initialisierung:', error);
     }

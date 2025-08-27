@@ -279,7 +279,7 @@ import Layout from '../layouts/Layout.astro';
   // Kosten für einen Aufenthalt berechnen (vereinfacht)
   function calculateKosten(aufenthalt: any) {
             const stunden = (aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft);
-    const oelkosten = stunden * 5.5 * 1.25; // 5.5 L/h, 1.25€/L
+            const oelkosten = stunden * 5.5 * 1.01; // 5.5 L/h, 1.01€/L
     const uebernachtungskosten = (aufenthalt.anzahlMitglieder * 15 + aufenthalt.anzahlGaeste * 25) * 
       Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
     
