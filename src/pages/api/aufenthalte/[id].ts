@@ -1,20 +1,14 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import { requireAuth } from '../../../utils/auth';
 
 const prisma = new PrismaClient();
 
-export const GET: APIRoute = async ({ params, cookies }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    // Session prüfen
-    const sessionCookie = cookies.get('session');
-    if (!sessionCookie) {
-      return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const session = JSON.parse(sessionCookie.value);
+    // Authentifizierung prüfen
+    const user = await requireAuth(context);
+    const { params } = context;
     const id = params.id;
     
     if (!id) {
@@ -47,7 +41,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
     }
 
     // Normale Benutzer können nur ihre eigenen Aufenthalte sehen
-    if (session.role !== 'ADMIN' && aufenthalt.userId !== session.userId) {
+    if (user.role !== 'ADMIN' && aufenthalt.userId !== user.id) {
       return new Response(JSON.stringify({ error: 'Keine Berechtigung' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
@@ -67,18 +61,11 @@ export const GET: APIRoute = async ({ params, cookies }) => {
   }
 };
 
-export const PUT: APIRoute = async ({ params, request, cookies }) => {
+export const PUT: APIRoute = async (context) => {
   try {
-    // Session prüfen
-    const sessionCookie = cookies.get('session');
-    if (!sessionCookie) {
-      return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const session = JSON.parse(sessionCookie.value);
+    // Authentifizierung prüfen
+    const user = await requireAuth(context);
+    const { params, request } = context;
     const id = params.id;
     const body = await request.json();
     
@@ -103,7 +90,7 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
     }
 
     // Normale Benutzer können nur ihre eigenen Aufenthalte bearbeiten
-    if (session.role !== 'ADMIN' && existingAufenthalt.userId !== session.userId) {
+    if (user.role !== 'ADMIN' && existingAufenthalt.userId !== user.id) {
       return new Response(JSON.stringify({ error: 'Keine Berechtigung' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
@@ -151,18 +138,11 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ params, cookies }) => {
+export const DELETE: APIRoute = async (context) => {
   try {
-    // Session prüfen
-    const sessionCookie = cookies.get('session');
-    if (!sessionCookie) {
-      return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const session = JSON.parse(sessionCookie.value);
+    // Authentifizierung prüfen
+    const user = await requireAuth(context);
+    const { params } = context;
     const id = params.id;
     
     if (!id) {
@@ -188,7 +168,7 @@ export const DELETE: APIRoute = async ({ params, cookies }) => {
     }
 
     // Normale Benutzer können nur ihre eigenen Aufenthalte löschen
-    if (session.role !== 'ADMIN' && aufenthalt.userId !== session.userId) {
+    if (user.role !== 'ADMIN' && aufenthalt.userId !== user.id) {
       return new Response(JSON.stringify({ error: 'Keine Berechtigung' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },

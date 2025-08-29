@@ -1,5 +1,5 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
 
 // Zugriffskontrolle: Nur Admins
 const sessionCookie = Astro.cookies.get('session');
@@ -13,7 +13,7 @@ if (session.role !== 'ADMIN') {
 }
 ---
 
-<Layout title="Neue Tankfüllung - Nutzerkosten">
+<ProtectedLayout title="Neue Tankfüllung - Nutzerkosten">
   <div class="px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
       <div class="flex items-center justify-between">
@@ -143,7 +143,7 @@ if (session.role !== 'ADMIN') {
       </div>
     </div>
   </div>
-</Layout>
+</ProtectedLayout>
 
 <script>
   let currentTankfuellung: any = null;

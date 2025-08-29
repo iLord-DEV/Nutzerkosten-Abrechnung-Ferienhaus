@@ -1,9 +1,14 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import { requireAdmin } from '../../../utils/auth';
 
 const prisma = new PrismaClient();
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async (context) => {
+  try {
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    const { params } = context;
   try {
     const id = params.id;
     

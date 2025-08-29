@@ -1,37 +1,16 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import { requireAuth } from '../../utils/auth';
 
 const prisma = new PrismaClient();
 
-export const GET: APIRoute = async ({ cookies, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    // Session prüfen
-    const sessionCookie = cookies.get('session');
-    if (!sessionCookie || !sessionCookie.value || sessionCookie.value.trim() === '') {
-      return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    let session;
-    try {
-      session = JSON.parse(sessionCookie.value);
-      // Prüfen, ob die Session gültige Daten enthält
-      if (!session.userId || !session.role || !session.email) {
-        return new Response(JSON.stringify({ error: 'Ungültige Session' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-    } catch (error) {
-      return new Response(JSON.stringify({ error: 'Ungültige Session' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    // Authentifizierung prüfen
+    const user = await requireAuth(context);
     
     // URL-Parameter auslesen
+    const { url } = context;
     const searchParams = url.searchParams;
     const jahr = searchParams.get('jahr');
     
@@ -44,8 +23,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     }
     
     // Normale Benutzer sehen nur ihre eigenen Aufenthalte
-    if (session.role !== 'ADMIN') {
-      whereClause.userId = session.userId;
+    if (user.role !== 'ADMIN') {
+      whereClause.userId = user.id;
     }
 
     const aufenthalte = await prisma.aufenthalt.findMany({
@@ -82,38 +61,16 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async (context) => {
   try {
-    // Session prüfen
-    const sessionCookie = cookies.get('session');
-    if (!sessionCookie || !sessionCookie.value || sessionCookie.value.trim() === '') {
-      return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    let session;
-    try {
-      session = JSON.parse(sessionCookie.value);
-      // Prüfen, ob die Session gültige Daten enthält
-      if (!session.userId || !session.role || !session.email) {
-        return new Response(JSON.stringify({ error: 'Ungültige Session' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-    } catch (error) {
-      return new Response(JSON.stringify({ error: 'Ungültige Session' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    // Authentifizierung prüfen
+    const user = await requireAuth(context);
+    const { request } = context;
     const body = await request.json();
     
     // Normale Benutzer können nur Aufenthalte für sich selbst erstellen
-    if (session.role !== 'ADMIN') {
-      body.userId = session.userId;
+    if (user.role !== 'ADMIN') {
+      body.userId = user.id;
     }
     
     const aufenthalt = await prisma.aufenthalt.create({

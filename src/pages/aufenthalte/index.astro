@@ -1,5 +1,5 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
 
 // Zugriffskontrolle
 const sessionCookie = Astro.cookies.get('session');
@@ -10,7 +10,7 @@ if (!sessionCookie) {
 const session = JSON.parse(sessionCookie.value);
 ---
 
-<Layout title="Aufenthalte - Nutzerkosten">
+<ProtectedLayout title="Aufenthalte - Nutzerkosten">
   <div class="w-full">
     <div class="sm:flex sm:items-center mb-8">
       <div class="sm:flex-auto">
@@ -201,7 +201,7 @@ const session = JSON.parse(sessionCookie.value);
       </div>
     </div>
   </div>
-</Layout>
+</ProtectedLayout>
 
 <script>
   let currentAufenthalte: Array<{
@@ -423,9 +423,9 @@ const session = JSON.parse(sessionCookie.value);
     }
   }
   
-  // Überlappungsinfo für einen Aufenthalt ermitteln
-  function getUeberlappungsInfo(aufenthalt: any, alleUeberlappungen: any[]) {
-    return alleUeberlappungen.filter((overlap: any) => {
+      // Überlappungsinfo für einen Aufenthalt ermitteln
+    function getUeberlappungsInfo(aufenthalt: any, alleUeberlappungen: any[]) {
+      return alleUeberlappungen.filter((overlap: any) => {
       // Überlappung prüfen: Zählerstände überschneiden sich
       const a1Start = aufenthalt.zaehlerAnkunft;
       const a1Ende = aufenthalt.zaehlerAbreise;

@@ -1,8 +1,8 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
 ---
 
-<Layout title="Statistiken - Nutzerkosten">
+<ProtectedLayout title="Statistiken - Nutzerkosten">
   <div class="px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
@@ -357,7 +357,7 @@ import Layout from '../../layouts/Layout.astro';
       </div>
     </div>
   </div>
-</Layout>
+</ProtectedLayout>
 
 <script>
   import { Chart, registerables } from 'chart.js';

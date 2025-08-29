@@ -1,10 +1,14 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import { requireAdmin } from '../../utils/auth';
 
 const prisma = new PrismaClient();
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async (context) => {
   try {
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    
     const tankfuellungen = await prisma.tankfuellung.findMany({
       orderBy: {
         datum: 'desc',
@@ -48,24 +52,11 @@ export const GET: APIRoute = async () => {
   }
 };
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async (context) => {
   try {
-    // Session prüfen
-    const sessionCookie = cookies.get('session');
-    if (!sessionCookie) {
-      return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const session = JSON.parse(sessionCookie.value);
-    if (session.role !== 'ADMIN') {
-      return new Response(JSON.stringify({ error: 'Nur Admins können Tankfüllungen erfassen' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    const { request } = context;
 
     const body = await request.json();
     const jahr = new Date(body.datum).getFullYear();

@@ -119,7 +119,11 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
         }
       }
     } catch (error) {
-      // Nicht eingeloggt, Login-Button bleibt sichtbar
+      // Nicht eingeloggt - Login-Button bleibt sichtbar, Navigation wird versteckt
+      const navLinks = document.getElementById('nav-links');
+      if (navLinks) {
+        navLinks.style.display = 'none';
+      }
     }
   }
 
@@ -130,7 +134,7 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
   
   // Logout-Button Event-Listener hinzufügen
   document.addEventListener('click', async (event) => {
-    if (event.target && event.target.id === 'logout-btn-nav') {
+    if (event.target && (event.target as HTMLElement).id === 'logout-btn-nav') {
       try {
         const response = await fetch('/api/auth/logout', {
           method: 'POST',

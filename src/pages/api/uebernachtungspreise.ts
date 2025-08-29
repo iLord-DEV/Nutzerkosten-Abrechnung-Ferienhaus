@@ -1,10 +1,15 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import { requireAdmin } from '../../utils/auth';
 
 const prisma = new PrismaClient();
 
 // GET: Alle Übernachtungspreise abrufen
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async (context) => {
+  try {
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    const { request } = context;
   try {
     const url = new URL(request.url);
     const datum = url.searchParams.get('datum');
@@ -60,7 +65,11 @@ export const GET: APIRoute = async ({ request }) => {
 };
 
 // POST: Neuen Übernachtungspreis erstellen
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async (context) => {
+  try {
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    const { request } = context;
   try {
     const body = await request.json();
     const { gueltigAb, uebernachtungMitglied, uebernachtungGast } = body;
@@ -94,7 +103,11 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 // PUT: Übernachtungspreis aktualisieren
-export const PUT: APIRoute = async ({ request }) => {
+export const PUT: APIRoute = async (context) => {
+  try {
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    const { request } = context;
   try {
     const body = await request.json();
     const { id, gueltigAb, uebernachtungMitglied, uebernachtungGast } = body;
@@ -129,7 +142,11 @@ export const PUT: APIRoute = async ({ request }) => {
 };
 
 // DELETE: Übernachtungspreis löschen
-export const DELETE: APIRoute = async ({ request }) => {
+export const DELETE: APIRoute = async (context) => {
+  try {
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    const { request } = context;
   try {
     const url = new URL(request.url);
     const id = url.pathname.split('/').pop();

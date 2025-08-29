@@ -1,20 +1,14 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import { requireAuth } from '../../utils/auth';
 
 const prisma = new PrismaClient();
 
-export const GET: APIRoute = async ({ url, cookies }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    // Session prüfen
-    const sessionCookie = cookies.get('session');
-    if (!sessionCookie) {
-      return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const session = JSON.parse(sessionCookie.value);
+    // Authentifizierung prüfen
+    const user = await requireAuth(context);
+    const { url } = context;
     const searchParams = new URL(url).searchParams;
     const jahr = searchParams.get('jahr') || '2024';
     let personId = searchParams.get('personId');
@@ -22,8 +16,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Normale Benutzer können nur ihre eigenen Daten sehen (außer bei Gesamtübersicht)
     const showGesamtuebersicht = searchParams.get('gesamt') === 'true';
-    if (session.role !== 'ADMIN' && !showGesamtuebersicht) {
-      personId = session.userId.toString();
+    if (user.role !== 'ADMIN' && !showGesamtuebersicht) {
+      personId = user.id.toString();
     }
 
     // Basis-Query für Aufenthalte
@@ -31,7 +25,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     
     // Person-Filter nur für Admins oder bei Gesamtübersicht
     if (personName && personName !== '') {
-      if (session.role === 'ADMIN' || showGesamtuebersicht) {
+      if (user.role === 'ADMIN' || showGesamtuebersicht) {
         // Admins können nach Namen filtern, normale Benutzer nur bei Gesamtübersicht
         const users = await prisma.user.findMany({
           where: { name: personName },
@@ -44,7 +38,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       } else {
         // Normale Benutzer können nicht nach anderen Nutzern filtern
         // Sie sehen immer nur ihre eigenen Daten
-        whereClause.userId = session.userId;
+        whereClause.userId = user.id;
       }
     } else if (personId && !showGesamtuebersicht) {
       // Fallback auf personId wenn kein personName gesetzt ist

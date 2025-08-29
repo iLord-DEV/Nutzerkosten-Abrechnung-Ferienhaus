@@ -1,8 +1,16 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
+import { requireAdmin } from '../../utils/auth';
+
+// Admin-Berechtigung prüfen
+try {
+  await requireAdmin(Astro);
+} catch (error) {
+  return Astro.redirect('/login');
+}
 ---
 
-<Layout title="Admin Dashboard - Nutzerkosten">
+<ProtectedLayout title="Admin Dashboard - Nutzerkosten">
   <div class="px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
       <div class="flex items-center justify-between">
@@ -184,7 +192,7 @@ import Layout from '../../layouts/Layout.astro';
       </div>
     </div>
   </div>
-</Layout>
+</ProtectedLayout>
 
 <script>
   // Admin-Dashboard Funktionalität

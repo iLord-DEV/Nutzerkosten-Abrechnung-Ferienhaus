@@ -1,11 +1,16 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import { requireAdmin } from '../../utils/auth';
 
 const prisma = new PrismaClient();
 
 // GET: Alle Preise abrufen
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async (context) => {
   try {
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    const { request } = context;
+    
     const url = new URL(request.url);
     const datum = url.searchParams.get('datum');
 
@@ -60,8 +65,12 @@ export const GET: APIRoute = async ({ request }) => {
 };
 
 // POST: Neuen Preis erstellen
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async (context) => {
   try {
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    const { request } = context;
+    
     const body = await request.json();
     const { gueltigAb, uebernachtungMitglied, uebernachtungGast } = body;
 
@@ -108,8 +117,11 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 // PUT: Preis aktualisieren
-export const PUT: APIRoute = async ({ request, url }) => {
+export const PUT: APIRoute = async (context) => {
   try {
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    const { request, url } = context;
     const jahr = url.searchParams.get('jahr');
     if (!jahr) {
       return new Response(JSON.stringify({ error: 'Jahr ist erforderlich' }), {
@@ -151,8 +163,11 @@ export const PUT: APIRoute = async ({ request, url }) => {
 };
 
 // DELETE: Preis löschen
-export const DELETE: APIRoute = async ({ request, url }) => {
+export const DELETE: APIRoute = async (context) => {
   try {
+    // Admin-Berechtigung prüfen
+    await requireAdmin(context);
+    const { request, url } = context;
     const jahr = url.searchParams.get('jahr');
     if (!jahr) {
       return new Response(JSON.stringify({ error: 'Jahr ist erforderlich' }), {

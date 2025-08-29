@@ -1,8 +1,16 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
+import { requireAdmin } from '../../utils/auth';
+
+// Admin-Berechtigung prüfen
+try {
+  await requireAdmin(Astro);
+} catch (error) {
+  return Astro.redirect('/login');
+}
 ---
 
-<Layout title="Benutzer verwalten - Admin">
+<ProtectedLayout title="Benutzer verwalten - Nutzerkosten">
   <div class="px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
       <div class="flex items-center justify-between">
@@ -134,7 +142,7 @@ import Layout from '../../layouts/Layout.astro';
       </div>
     </div>
   </div>
-</Layout>
+</ProtectedLayout>
 
 <script>
   let currentUser = null;
@@ -280,7 +288,7 @@ import Layout from '../../layouts/Layout.astro';
   }
 
   // Benutzer bearbeiten
-  async function updateUser(event) {
+  async function updateUser(event: any) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
@@ -315,7 +323,7 @@ import Layout from '../../layouts/Layout.astro';
   }
 
   // Benutzer löschen
-  async function deleteUser(userId) {
+  async function deleteUser(userId: any) {
     if (!confirm('Möchten Sie diesen Benutzer wirklich löschen?')) {
       return;
     }

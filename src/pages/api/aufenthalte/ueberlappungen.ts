@@ -1,20 +1,14 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import { requireAuth } from '../../../utils/auth';
 
 const prisma = new PrismaClient();
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async (context) => {
   try {
-    // Session prüfen
-    const sessionCookie = cookies.get('session');
-    if (!sessionCookie) {
-      return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const session = JSON.parse(sessionCookie.value);
+    // Authentifizierung prüfen
+    const user = await requireAuth(context);
+    const { request } = context;
     const body = await request.json();
     const { eigeneAufenthalte, jahr } = body;
 
@@ -35,7 +29,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Suche nach Aufenthalten anderer Benutzer, die überlappen
       const ueberlappendeAufenthalte = await prisma.aufenthalt.findMany({
         where: {
-          userId: { not: session.userId }, // Nicht der eigene Benutzer
+          userId: { not: user.id }, // Nicht der eigene Benutzer
           jahr: jahr ? parseInt(jahr) : undefined,
           // Überlappungs-Bedingung: zaehlerAbreise > eigenerStart UND zaehlerAnkunft < eigenerEnde
           AND: [

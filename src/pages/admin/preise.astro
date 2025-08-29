@@ -1,11 +1,15 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
+import { requireAdmin } from '../../utils/auth';
 import { PrismaClient } from '@prisma/client';
 
 let uebernachtungspreise = [];
 let preise = [];
 
+// Admin-Berechtigung prüfen
 try {
+  await requireAdmin(Astro);
+  
   const prisma = new PrismaClient();
   
   // Hole alle Preise mit Übernachtungspreisen (gueltigAb gesetzt), sortiert nach Gültigkeitsdatum
@@ -32,12 +36,15 @@ try {
 
   await prisma.$disconnect();
 } catch (error) {
+  if (error instanceof Error && error.message === 'Keine Berechtigung') {
+    return Astro.redirect('/login');
+  }
   console.error('Fehler beim Laden der Daten:', error);
   // Fallback: Leere Arrays verwenden
 }
 ---
 
-<Layout title="Preise verwalten">
+<ProtectedLayout title="Preise verwalten - Nutzerkosten">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -304,7 +311,7 @@ try {
       </div>
     </div>
   </div>
-</Layout>
+</ProtectedLayout>
 
 <script>
   // Globale Variablen

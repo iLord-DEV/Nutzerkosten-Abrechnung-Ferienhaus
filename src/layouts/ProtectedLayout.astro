@@ -1,0 +1,21 @@
+---
+import Layout from './Layout.astro';
+import { getUser } from '../utils/auth';
+
+export interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+
+// Authentifizierung prüfen
+const user = await getUser(Astro);
+if (!user) {
+  return Astro.redirect('/login');
+}
+---
+
+<Layout title={title} description={description}>
+  <slot />
+</Layout>

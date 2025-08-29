@@ -1,5 +1,5 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
 
 // Zugriffskontrolle
 const sessionCookie = Astro.cookies.get('session');
@@ -10,7 +10,7 @@ if (!sessionCookie) {
 const session = JSON.parse(sessionCookie.value);
 ---
 
-<Layout title="Neuer Aufenthalt - Nutzerkosten">
+<ProtectedLayout title="Neuer Aufenthalt - Nutzerkosten">
   <div class="px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
       <div class="flex items-center justify-between">
@@ -221,7 +221,7 @@ const session = JSON.parse(sessionCookie.value);
       </div>
     </div>
   </div>
-</Layout>
+</ProtectedLayout>
 
 <script>
   let users: Array<{id: number, name: string, email: string, role: string}> = [];
