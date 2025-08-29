@@ -1,0 +1,137 @@
+---
+import ProtectedLayout from '../layouts/ProtectedLayout.astro';
+---
+
+<ProtectedLayout title="Debug - Nutzerkosten">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        Debug & Diagnose
+      </h1>
+      <p class="mt-2 text-gray-600 dark:text-gray-400">
+        Überprüfung der API-Funktionalität und Datenbankdaten
+      </p>
+    </div>
+
+    <!-- API-Tests -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          API-Tests
+        </h3>
+        <div class="space-y-4">
+          <button id="test-auth" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            🔐 Authentifizierung testen
+          </button>
+          <button id="test-statistiken" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            📊 Statistiken API testen
+          </button>
+          <button id="test-aufenthalte" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            🏠 Aufenthalte API testen
+          </button>
+          <button id="test-tankfuellungen" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            ⛽ Tankfüllungen API testen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ergebnisse -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          Ergebnisse
+        </h3>
+        <div id="results" class="space-y-4">
+          <p class="text-gray-500 dark:text-gray-400">Klicken Sie auf einen der Buttons oben, um Tests auszuführen.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</ProtectedLayout>
+
+<script>
+  // Ergebnisse anzeigen
+  function showResult(title: string, data: any, isError = false) {
+    const resultsDiv = document.getElementById('results');
+    if (!resultsDiv) return;
+
+    const resultDiv = document.createElement('div');
+    resultDiv.className = `p-4 rounded-md ${isError ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'}`;
+    
+    resultDiv.innerHTML = `
+      <h4 class="font-medium ${isError ? 'text-red-800 dark:text-red-200' : 'text-green-800 dark:text-green-200'}">${title}</h4>
+      <pre class="mt-2 text-sm ${isError ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'} overflow-auto">${JSON.stringify(data, null, 2)}</pre>
+    `;
+    
+    resultsDiv.appendChild(resultDiv);
+  }
+
+  // Authentifizierung testen
+  document.getElementById('test-auth')?.addEventListener('click', async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      
+      if (response.ok) {
+        showResult('✅ Authentifizierung erfolgreich', data);
+      } else {
+        showResult('❌ Authentifizierung fehlgeschlagen', data, true);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showResult('❌ Authentifizierung Fehler', { error: errorMessage }, true);
+    }
+  });
+
+  // Statistiken API testen
+  document.getElementById('test-statistiken')?.addEventListener('click', async () => {
+    try {
+      const response = await fetch('/api/statistiken?jahr=2024');
+      const data = await response.json();
+      
+      if (response.ok) {
+        showResult('✅ Statistiken API erfolgreich', data);
+      } else {
+        showResult('❌ Statistiken API fehlgeschlagen', data, true);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showResult('❌ Statistiken API Fehler', { error: errorMessage }, true);
+    }
+  });
+
+  // Aufenthalte API testen
+  document.getElementById('test-aufenthalte')?.addEventListener('click', async () => {
+    try {
+      const response = await fetch('/api/aufenthalte');
+      const data = await response.json();
+      
+      if (response.ok) {
+        showResult('✅ Aufenthalte API erfolgreich', data);
+      } else {
+        showResult('❌ Aufenthalte API fehlgeschlagen', data, true);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showResult('❌ Aufenthalte API Fehler', { error: errorMessage }, true);
+    }
+  });
+
+  // Tankfüllungen API testen
+  document.getElementById('test-tankfuellungen')?.addEventListener('click', async () => {
+    try {
+      const response = await fetch('/api/tankfuellungen');
+      const data = await response.json();
+      
+      if (response.ok) {
+        showResult('✅ Tankfüllungen API erfolgreich', data);
+      } else {
+        showResult('❌ Tankfüllungen API fehlgeschlagen', data, true);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showResult('❌ Tankfüllungen API Fehler', { error: errorMessage }, true);
+    }
+  });
+</script>

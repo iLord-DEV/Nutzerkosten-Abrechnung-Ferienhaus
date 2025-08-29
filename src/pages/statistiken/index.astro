@@ -422,15 +422,25 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
     const jahr = (document.getElementById('jahr') as HTMLSelectElement)?.value || '2024';
     const person = (document.getElementById('person') as HTMLSelectElement)?.value || '';
     
+    console.log('🔍 Lade Statistiken für:', { jahr, person });
+    
     try {
       const response = await fetch(`/api/statistiken?jahr=${jahr}${person ? `&person=${person}` : ''}`);
+      console.log('📡 API-Antwort Status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('📊 Empfangene Daten:', data);
         updateUebersichtskarten(data);
         updateCharts(data);
+      } else {
+        const errorData = await response.json();
+        console.error('❌ API-Fehler:', errorData);
+        alert(`Fehler beim Laden der Statistiken: ${errorData.error || 'Unbekannter Fehler'}`);
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Statistiken:', error);
+      console.error('❌ Fehler beim Laden der Statistiken:', error);
+      alert('Fehler beim Laden der Statistiken. Bitte überprüfen Sie die Konsole für Details.');
     }
   }
 

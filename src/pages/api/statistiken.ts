@@ -45,7 +45,7 @@ export const GET: APIRoute = async (context) => {
       whereClause.userId = parseInt(personId);
     }
 
-    console.log('🔍 Filter-Debug:', { jahr, personName, whereClause });
+    console.log('🔍 Filter-Debug:', { jahr, personName, whereClause, userRole: user.role, userId: user.id });
 
     // Aufenthalte laden
     const aufenthalte = await prisma.aufenthalt.findMany({
@@ -86,10 +86,29 @@ export const GET: APIRoute = async (context) => {
       },
     });
 
+    console.log('⛽ Gefundene Tankfüllungen:', tankfuellungen.length);
+    if (tankfuellungen.length > 0) {
+      console.log('📊 Erste Tankfüllung:', {
+        datum: tankfuellungen[0].datum,
+        liter: tankfuellungen[0].liter,
+        zaehlerstand: tankfuellungen[0].zaehlerstand
+      });
+    }
+
     // Preise laden
     const preise = await prisma.preise.findUnique({
       where: { jahr: parseInt(jahr) },
     });
+
+    console.log('💰 Gefundene Preise für Jahr', jahr, ':', preise ? 'Ja' : 'Nein');
+    if (preise) {
+      console.log('📋 Preis-Details:', {
+        oelpreisProLiter: preise.oelpreisProLiter,
+        uebernachtungMitglied: preise.uebernachtungMitglied,
+        uebernachtungGast: preise.uebernachtungGast,
+        verbrauchProStunde: preise.verbrauchProStunde
+      });
+    }
 
     // Statistiken berechnen
     const statistiken = {
@@ -148,12 +167,21 @@ export const GET: APIRoute = async (context) => {
     statistiken.gesamtVerbrauch = gesamtVerbrauch;
     
     // Nur Admins sehen personenspezifische Kosten
-    if (session.role === 'ADMIN') {
+    if (user.role === 'ADMIN') {
       statistiken.kostenProPerson = kostenProPerson;
     } else {
       // Normale Benutzer sehen nur Gesamtkosten
       statistiken.kostenProPerson = {};
     }
+
+    console.log('📈 Finale Statistiken:', {
+      jahr: statistiken.jahr,
+      gesamtVerbrauch: statistiken.gesamtVerbrauch,
+      gesamtKosten: statistiken.gesamtKosten,
+      anzahlAufenthalte: statistiken.anzahlAufenthalte,
+      anzahlTankfuellungen: statistiken.anzahlTankfuellungen,
+      durchschnittVerbrauchProStunde: statistiken.durchschnittVerbrauchProStunde
+    });
 
     return new Response(JSON.stringify(statistiken), {
       status: 200,
