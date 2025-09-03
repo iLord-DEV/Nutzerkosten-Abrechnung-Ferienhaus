@@ -31,6 +31,25 @@ if (session.role !== 'ADMIN') {
       </div>
     </div>
 
+    <!-- Aktueller Zähler-Status -->
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+            <span class="text-white text-sm font-medium">🔧</span>
+          </div>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">
+            Aktueller Zähler
+          </h3>
+          <p class="text-sm text-blue-600 dark:text-blue-300" id="aktueller-zaehler-info">
+            Wird geladen...
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Verbrauchsübersicht -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
@@ -126,6 +145,9 @@ if (session.role !== 'ADMIN') {
                   Zählerstand
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Zähler
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Liter
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -183,9 +205,38 @@ if (session.role !== 'ADMIN') {
     liter: number;
     preisProLiter: number;
     zaehlerstand: number;
+    verbrauchProStunde?: string;
+    verbrauchteStunden?: string;
+    zaehler?: {
+      id: number;
+      einbauDatum: string;
+    };
   }> = [];
   
   let verbrauchsChart: Chart | null = null;
+
+  // Aktuellen Zähler laden
+  async function loadAktuellerZaehler() {
+    try {
+      const response = await fetch('/api/zaehler');
+      if (response.ok) {
+        const zaehler = await response.json();
+        const aktiverZaehler = zaehler.find((z: any) => z.istAktiv);
+        
+        const infoElement = document.getElementById('aktueller-zaehler-info');
+        if (infoElement) {
+                  if (aktiverZaehler) {
+          const einbauDatum = new Date(aktiverZaehler.einbauDatum).toLocaleDateString('de-DE');
+          infoElement.textContent = `Zähler #${aktiverZaehler.id} - Eingebaut am ${einbauDatum} - Letzter Stand: ${aktiverZaehler.letzterStand.toFixed(1)} h`;
+        } else {
+            infoElement.innerHTML = '<span class="text-red-600 dark:text-red-400">Kein aktiver Zähler gefunden! <a href="/admin/zaehler" class="underline">Zähler einbauen</a></span>';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des aktuellen Zählers:', error);
+    }
+  }
 
   // Tankfüllungen aus der API laden
   async function loadTankfuellungen() {
@@ -221,20 +272,23 @@ if (session.role !== 'ADMIN') {
 
     tbody.innerHTML = '';
     
-    tankfuellungen.forEach((tankfuellung: typeof currentTankfuellungen[0], index: number) => {
+    // Tankfüllungen in absteigender Reihenfolge für die Tabelle anzeigen
+    const tankfuellungenReversed = [...tankfuellungen].reverse();
+    
+    tankfuellungenReversed.forEach((tankfuellung: typeof currentTankfuellungen[0], index: number) => {
       const row = document.createElement('tr');
       const datum = new Date(tankfuellung.datum).toLocaleDateString('de-DE');
       const gesamtKosten = tankfuellung.liter * tankfuellung.preisProLiter;
       
-      // Verbrauch berechnen (Differenz zur nächsten Tankfüllung)
+      // Verbrauch berechnen - verwende die bereits berechneten Werte aus der API
       let verbrauch = '-';
-      if (index < tankfuellungen.length - 1) {
-        const naechste = tankfuellungen[index + 1];
-        const stundenDifferenz = naechste.zaehlerstand - tankfuellung.zaehlerstand;
-        if (stundenDifferenz > 0) {
-          verbrauch = `${(tankfuellung.liter / stundenDifferenz).toFixed(1)} L/h`;
-        }
+      if (tankfuellung.verbrauchProStunde && tankfuellung.verbrauchProStunde !== '-') {
+        verbrauch = `${tankfuellung.verbrauchProStunde} L/h`;
       }
+
+      const zaehlerInfo = tankfuellung.zaehler 
+        ? `#${tankfuellung.zaehler.id}`
+        : 'Unbekannt';
 
       row.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
@@ -242,6 +296,9 @@ if (session.role !== 'ADMIN') {
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
           ${tankfuellung.zaehlerstand.toFixed(1)} h
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${zaehlerInfo}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
           ${tankfuellung.liter} L
@@ -273,9 +330,28 @@ if (session.role !== 'ADMIN') {
   function updateVerbrauchsUebersicht(tankfuellungen: typeof currentTankfuellungen) {
     if (tankfuellungen.length < 2) return;
 
-    // Aktueller Verbrauch (letzte 2 Tankfüllungen)
-    const letzte = tankfuellungen[tankfuellungen.length - 1];
-    const vorletzte = tankfuellungen[tankfuellungen.length - 2];
+    // Sortiere Tankfüllungen nach Datum
+    const sortedTankfuellungen = [...tankfuellungen].sort((a, b) => new Date(a.datum).getTime() - new Date(b.datum).getTime());
+    
+    // Finde die letzten Tankfüllungen mit dem gleichen Zähler
+    const aktiverZaehler = sortedTankfuellungen[sortedTankfuellungen.length - 1]?.zaehler?.id;
+    const tankfuellungenGleicherZaehler = sortedTankfuellungen.filter(t => t.zaehler?.id === aktiverZaehler);
+    
+    if (tankfuellungenGleicherZaehler.length < 2) {
+      // Keine ausreichenden Daten für Verbrauchsberechnung
+      const aktuellerVerbrauchEl = document.getElementById('aktueller-verbrauch');
+      const verbrauchsTrendEl = document.getElementById('verbrauchs-trend');
+      const verbrauchsStatusEl = document.getElementById('verbrauchs-status');
+      
+      if (aktuellerVerbrauchEl) aktuellerVerbrauchEl.textContent = '-';
+      if (verbrauchsTrendEl) verbrauchsTrendEl.textContent = 'Unbekannt';
+      if (verbrauchsStatusEl) verbrauchsStatusEl.textContent = 'Unbekannt';
+      return;
+    }
+
+    // Aktueller Verbrauch (letzte 2 Tankfüllungen mit gleichem Zähler)
+    const letzte = tankfuellungenGleicherZaehler[tankfuellungenGleicherZaehler.length - 1];
+    const vorletzte = tankfuellungenGleicherZaehler[tankfuellungenGleicherZaehler.length - 2];
     const stundenDifferenz = letzte.zaehlerstand - vorletzte.zaehlerstand;
     const verbrauch = stundenDifferenz > 0 ? (vorletzte.liter / stundenDifferenz).toFixed(1) : '-';
 
@@ -283,18 +359,22 @@ if (session.role !== 'ADMIN') {
     let trend = 'Stabil';
     let trendColor = 'text-gray-600 dark:text-gray-400';
     
-    if (tankfuellungen.length >= 3) {
-      const drittletzte = tankfuellungen[tankfuellungen.length - 3];
-      const verbrauchAlt = (drittletzte.liter / (vorletzte.zaehlerstand - drittletzte.zaehlerstand)).toFixed(1);
-      const verbrauchNeu = parseFloat(verbrauch);
-      const verbrauchAltNum = parseFloat(verbrauchAlt);
+    if (tankfuellungenGleicherZaehler.length >= 3) {
+      const drittletzte = tankfuellungenGleicherZaehler[tankfuellungenGleicherZaehler.length - 3];
+      const stundenDifferenzAlt = vorletzte.zaehlerstand - drittletzte.zaehlerstand;
       
-      if (verbrauchNeu < verbrauchAltNum * 0.9) {
-        trend = '↘️ Abnehmend';
-        trendColor = 'text-green-600 dark:text-green-400';
-      } else if (verbrauchNeu > verbrauchAltNum * 1.1) {
-        trend = '↗️ Zunehmend';
-        trendColor = 'text-red-600 dark:text-red-400';
+      if (stundenDifferenzAlt > 0) {
+        const verbrauchAlt = (drittletzte.liter / stundenDifferenzAlt).toFixed(1);
+        const verbrauchNeu = parseFloat(verbrauch);
+        const verbrauchAltNum = parseFloat(verbrauchAlt);
+        
+        if (verbrauchNeu < verbrauchAltNum * 0.9) {
+          trend = '↘️ Abnehmend';
+          trendColor = 'text-green-600 dark:text-green-400';
+        } else if (verbrauchNeu > verbrauchAltNum * 1.1) {
+          trend = '↗️ Zunehmend';
+          trendColor = 'text-red-600 dark:text-red-400';
+        }
       }
     }
 
@@ -314,64 +394,113 @@ if (session.role !== 'ADMIN') {
   // Verbrauchs-Chart rendern
   function renderVerbrauchsChart(tankfuellungen: typeof currentTankfuellungen) {
     const canvas = document.getElementById('verbrauchs-chart') as HTMLCanvasElement;
-    if (!canvas) return;
+    if (!canvas) {
+      console.error('Canvas-Element nicht gefunden');
+      return;
+    }
 
     // Chart zerstören falls vorhanden
     if (verbrauchsChart) {
       verbrauchsChart.destroy();
+      verbrauchsChart = null;
     }
 
-    // Daten für Chart vorbereiten
-    const labels = tankfuellungen.map((t: typeof currentTankfuellungen[0]) => new Date(t.datum).toLocaleDateString('de-DE')).reverse();
-    const data = tankfuellungen.map((t: typeof currentTankfuellungen[0], i: number) => {
-      if (i === 0) return null;
-      const vorherige = tankfuellungen[i - 1];
-      const stundenDifferenz = t.zaehlerstand - vorherige.zaehlerstand;
-      return stundenDifferenz > 0 ? (vorherige.liter / stundenDifferenz) : null;
-    }).reverse();
+    // Mindestens 2 Tankfüllungen für Chart benötigt
+    if (tankfuellungen.length < 2) {
+      console.log('Nicht genügend Tankfüllungen für Chart');
+      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
 
-    // Null-Werte filtern
-    const filteredData = data.filter((d: number | null) => d !== null);
-    const filteredLabels = labels.filter((_: string, i: number) => data[i] !== null);
-
-    verbrauchsChart = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels: filteredLabels,
-        datasets: [{
-          label: 'Verbrauch (L/h)',
-          data: filteredData,
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          tension: 0.1,
-          fill: true
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Verbrauch (L/h)'
-            }
-          },
-          x: {
-            title: {
-              display: true,
-              text: 'Datum'
-            }
+    try {
+      // Daten für Chart vorbereiten - sortiert nach Datum
+      const sortedTankfuellungen = [...tankfuellungen].sort((a, b) => new Date(a.datum).getTime() - new Date(b.datum).getTime());
+      
+      const labels: string[] = [];
+      const data: number[] = [];
+      
+      // Verbrauch zwischen aufeinanderfolgenden Tankfüllungen berechnen
+      for (let i = 1; i < sortedTankfuellungen.length; i++) {
+        const aktuelle = sortedTankfuellungen[i];
+        const vorherige = sortedTankfuellungen[i - 1];
+        
+        // Nur wenn beide Tankfüllungen den gleichen Zähler haben
+        if (aktuelle.zaehler?.id === vorherige.zaehler?.id) {
+          const stundenDifferenz = aktuelle.zaehlerstand - vorherige.zaehlerstand;
+          if (stundenDifferenz > 0) {
+            const verbrauch = vorherige.liter / stundenDifferenz;
+            labels.push(new Date(aktuelle.datum).toLocaleDateString('de-DE'));
+            data.push(verbrauch);
+            console.log(`Chart-Datenpunkt: ${new Date(aktuelle.datum).toLocaleDateString('de-DE')} - Verbrauch: ${verbrauch.toFixed(2)} L/h (${vorherige.liter}L / ${stundenDifferenz}h)`);
           }
         }
       }
-    });
+
+      if (data.length === 0) {
+        console.log('Keine gültigen Verbrauchsdaten für Chart');
+        return;
+      }
+
+      console.log('Chart-Daten:', { labels, data });
+
+      verbrauchsChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Verbrauch (L/h)',
+            data: data,
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.1,
+            fill: true,
+            pointBackgroundColor: 'rgb(59, 130, 246)',
+            pointBorderColor: 'rgb(59, 130, 246)',
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `Verbrauch: ${context.parsed.y.toFixed(2)} L/h`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Verbrauch (L/h)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value.toFixed(1) + ' L/h';
+                }
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Datum'
+              }
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Fehler beim Erstellen des Charts:', error);
+    }
   }
 
   // Tankfüllung löschen
@@ -386,15 +515,20 @@ if (session.role !== 'ADMIN') {
       });
       
       if (response.ok) {
+        alert('Tankfüllung erfolgreich gelöscht!');
         loadTankfuellungen(); // Neu laden
       } else {
-        alert('Fehler beim Löschen der Tankfüllung');
+        const errorData = await response.json();
+        alert(`Fehler beim Löschen der Tankfüllung: ${errorData.error || 'Unbekannter Fehler'}`);
       }
     } catch (error) {
       console.error('Fehler beim Löschen:', error);
       alert('Ein Fehler ist aufgetreten');
     }
   }
+
+  // Funktion global verfügbar machen
+  (window as any).deleteTankfuellung = deleteTankfuellung;
 
   // Lade-Animation anzeigen/verstecken
   function showLoading(show: boolean) {
@@ -414,6 +548,7 @@ if (session.role !== 'ADMIN') {
 
   // Event-Listener
   document.addEventListener('DOMContentLoaded', () => {
+    loadAktuellerZaehler();
     loadTankfuellungen();
   });
 </script>

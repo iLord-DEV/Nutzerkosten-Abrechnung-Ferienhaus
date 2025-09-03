@@ -9,6 +9,7 @@ async function main() {
   await prisma.jahresAbschluss.deleteMany();
   await prisma.aufenthalt.deleteMany();
   await prisma.tankfuellung.deleteMany();
+  await prisma.zaehler.deleteMany();
   await prisma.preise.deleteMany();
   await prisma.user.deleteMany();
 
@@ -55,6 +56,18 @@ async function main() {
 
   console.log('✅ Benutzer erstellt:', { admin, anna, hans, lisa, peter });
 
+  // 2. Ersten Zähler erstellen
+  const ersterZaehler = await prisma.zaehler.create({
+    data: {
+      einbauDatum: new Date('2024-01-01T12:00:00Z'),
+      letzterStand: 0,
+      istAktiv: true,
+      notizen: 'Erster Zähler - Systemstart',
+    },
+  });
+
+  console.log('✅ Ersten Zähler erstellt');
+
   // 2. Preise erstellen
   const preise2022 = await prisma.preise.create({
     data: {
@@ -100,6 +113,7 @@ async function main() {
       liter: 250,
       preisProLiter: 1.05,
       zaehlerstand: 800,
+      zaehlerId: ersterZaehler.id,
     },
   });
 
@@ -109,6 +123,7 @@ async function main() {
       liter: 280,
       preisProLiter: 1.35,
       zaehlerstand: 1350,
+      zaehlerId: ersterZaehler.id,
     },
   });
 
@@ -671,6 +686,14 @@ async function main() {
     jahresAbschluss2022,
     jahresAbschluss2023,
     jahresAbschluss2024
+  });
+
+  // 5. Alle Aufenthalte mit dem ersten Zähler verknüpfen
+  console.log('🔗 Verknüpfe alle Aufenthalte mit dem ersten Zähler...');
+  await prisma.aufenthalt.updateMany({
+    data: {
+      zaehlerId: ersterZaehler.id,
+    },
   });
 
   console.log('🎉 Datenbank-Seeding erfolgreich abgeschlossen!');

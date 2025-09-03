@@ -58,6 +58,8 @@ export const GET: APIRoute = async (context) => {
             email: true,
           },
         },
+
+
       },
     });
 
@@ -129,7 +131,25 @@ export const GET: APIRoute = async (context) => {
     const kostenProPerson: { [key: string]: number } = {};
 
     aufenthalte.forEach((aufenthalt) => {
-      const verbrauchteStunden = aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft;
+      let verbrauchteStunden = 0;
+      
+      // Prüfen ob Zählerwechsel während des Aufenthalts stattgefunden hat
+      if (aufenthalt.zaehlerId && aufenthalt.zaehlerAbreiseId && aufenthalt.zaehlerId !== aufenthalt.zaehlerAbreiseId) {
+        // Zählerwechsel erkannt - Berechnung anpassen
+        // TODO: Hier müsste der letzte Stand des alten Zählers ermittelt werden
+        // Für jetzt: Vereinfachte Berechnung (sollte in der Praxis erweitert werden)
+        console.log(`⚠️ Zählerwechsel während Aufenthalt ${aufenthalt.id} erkannt!`);
+        console.log(`   Ankunft: Zähler ${aufenthalt.zaehlerId} bei ${aufenthalt.zaehlerAnkunft}h`);
+        console.log(`   Abreise: Zähler ${aufenthalt.zaehlerAbreiseId} bei ${aufenthalt.zaehlerAbreise}h`);
+        
+        // Vereinfachte Berechnung: Nur der Abreise-Zählerstand wird verwendet
+        // In der Praxis sollte hier der letzte Stand des alten Zählers ermittelt werden
+        verbrauchteStunden = aufenthalt.zaehlerAbreise;
+      } else {
+        // Normaler Fall: Gleicher Zähler oder noch keine Zähler-IDs gesetzt
+        verbrauchteStunden = aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft;
+      }
+      
       gesamtVerbrauch += verbrauchteStunden;
 
       // Ölkosten

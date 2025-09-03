@@ -1,0 +1,561 @@
+---
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
+import { requireAdmin } from '../../utils/auth';
+
+// Admin-Berechtigung prüfen
+try {
+  await requireAdmin(Astro);
+} catch (error) {
+  return Astro.redirect('/login');
+}
+---
+
+<ProtectedLayout title="Zählerverwaltung - Admin">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Zählerverwaltung
+          </h1>
+          <p class="mt-2 text-gray-600 dark:text-gray-400">
+            Verwalten Sie die Ölzähler und deren Wechsel
+          </p>
+        </div>
+        <button 
+          id="neuer-zaehler-btn"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+        >
+          ➕ Neuer Zähler
+        </button>
+      </div>
+    </div>
+
+    <!-- Zähler-Liste -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-2">
+          Alle Zähler
+        </h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Das Ausbaudatum wird automatisch auf das Einbaudatum des folgenden Zählers gesetzt.
+        </p>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Status
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Zähler-ID
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Einbau
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Ausbau
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Letzter Stand
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Tankfüllungen
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Aktionen
+                </th>
+              </tr>
+            </thead>
+            <tbody id="zaehler-tabelle" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <!-- Wird dynamisch geladen -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal für neuen Zähler -->
+  <div id="zaehler-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          Neuer Zähler einbauen
+        </h3>
+        <form id="zaehler-form">
+          <div class="mb-4">
+            <label for="einbauDatum" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Einbaudatum *
+            </label>
+            <input 
+              type="date" 
+              id="einbauDatum" 
+              name="einbauDatum"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+          </div>
+
+          <div class="mb-4" id="letzter-stand-container" style="display: none;">
+            <label for="letzterStandAlterZaehler" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Letzter Stand des alten Zählers
+            </label>
+            <input 
+              type="number" 
+              id="letzterStandAlterZaehler" 
+              name="letzterStandAlterZaehler"
+              step="0.1"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              placeholder="0.0"
+            >
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Das Ausbaudatum des alten Zählers wird automatisch auf das Einbaudatum des neuen Zählers gesetzt.
+            </p>
+          </div>
+          
+          <div class="mb-4">
+            <label for="notizen" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Notizen (optional)
+            </label>
+            <textarea 
+              id="notizen" 
+              name="notizen"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Grund für den Wechsel, Wartung, etc."
+            ></textarea>
+          </div>
+
+          <div class="mb-4">
+            <label class="flex items-center">
+              <input 
+                type="checkbox" 
+                id="ersetzeAktiven" 
+                name="ersetzeAktiven"
+                class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+              >
+              <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                Aktiven Zähler ersetzen
+              </span>
+            </label>
+          </div>
+
+          <div class="flex justify-end space-x-3">
+            <button 
+              type="button" 
+              id="modal-cancel"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-md"
+            >
+              Abbrechen
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+            >
+              Zähler einbauen
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal für Zähler-Details -->
+  <div id="zaehler-details-modal" class="hidden">
+    <!-- Wird dynamisch gefüllt -->
+  </div>
+</ProtectedLayout>
+
+<script>
+  let zaehler = [];
+  let aktiverZaehler = null;
+
+  // Zähler laden
+  async function loadZaehler() {
+    try {
+      const response = await fetch('/api/zaehler');
+      if (response.ok) {
+        zaehler = await response.json();
+        aktiverZaehler = zaehler.find(z => z.istAktiv);
+        renderZaehlerTabelle();
+      } else {
+        console.error('Fehler beim Laden der Zähler');
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Zähler:', error);
+    }
+  }
+
+  // Zähler-Tabelle rendern
+  function renderZaehlerTabelle() {
+    const tbody = document.getElementById('zaehler-tabelle');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    zaehler.forEach(zaehler => {
+      const row = document.createElement('tr');
+      
+      const statusBadge = zaehler.istAktiv 
+        ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Aktiv</span>'
+        : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">Inaktiv</span>';
+
+      const ausbauDatum = zaehler.ausbauDatum 
+        ? new Date(zaehler.ausbauDatum).toLocaleDateString('de-DE')
+        : '-';
+
+      row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap">
+          ${statusBadge}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          #${zaehler.id}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${new Date(zaehler.einbauDatum).toLocaleDateString('de-DE')}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${ausbauDatum}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${zaehler.letzterStand.toFixed(1)} h
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${zaehler._count.tankfuellungen}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+          <button 
+            onclick="viewZaehlerDetails(${zaehler.id})"
+            class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+          >
+            Details
+          </button>
+          ${!zaehler.istAktiv ? `
+            <button 
+              onclick="deleteZaehler(${zaehler.id})"
+              class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+            >
+              Löschen
+            </button>
+          ` : ''}
+        </td>
+      `;
+      
+      tbody.appendChild(row);
+    });
+  }
+
+  // Modal öffnen
+  function openModal() {
+    const modal = document.getElementById('zaehler-modal');
+    const form = document.getElementById('zaehler-form');
+    const letzterStandContainer = document.getElementById('letzter-stand-container');
+    const ersetzeAktivenCheckbox = document.getElementById('ersetzeAktiven');
+    
+    // Formular zurücksetzen
+    form.reset();
+    
+    // Heute als Standard-Datum setzen
+    const heute = new Date().toISOString().split('T')[0];
+    document.getElementById('einbauDatum').value = heute;
+    
+    // Checkbox-Event-Listener
+    ersetzeAktivenCheckbox.addEventListener('change', function() {
+      if (this.checked && aktiverZaehler) {
+        letzterStandContainer.style.display = 'block';
+      } else {
+        letzterStandContainer.style.display = 'none';
+      }
+    });
+    
+    modal.classList.remove('hidden');
+  }
+
+  // Modal schließen
+  function closeModal() {
+    const modal = document.getElementById('zaehler-modal');
+    modal.classList.add('hidden');
+  }
+
+  // Neuen Zähler erstellen
+  async function createZaehler(formData) {
+    try {
+      const response = await fetch('/api/zaehler', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const neuerZaehler = await response.json();
+        console.log('Zähler erfolgreich erstellt:', neuerZaehler);
+        closeModal();
+        loadZaehler(); // Tabelle neu laden
+      } else {
+        const error = await response.json();
+        alert('Fehler beim Erstellen des Zählers: ' + error.error);
+      }
+    } catch (error) {
+      console.error('Fehler beim Erstellen des Zählers:', error);
+      alert('Fehler beim Erstellen des Zählers');
+    }
+  }
+
+  // Zähler-Details anzeigen
+  async function viewZaehlerDetails(zaehlerId) {
+    try {
+      const response = await fetch(`/api/zaehler/${zaehlerId}`);
+      if (response.ok) {
+        const zaehler = await response.json();
+        showZaehlerDetailsModal(zaehler);
+      } else {
+        alert('Fehler beim Laden der Zähler-Details');
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Zähler-Details:', error);
+      alert('Fehler beim Laden der Zähler-Details');
+    }
+  }
+
+  // Zähler-Details Modal anzeigen
+  function showZaehlerDetailsModal(zaehler) {
+    const modal = document.getElementById('zaehler-details-modal');
+    if (!modal) return;
+
+    // Statistiken berechnen
+    const tankfuellungen = zaehler.tankfuellungen || [];
+    const aufenthalte = zaehler.aufenthalte || [];
+    
+    const gesamtLiter = tankfuellungen.reduce((sum, tf) => sum + tf.liter, 0);
+    const gesamtKosten = tankfuellungen.reduce((sum, tf) => sum + (tf.liter * tf.preisProLiter), 0);
+    
+    // Verbrauch berechnen (nur wenn mindestens 2 Tankfüllungen)
+    let durchschnittlicherVerbrauch = '-';
+    if (tankfuellungen.length >= 2) {
+      const ersteTf = tankfuellungen[tankfuellungen.length - 1]; // Älteste
+      const letzteTf = tankfuellungen[0]; // Neueste
+      const stundenDifferenz = letzteTf.zaehlerstand - ersteTf.zaehlerstand;
+      if (stundenDifferenz > 0) {
+        durchschnittlicherVerbrauch = `${(gesamtLiter / stundenDifferenz).toFixed(2)} L/h`;
+      }
+    }
+
+    // Zeitachse erstellen
+    const aktivitaeten = [];
+    
+    // Einbau hinzufügen
+    aktivitaeten.push({
+      datum: new Date(zaehler.einbauDatum),
+      typ: 'einbau',
+      text: `Zähler eingebaut`,
+      icon: '🔧'
+    });
+
+    // Tankfüllungen hinzufügen
+    tankfuellungen.forEach(tf => {
+      aktivitaeten.push({
+        datum: new Date(tf.datum),
+        typ: 'tankfuellung',
+        text: `${tf.liter}L getankt (€${(tf.liter * tf.preisProLiter).toFixed(2)})`,
+        icon: '⛽'
+      });
+    });
+
+    // Aufenthalte hinzufügen
+    aufenthalte.forEach(aufenthalt => {
+      aktivitaeten.push({
+        datum: new Date(aufenthalt.ankunft),
+        typ: 'aufenthalt',
+        text: `${aufenthalt.user.name}: ${aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft}h`,
+        icon: '🏠'
+      });
+    });
+
+    // Ausbau hinzufügen (falls vorhanden)
+    if (zaehler.ausbauDatum) {
+      aktivitaeten.push({
+        datum: new Date(zaehler.ausbauDatum),
+        typ: 'ausbau',
+        text: `Zähler ausgebaut (Stand: ${zaehler.letzterStand}h)`,
+        icon: '📦'
+      });
+    }
+
+    // Nach Datum sortieren
+    aktivitaeten.sort((a, b) => a.datum - b.datum);
+
+    // Modal-Inhalt erstellen
+    modal.innerHTML = `
+      <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div class="relative top-10 mx-auto p-5 border w-4/5 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800">
+          <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-xl font-medium text-gray-900 dark:text-white">
+                Zähler #${zaehler.id} - Details
+              </h3>
+              <button onclick="closeZaehlerDetailsModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <span class="text-2xl">&times;</span>
+              </button>
+            </div>
+
+            <!-- Grunddaten -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 dark:text-white mb-3">Grunddaten</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Status:</span>
+                    <span class="font-medium ${zaehler.istAktiv ? 'text-green-600' : 'text-gray-600'}">
+                      ${zaehler.istAktiv ? 'Aktiv' : 'Inaktiv'}
+                    </span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Einbaudatum:</span>
+                    <span class="font-medium">${new Date(zaehler.einbauDatum).toLocaleDateString('de-DE')}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Ausbaudatum:</span>
+                    <span class="font-medium">${zaehler.ausbauDatum ? new Date(zaehler.ausbauDatum).toLocaleDateString('de-DE') : 'Noch aktiv'}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Letzter Stand:</span>
+                    <span class="font-medium">${zaehler.letzterStand.toFixed(1)} h</span>
+                  </div>
+                  ${zaehler.notizen ? `
+                    <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                      <span class="text-gray-600 dark:text-gray-400">Notizen:</span>
+                      <p class="text-sm mt-1">${zaehler.notizen}</p>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+
+              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 dark:text-white mb-3">Statistiken</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Tankfüllungen:</span>
+                    <span class="font-medium">${tankfuellungen.length}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Aufenthalte:</span>
+                    <span class="font-medium">${aufenthalte.length}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Gesamt Liter:</span>
+                    <span class="font-medium">${gesamtLiter.toFixed(1)} L</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Gesamt Kosten:</span>
+                    <span class="font-medium">€${gesamtKosten.toFixed(2)}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Ø Verbrauch:</span>
+                    <span class="font-medium">${durchschnittlicherVerbrauch}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Zeitachse -->
+            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <h4 class="font-medium text-gray-900 dark:text-white mb-3">Zeitachse</h4>
+              <div class="space-y-3">
+                ${aktivitaeten.map(aktivitaet => `
+                  <div class="flex items-center space-x-3">
+                    <span class="text-lg">${aktivitaet.icon}</span>
+                    <div class="flex-1">
+                      <div class="text-sm font-medium text-gray-900 dark:text-white">
+                        ${aktivitaet.text}
+                      </div>
+                      <div class="text-xs text-gray-500 dark:text-gray-400">
+                        ${aktivitaet.datum.toLocaleDateString('de-DE')} ${aktivitaet.datum.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'})}
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+              <button onclick="closeZaehlerDetailsModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-md">
+                Schließen
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    modal.classList.remove('hidden');
+  }
+
+  // Zähler-Details Modal schließen
+  function closeZaehlerDetailsModal() {
+    const modal = document.getElementById('zaehler-details-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+
+  // Zähler löschen
+  async function deleteZaehler(zaehlerId) {
+    if (!confirm('Sind Sie sicher, dass Sie diesen Zähler löschen möchten?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/zaehler/${zaehlerId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        console.log('Zähler erfolgreich gelöscht');
+        loadZaehler(); // Tabelle neu laden
+      } else {
+        const error = await response.json();
+        alert('Fehler beim Löschen des Zählers: ' + error.error);
+      }
+    } catch (error) {
+      console.error('Fehler beim Löschen des Zählers:', error);
+      alert('Fehler beim Löschen des Zählers');
+    }
+  }
+
+  // Event-Listener
+  document.addEventListener('DOMContentLoaded', () => {
+    loadZaehler();
+
+    // Modal-Buttons
+    document.getElementById('neuer-zaehler-btn').addEventListener('click', openModal);
+    document.getElementById('modal-cancel').addEventListener('click', closeModal);
+
+    // Form-Submit
+    document.getElementById('zaehler-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Checkbox-Wert korrekt setzen
+      data.ersetzeAktiven = document.getElementById('ersetzeAktiven').checked;
+      
+      createZaehler(data);
+    });
+
+    // Modal schließen bei Klick außerhalb
+    document.getElementById('zaehler-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'zaehler-modal') {
+        closeModal();
+      }
+    });
+  });
+
+  // Globale Funktionen für onclick-Handler
+  window.viewZaehlerDetails = viewZaehlerDetails;
+  window.deleteZaehler = deleteZaehler;
+  window.closeZaehlerDetailsModal = closeZaehlerDetailsModal;
+</script>

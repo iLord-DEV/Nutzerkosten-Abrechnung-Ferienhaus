@@ -38,6 +38,8 @@ export const GET: APIRoute = async (context) => {
             role: true,
           },
         },
+
+
       },
       orderBy: {
         ankunft: 'desc',
@@ -73,6 +75,22 @@ export const POST: APIRoute = async (context) => {
       body.userId = user.id;
     }
     
+    // Aktiven Zähler für Ankunft finden
+    const aktiverZaehler = await prisma.zaehler.findFirst({
+      where: { istAktiv: true },
+    });
+
+    if (!aktiverZaehler) {
+      return new Response(JSON.stringify({ 
+        error: 'Kein aktiver Zähler gefunden. Bitte erst einen Zähler einbauen.' 
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+
     const aufenthalt = await prisma.aufenthalt.create({
       data: {
         userId: body.userId,
@@ -83,6 +101,8 @@ export const POST: APIRoute = async (context) => {
         anzahlMitglieder: parseInt(body.anzahlMitglieder),
         anzahlGaeste: parseInt(body.anzahlGaeste),
         jahr: new Date(body.ankunft).getFullYear(),
+        zaehlerId: aktiverZaehler.id, // Zähler bei Ankunft
+        zaehlerAbreiseId: aktiverZaehler.id, // Zähler bei Abreise (kann später geändert werden)
       },
       include: {
         user: {

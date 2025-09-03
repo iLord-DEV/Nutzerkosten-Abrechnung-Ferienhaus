@@ -11,16 +11,24 @@ export const GET: APIRoute = async (context) => {
     
     const tankfuellungen = await prisma.tankfuellung.findMany({
       orderBy: {
-        datum: 'desc',
+        datum: 'asc',
+      },
+      include: {
+        zaehler: {
+          select: {
+            id: true,
+            einbauDatum: true,
+          },
+        },
       },
     });
 
     // Verbrauchsberechnung für jede Tankfüllung
     const tankfuellungenMitVerbrauch = tankfuellungen.map((tf, index) => {
-      if (index < tankfuellungen.length - 1) {
-        const naechsteTf = tankfuellungen[index + 1];
-        const verbrauchteStunden = tf.zaehlerstand - naechsteTf.zaehlerstand;
-        const verbrauchProStunde = verbrauchteStunden > 0 ? tf.liter / verbrauchteStunden : 0;
+      if (index > 0) {
+        const vorherigeTf = tankfuellungen[index - 1];
+        const verbrauchteStunden = tf.zaehlerstand - vorherigeTf.zaehlerstand;
+        const verbrauchProStunde = verbrauchteStunden > 0 ? vorherigeTf.liter / verbrauchteStunden : 0;
         
         return {
           ...tf,
@@ -61,6 +69,22 @@ export const POST: APIRoute = async (context) => {
     const body = await request.json();
     const jahr = new Date(body.datum).getFullYear();
     
+    // Aktiven Zähler finden
+    const aktiverZaehler = await prisma.zaehler.findFirst({
+      where: { istAktiv: true },
+    });
+
+    if (!aktiverZaehler) {
+      return new Response(JSON.stringify({ 
+        error: 'Kein aktiver Zähler gefunden. Bitte erst einen Zähler einbauen.' 
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+    
     // Tankfüllung erstellen (allgemeine Systemdaten)
     const tankfuellung = await prisma.tankfuellung.create({
       data: {
@@ -68,24 +92,26 @@ export const POST: APIRoute = async (context) => {
         liter: parseFloat(body.liter),
         preisProLiter: parseFloat(body.preisProLiter),
         zaehlerstand: parseFloat(body.zaehlerstand),
+        zaehlerId: aktiverZaehler.id,
       },
     });
 
-    // Prüfen ob das die 2. Tankfüllung ist (kann Jahre später sein!)
-    const alleTankfuellungen = await prisma.tankfuellung.findMany({
+    // Verbrauchsberechnung: Nur für Tankfüllungen mit dem gleichen Zähler
+    const tankfuellungenGleicherZaehler = await prisma.tankfuellung.findMany({
+      where: { zaehlerId: aktiverZaehler.id },
       orderBy: { datum: 'asc' },
     });
 
-    // Ab der 2. Tankfüllung: Tatsächlichen Verbrauch berechnen
-    if (alleTankfuellungen.length >= 2) {
-      const neueste = alleTankfuellungen[alleTankfuellungen.length - 1];
-      const vorherige = alleTankfuellungen[alleTankfuellungen.length - 2];
+    // Ab der 2. Tankfüllung mit dem gleichen Zähler: Tatsächlichen Verbrauch berechnen
+    if (tankfuellungenGleicherZaehler.length >= 2) {
+      const neueste = tankfuellungenGleicherZaehler[tankfuellungenGleicherZaehler.length - 1];
+      const vorherige = tankfuellungenGleicherZaehler[tankfuellungenGleicherZaehler.length - 2];
       
       const stundenDifferenz = neueste.zaehlerstand - vorherige.zaehlerstand;
       if (stundenDifferenz > 0) {
         const neuerVerbrauchProStunde = neueste.liter / stundenDifferenz;
         
-        console.log(`🔥 VERBRAUCH BERECHNET: ${neueste.liter}L ÷ ${stundenDifferenz}h = ${neuerVerbrauchProStunde.toFixed(3)} L/h`);
+        console.log(`🔥 VERBRAUCH BERECHNET (Zähler ${aktiverZaehler.id}): ${neueste.liter}L ÷ ${stundenDifferenz}h = ${neuerVerbrauchProStunde.toFixed(3)} L/h`);
         
         // Aktualisiere alle Jahre ab dem Jahr der 2. Tankfüllung
         const startJahr = new Date(neueste.datum).getFullYear();
@@ -113,7 +139,7 @@ export const POST: APIRoute = async (context) => {
 
     return new Response(JSON.stringify({
       ...tankfuellung,
-      verbrauchBerechnet: alleTankfuellungen.length >= 2,
+      verbrauchBerechnet: tankfuellungenGleicherZaehler.length >= 2,
     }), {
       status: 201,
       headers: {
