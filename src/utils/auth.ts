@@ -36,7 +36,9 @@ export async function getUser(context: APIContext): Promise<User | null> {
 export async function requireAuth(context: APIContext): Promise<User> {
   const user = await getUser(context);
   if (!user) {
-    throw new Error('Nicht authentifiziert');
+    const error = new Error('Nicht authentifiziert');
+    error.name = 'AuthenticationError';
+    throw error;
   }
   return user;
 }

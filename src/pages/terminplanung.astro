@@ -1,0 +1,544 @@
+---
+import Layout from '../layouts/ProtectedLayout.astro';
+import { getUser } from '../utils/auth';
+
+const user = await getUser(Astro);
+---
+
+<Layout title="Terminplanung">
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Terminplanung</h1>
+      <button 
+        id="neueTerminplanungBtn"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+      >
+        + Neue Terminplanung
+      </button>
+    </div>
+
+    <!-- Status-Legende -->
+    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+      <h3 class="text-sm font-medium text-gray-700 mb-3">Status-Legende:</h3>
+      <div class="flex flex-wrap gap-4 text-sm">
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-green-500 rounded"></div>
+          <span>Freigegeben</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-yellow-500 rounded"></div>
+          <span>In Diskussion</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-orange-500 rounded"></div>
+          <span>Warten auf Abstimmungen</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-gray-500 rounded"></div>
+          <span>Storniert</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kalender-Ansicht -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-semibold">Kalender</h2>
+        <div class="flex gap-2">
+          <button id="prevMonth" class="px-3 py-1 border rounded hover:bg-gray-50">←</button>
+          <span id="currentMonth" class="px-4 py-1 font-medium"></span>
+          <button id="nextMonth" class="px-3 py-1 border rounded hover:bg-gray-50">→</button>
+        </div>
+      </div>
+      
+      <div id="calendar" class="grid grid-cols-7 gap-1 mb-4">
+        <!-- Kalender wird hier dynamisch generiert -->
+      </div>
+    </div>
+
+    <!-- Terminplanungen-Liste -->
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold mb-4">Alle Terminplanungen</h2>
+      <div id="terminplanungenListe" class="space-y-4">
+        <!-- Terminplanungen werden hier dynamisch geladen -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal für Kommentar -->
+  <div id="kommentarModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg max-w-md w-full p-6">
+        <h3 class="text-lg font-semibold mb-4">Kommentar hinzufügen</h3>
+        <form id="kommentarForm">
+          <input type="hidden" id="kommentarTerminplanungId" name="terminplanungId">
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Dein Kommentar:</label>
+            <textarea 
+              id="kommentarInhalt" 
+              name="kommentarInhalt" 
+              rows="4"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Was möchtest du zu diesem Termin sagen?"
+            ></textarea>
+          </div>
+          
+          <div class="flex justify-end gap-3">
+            <button 
+              type="button" 
+              id="kommentarCancelBtn"
+              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Abbrechen
+            </button>
+            <button 
+              type="submit" 
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Kommentar hinzufügen
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal für neue Terminplanung -->
+  <div id="terminplanungModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg max-w-md w-full p-6">
+        <h3 class="text-lg font-semibold mb-4">Neue Terminplanung</h3>
+        <form id="terminplanungForm">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Titel</label>
+            <input 
+              type="text" 
+              id="titel" 
+              name="titel" 
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="z.B. Sommerferien 2024"
+            >
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Startdatum</label>
+            <input 
+              type="date" 
+              id="startDatum" 
+              name="startDatum" 
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Enddatum</label>
+            <input 
+              type="date" 
+              id="endDatum" 
+              name="endDatum" 
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+          
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Beschreibung (optional)</label>
+            <textarea 
+              id="beschreibung" 
+              name="beschreibung" 
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Zusätzliche Informationen..."
+            ></textarea>
+          </div>
+          
+          <div class="flex justify-end gap-3">
+            <button 
+              type="button" 
+              id="cancelBtn"
+              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Abbrechen
+            </button>
+            <button 
+              type="submit" 
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Erstellen
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  let currentDate = new Date();
+  let terminplanungen = [];
+  let currentUser = null;
+
+  // User-Info laden
+  async function loadCurrentUser() {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        currentUser = await response.json();
+        // Nach dem Laden der User-Info die Terminplanungen rendern
+        if (terminplanungen.length > 0) {
+          renderTerminplanungenListe();
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der User-Info:', error);
+    }
+  }
+
+  // Kalender initialisieren
+  function initCalendar() {
+    updateCalendar();
+    document.getElementById('prevMonth').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      updateCalendar();
+    });
+    document.getElementById('nextMonth').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      updateCalendar();
+    });
+  }
+
+  // Kalender aktualisieren
+  function updateCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    document.getElementById('currentMonth').textContent = 
+      new Date(year, month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const calendar = document.getElementById('calendar');
+    calendar.innerHTML = '';
+    
+    // Wochentage
+    const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    weekdays.forEach(day => {
+      const dayHeader = document.createElement('div');
+      dayHeader.className = 'text-center font-medium text-gray-500 py-2';
+      dayHeader.textContent = day;
+      calendar.appendChild(dayHeader);
+    });
+    
+    // Tage
+    const current = new Date(startDate);
+    for (let i = 0; i < 42; i++) {
+      const dayElement = document.createElement('div');
+      dayElement.className = 'h-20 border border-gray-200 p-1 text-sm';
+      
+      if (current.getMonth() === month) {
+        dayElement.textContent = current.getDate();
+        dayElement.className += ' bg-white';
+        
+        // Termine für diesen Tag anzeigen
+        const dayTermine = terminplanungen.filter(termin => {
+          const start = new Date(termin.startDatum);
+          const end = new Date(termin.endDatum);
+          return current >= start && current <= end;
+        });
+        
+        dayTermine.forEach(termin => {
+          const terminElement = document.createElement('div');
+          terminElement.className = `text-xs p-1 rounded mb-1 truncate ${
+            termin.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+            termin.status === 'DISCUSSING' ? 'bg-yellow-100 text-yellow-800' :
+            termin.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :
+            'bg-gray-100 text-gray-800'
+          }`;
+          terminElement.textContent = termin.titel;
+          terminElement.title = `${termin.titel} (${termin.status})`;
+          dayElement.appendChild(terminElement);
+        });
+      } else {
+        dayElement.className += ' bg-gray-50 text-gray-400';
+      }
+      
+      current.setDate(current.getDate() + 1);
+      calendar.appendChild(dayElement);
+    }
+  }
+
+  // Terminplanungen laden
+  async function loadTerminplanungen() {
+    try {
+      const response = await fetch('/api/terminplanung');
+      if (response.ok) {
+        terminplanungen = await response.json();
+        updateCalendar();
+        // Nur rendern wenn currentUser geladen ist
+        if (currentUser) {
+          renderTerminplanungenListe();
+        }
+      } else if (response.status === 401) {
+        console.log('Nicht authentifiziert - leite zur Login-Seite weiter');
+        window.location.href = '/login';
+      } else {
+        console.error('Fehler beim Laden der Terminplanungen:', response.status);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Terminplanungen:', error);
+    }
+  }
+
+  // Terminplanungen-Liste rendern
+  function renderTerminplanungenListe() {
+    const liste = document.getElementById('terminplanungenListe');
+    if (!liste) return;
+    
+    liste.innerHTML = '';
+    
+    terminplanungen.forEach(termin => {
+      const terminElement = document.createElement('div');
+      terminElement.className = 'bg-white border border-gray-200 rounded-lg p-4';
+      
+      const statusColor = 
+        termin.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+        termin.status === 'DISCUSSING' ? 'bg-yellow-100 text-yellow-800' :
+        termin.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :
+        'bg-gray-100 text-gray-800';
+      
+      terminElement.innerHTML = `
+        <div class="flex justify-between items-start mb-2">
+          <h3 class="font-semibold text-lg">${termin.titel}</h3>
+          <span class="px-2 py-1 rounded-full text-xs font-medium ${statusColor}">
+            ${termin.status}
+          </span>
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          ${new Date(termin.startDatum).toLocaleDateString('de-DE')} - 
+          ${new Date(termin.endDatum).toLocaleDateString('de-DE')}
+        </div>
+        <div class="text-sm text-gray-500 mb-3">
+          von ${termin.user.name}
+        </div>
+        ${termin.beschreibung ? `<p class="text-sm text-gray-700 mb-3">${termin.beschreibung}</p>` : ''}
+        <div class="flex gap-2 mb-3">
+          <a 
+            href="/terminplanung/${termin.id}"
+            class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 font-medium text-center"
+          >
+            📋 Details
+          </a>
+                   ${termin.userId !== currentUser?.id ? `
+           ${termin.abstimmungen.some(a => a.userId === currentUser?.id && a.stimme === 'APPROVE' && a.version === termin.version) ? `
+             <button 
+               onclick="zustimmungEntziehen(${termin.id})"
+               class="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 font-medium"
+             >
+               ❌ Zustimmung entziehen
+             </button>
+           ` : `
+             <button 
+               onclick="zustimmen(${termin.id})"
+               class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 font-medium"
+             >
+               ✅ Zustimmen
+             </button>
+           `}
+           <button 
+             onclick="kommentieren(${termin.id})"
+             class="px-4 py-2 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 font-medium"
+           >
+             💬 Kommentieren
+           </button>
+         ` : ''}
+        </div>
+        
+        <!-- Abstimmungs-Übersicht direkt in der Karte -->
+        <div class="mt-3 pt-3 border-t border-gray-200">
+          <div class="text-sm text-gray-600 mb-2">Abstimmungen:</div>
+          <div class="flex flex-wrap gap-2">
+            ${termin.abstimmungen
+              .filter(a => a.version === termin.version)
+              .map(abstimmung => `
+                <span class="px-2 py-1 rounded text-xs ${
+                  abstimmung.stimme === 'APPROVE' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                }">
+                  ${abstimmung.user.name}: ${abstimmung.stimme === 'APPROVE' ? '✅ zugestimmt' : '❓ Mehr Infos'}
+                </span>
+              `).join('')}
+            ${termin.abstimmungen.filter(a => a.version === termin.version).length === 0 ? 
+              '<span class="text-gray-500 text-xs">Noch keine Abstimmungen</span>' : ''}
+          </div>
+          
+          <!-- Kommentare anzeigen -->
+          ${termin.kommentare.length > 0 ? `
+            <div class="mt-2">
+              <div class="text-xs text-gray-500 mb-1">Kommentare:</div>
+              <div class="space-y-1">
+                ${termin.kommentare.slice(-2).map(kommentar => `
+                  <div class="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                    <strong>${kommentar.user.name}:</strong> ${kommentar.inhalt}
+                  </div>
+                `).join('')}
+                ${termin.kommentare.length > 2 ? `
+                  <div class="text-xs text-gray-400">... und ${termin.kommentare.length - 2} weitere</div>
+                ` : ''}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      
+      liste.appendChild(terminElement);
+    });
+  }
+
+  // Modal-Funktionen
+  function openModal() {
+    document.getElementById('terminplanungModal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('terminplanungModal').classList.add('hidden');
+    document.getElementById('terminplanungForm').reset();
+  }
+
+  // Event Listeners
+  document.getElementById('neueTerminplanungBtn').addEventListener('click', openModal);
+  document.getElementById('cancelBtn').addEventListener('click', closeModal);
+  document.getElementById('kommentarCancelBtn').addEventListener('click', closeKommentarModal);
+  
+  document.getElementById('terminplanungForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = {
+      titel: formData.get('titel'),
+      startDatum: formData.get('startDatum'),
+      endDatum: formData.get('endDatum'),
+      beschreibung: formData.get('beschreibung')
+    };
+    
+    try {
+      const response = await fetch('/api/terminplanung', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (response.ok) {
+        closeModal();
+        loadTerminplanungen();
+      } else {
+        const error = await response.json();
+        alert('Fehler: ' + error.error);
+      }
+    } catch (error) {
+      console.error('Fehler beim Erstellen der Terminplanung:', error);
+      alert('Fehler beim Erstellen der Terminplanung');
+    }
+  });
+
+  document.getElementById('kommentarForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const terminplanungId = formData.get('terminplanungId');
+    const inhalt = formData.get('kommentarInhalt');
+    
+    try {
+      const response = await fetch(`/api/terminplanung/${terminplanungId}/kommentar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ inhalt })
+      });
+      
+      if (response.ok) {
+        closeKommentarModal();
+        loadTerminplanungen();
+      } else {
+        const error = await response.json();
+        alert('Fehler: ' + error.error);
+      }
+    } catch (error) {
+      console.error('Fehler beim Erstellen des Kommentars:', error);
+      alert('Fehler beim Erstellen des Kommentars');
+    }
+  });
+
+  // Funktionen für Zustimmung und Kommentare
+  window.zustimmen = async function(terminplanungId) {
+    try {
+      const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          stimme: 'APPROVE',
+          kommentar: ''
+        })
+      });
+      
+      if (response.ok) {
+        alert('Zustimmung erfolgreich abgegeben!');
+        loadTerminplanungen();
+      } else {
+        const error = await response.json();
+        alert('Fehler: ' + error.error);
+      }
+    } catch (error) {
+      console.error('Fehler beim Zustimmen:', error);
+      alert('Fehler beim Zustimmen');
+    }
+  };
+
+  window.zustimmungEntziehen = async function(terminplanungId) {
+    try {
+      const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        alert('Zustimmung erfolgreich entzogen!');
+        loadTerminplanungen();
+      } else {
+        const error = await response.json();
+        alert('Fehler: ' + error.error);
+      }
+    } catch (error) {
+      console.error('Fehler beim Entziehen der Zustimmung:', error);
+      alert('Fehler beim Entziehen der Zustimmung');
+    }
+  };
+
+  window.kommentieren = function(terminplanungId) {
+    document.getElementById('kommentarTerminplanungId').value = terminplanungId;
+    document.getElementById('kommentarModal').classList.remove('hidden');
+  };
+
+  function closeKommentarModal() {
+    document.getElementById('kommentarModal').classList.add('hidden');
+    document.getElementById('kommentarForm').reset();
+  }
+
+  // Initialisierung
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadCurrentUser();
+    initCalendar();
+    await loadTerminplanungen();
+  });
+</script>
