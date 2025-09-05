@@ -176,12 +176,86 @@ const user = await getUser(Astro);
       </div>
     </div>
   </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+    <div id="toast-content" class="bg-white border-l-4 p-4 rounded-lg shadow-lg max-w-sm">
+      <div class="flex items-center">
+        <div id="toast-icon" class="flex-shrink-0 mr-3"></div>
+        <div>
+          <p id="toast-title" class="text-sm font-medium text-gray-900"></p>
+          <p id="toast-message" class="text-sm text-gray-500"></p>
+        </div>
+        <button id="toast-close" class="ml-4 text-gray-400 hover:text-gray-600">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
 </Layout>
 
 <script>
   let currentDate = new Date();
   let terminplanungen = [];
   let currentUser = null;
+
+  // Toast Notification System
+  function showToast(type, title, message) {
+    const toast = document.getElementById('toast');
+    const toastContent = document.getElementById('toast-content');
+    const toastIcon = document.getElementById('toast-icon');
+    const toastTitle = document.getElementById('toast-title');
+    const toastMessage = document.getElementById('toast-message');
+    
+    // Toast-Typ konfigurieren
+    const configs = {
+      success: {
+        icon: '✅',
+        borderColor: 'border-green-500',
+        bgColor: 'bg-green-50'
+      },
+      error: {
+        icon: '❌',
+        borderColor: 'border-red-500',
+        bgColor: 'bg-red-50'
+      },
+      info: {
+        icon: 'ℹ️',
+        borderColor: 'border-blue-500',
+        bgColor: 'bg-blue-50'
+      },
+      warning: {
+        icon: '⚠️',
+        borderColor: 'border-yellow-500',
+        bgColor: 'bg-yellow-50'
+      }
+    };
+    
+    const config = configs[type] || configs.info;
+    
+    // Toast-Content aktualisieren
+    toastIcon.textContent = config.icon;
+    toastTitle.textContent = title;
+    toastMessage.textContent = message;
+    
+    // Styling anwenden
+    toastContent.className = `border-l-4 p-4 rounded-lg shadow-lg max-w-sm ${config.borderColor} ${config.bgColor}`;
+    
+    // Toast anzeigen
+    toast.classList.remove('hidden');
+    
+    // Auto-hide nach 1 Sekunde
+    setTimeout(() => {
+      hideToast();
+    }, 1000);
+  }
+  
+  function hideToast() {
+    const toast = document.getElementById('toast');
+    toast.classList.add('hidden');
+  }
 
   // User-Info laden
   async function loadCurrentUser() {
@@ -371,7 +445,7 @@ const user = await getUser(Astro);
                 <span class="px-2 py-1 rounded text-xs ${
                   abstimmung.stimme === 'APPROVE' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                 }">
-                  ${abstimmung.user.name}: ${abstimmung.stimme === 'APPROVE' ? '✅ zugestimmt' : '❓ Mehr Infos'}
+                  ${abstimmung.userId === currentUser?.id ? 'Du' : abstimmung.user.name}: ${abstimmung.stimme === 'APPROVE' ? `✅ ${abstimmung.userId === currentUser?.id ? 'hast' : 'hat'} zugestimmt` : '❓ Mehr Infos'}
                 </span>
               `).join('')}
             ${termin.abstimmungen.filter(a => a.version === termin.version).length === 0 ? 
@@ -460,11 +534,11 @@ const user = await getUser(Astro);
         loadTerminplanungen();
       } else {
         const error = await response.json();
-        alert('Fehler: ' + error.error);
+        showToast('error', 'Fehler', error.error);
       }
     } catch (error) {
       console.error('Fehler beim Erstellen der Terminplanung:', error);
-      alert('Fehler beim Erstellen der Terminplanung');
+      showToast('error', 'Fehler', 'Beim Erstellen der Terminplanung ist ein Fehler aufgetreten');
     }
   });
 
@@ -493,11 +567,11 @@ const user = await getUser(Astro);
         loadTerminplanungen();
       } else {
         const error = await response.json();
-        alert('Fehler: ' + error.error);
+        showToast('error', 'Fehler', error.error);
       }
     } catch (error) {
       console.error('Fehler beim Erstellen des Kommentars:', error);
-      alert('Fehler beim Erstellen des Kommentars');
+      showToast('error', 'Fehler', 'Beim Erstellen des Kommentars ist ein Fehler aufgetreten');
     }
   });
 
@@ -516,15 +590,15 @@ const user = await getUser(Astro);
       });
       
       if (response.ok) {
-        alert('Zustimmung erfolgreich abgegeben!');
+        showToast('success', 'Zustimmung abgegeben', 'Deine Zustimmung wurde erfolgreich gespeichert!');
         loadTerminplanungen();
       } else {
         const error = await response.json();
-        alert('Fehler: ' + error.error);
+        showToast('error', 'Fehler', error.error);
       }
     } catch (error) {
       console.error('Fehler beim Zustimmen:', error);
-      alert('Fehler beim Zustimmen');
+      showToast('error', 'Fehler', 'Beim Zustimmen ist ein Fehler aufgetreten');
     }
   };
 
@@ -538,15 +612,15 @@ const user = await getUser(Astro);
       });
       
       if (response.ok) {
-        alert('Zustimmung erfolgreich entzogen!');
+        showToast('info', 'Zustimmung entzogen', 'Deine Zustimmung wurde erfolgreich zurückgezogen!');
         loadTerminplanungen();
       } else {
         const error = await response.json();
-        alert('Fehler: ' + error.error);
+        showToast('error', 'Fehler', error.error);
       }
     } catch (error) {
       console.error('Fehler beim Entziehen der Zustimmung:', error);
-      alert('Fehler beim Entziehen der Zustimmung');
+      showToast('error', 'Fehler', 'Beim Entziehen der Zustimmung ist ein Fehler aufgetreten');
     }
   };
 
@@ -571,6 +645,12 @@ const user = await getUser(Astro);
   function closeKommentarModal() {
     document.getElementById('kommentarModal').classList.add('hidden');
     document.getElementById('kommentarForm').reset();
+  }
+
+  // Toast Close Button Event Listener
+  const toastCloseBtn = document.getElementById('toast-close');
+  if (toastCloseBtn) {
+    toastCloseBtn.addEventListener('click', hideToast);
   }
 
   // Initialisierung

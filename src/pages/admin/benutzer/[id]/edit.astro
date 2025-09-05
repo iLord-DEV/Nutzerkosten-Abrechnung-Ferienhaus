@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
 let user = null;
 
 try {
-  const userId = parseInt(Astro.params.id);
+  const userId = parseInt(Astro.params.id || '0');
   user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -138,6 +138,85 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
             </button>
           </div>
         </form>
+
+        <!-- Passwort-Änderung Sektion -->
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+            Passwort ändern
+          </h3>
+          <form id="change-password-form" class="space-y-4">
+            <input type="hidden" id="password-user-id" value={userIdValue} />
+            
+            <div>
+              <label for="new-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Neues Passwort
+              </label>
+              <input 
+                type="password" 
+                id="new-password" 
+                name="newPassword" 
+                minlength="8"
+                required 
+                class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Mindestens 8 Zeichen mit Groß-/Kleinbuchstaben, Zahlen und Sonderzeichen"
+              />
+              <!-- Passwort-Stärke-Anzeige -->
+              <div id="password-strength" class="mt-2 hidden">
+                <div class="flex items-center space-x-2">
+                  <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div id="password-strength-bar" class="h-2 rounded-full transition-all duration-300"></div>
+                  </div>
+                  <span id="password-strength-text" class="text-sm font-medium"></span>
+                </div>
+                <div id="password-requirements" class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                  <div class="grid grid-cols-2 gap-1">
+                    <div id="req-length" class="flex items-center">
+                      <span class="w-2 h-2 rounded-full mr-2 bg-gray-300"></span>
+                      Mindestens 8 Zeichen
+                    </div>
+                    <div id="req-uppercase" class="flex items-center">
+                      <span class="w-2 h-2 rounded-full mr-2 bg-gray-300"></span>
+                      Großbuchstaben
+                    </div>
+                    <div id="req-lowercase" class="flex items-center">
+                      <span class="w-2 h-2 rounded-full mr-2 bg-gray-300"></span>
+                      Kleinbuchstaben
+                    </div>
+                    <div id="req-numbers" class="flex items-center">
+                      <span class="w-2 h-2 rounded-full mr-2 bg-gray-300"></span>
+                      Zahlen
+                    </div>
+                    <div id="req-special" class="flex items-center">
+                      <span class="w-2 h-2 rounded-full mr-2 bg-gray-300"></span>
+                      Sonderzeichen
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label for="confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Passwort bestätigen
+              </label>
+              <input 
+                type="password" 
+                id="confirm-password" 
+                name="confirmPassword" 
+                minlength="4"
+                required 
+                class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Passwort wiederholen"
+              />
+            </div>
+
+            <div class="flex justify-end">
+              <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                Passwort ändern
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -145,11 +224,11 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
 
 <script>
   // Benutzer bearbeiten
-  async function updateUser(event) {
+  async function updateUser(event: Event) {
     event.preventDefault();
     
-    const formData = new FormData(event.target);
-    const userId = document.getElementById('user-id').value;
+    const formData = new FormData(event.target as HTMLFormElement);
+    const userId = (document.getElementById('user-id') as HTMLInputElement)?.value;
     const userData = {
       id: userId,
       name: formData.get('name'),
@@ -179,8 +258,150 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
     }
   }
 
+  // Passwort-Validierung (vereinfachte Version für Frontend)
+  function validatePassword(password: string) {
+    const errors: string[] = [];
+    
+    if (password.length < 8) {
+      errors.push('Mindestens 8 Zeichen');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Großbuchstaben');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('Kleinbuchstaben');
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push('Zahlen');
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password)) {
+      errors.push('Sonderzeichen');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  // Passwort-Stärke-Anzeige aktualisieren
+  function updatePasswordStrength(password: string) {
+    const strengthDiv = document.getElementById('password-strength');
+    const strengthBar = document.getElementById('password-strength-bar');
+    const strengthText = document.getElementById('password-strength-text');
+    
+    if (!strengthDiv || !strengthBar || !strengthText) return;
+
+    if (password.length === 0) {
+      strengthDiv.classList.add('hidden');
+      return;
+    }
+
+    strengthDiv.classList.remove('hidden');
+    
+    const validation = validatePassword(password);
+    const score = Math.max(0, 100 - (validation.errors.length * 20));
+    
+    // Stärke-Balken aktualisieren
+    strengthBar.style.width = `${score}%`;
+    
+    if (score < 40) {
+      strengthBar.className = 'h-2 rounded-full transition-all duration-300 bg-red-500';
+      strengthText.textContent = 'Schwach';
+      strengthText.className = 'text-sm font-medium text-red-600';
+    } else if (score < 70) {
+      strengthBar.className = 'h-2 rounded-full transition-all duration-300 bg-yellow-500';
+      strengthText.textContent = 'Mittel';
+      strengthText.className = 'text-sm font-medium text-yellow-600';
+    } else if (score < 90) {
+      strengthBar.className = 'h-2 rounded-full transition-all duration-300 bg-blue-500';
+      strengthText.textContent = 'Stark';
+      strengthText.className = 'text-sm font-medium text-blue-600';
+    } else {
+      strengthBar.className = 'h-2 rounded-full transition-all duration-300 bg-green-500';
+      strengthText.textContent = 'Sehr stark';
+      strengthText.className = 'text-sm font-medium text-green-600';
+    }
+
+    // Anforderungen aktualisieren
+    const requirements = [
+      { id: 'req-length', test: password.length >= 8 },
+      { id: 'req-uppercase', test: /[A-Z]/.test(password) },
+      { id: 'req-lowercase', test: /[a-z]/.test(password) },
+      { id: 'req-numbers', test: /[0-9]/.test(password) },
+      { id: 'req-special', test: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password) }
+    ];
+
+    requirements.forEach(req => {
+      const element = document.getElementById(req.id);
+      if (element) {
+        const indicator = element.querySelector('span');
+        if (indicator) {
+          indicator.className = `w-2 h-2 rounded-full mr-2 ${req.test ? 'bg-green-500' : 'bg-gray-300'}`;
+        }
+      }
+    });
+  }
+
+  // Passwort ändern
+  async function changePassword(event: Event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target as HTMLFormElement);
+    const userId = (document.getElementById('password-user-id') as HTMLInputElement)?.value;
+    const newPassword = formData.get('newPassword') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    // Passwort-Validierung
+    if (newPassword !== confirmPassword) {
+      alert('Die Passwörter stimmen nicht überein!');
+      return;
+    }
+
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      alert('Passwort-Anforderungen nicht erfüllt:\n• ' + passwordValidation.errors.join('\n• '));
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/${userId}/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ newPassword }),
+      });
+
+      if (response.ok) {
+        alert('Passwort erfolgreich geändert!');
+        // Formular zurücksetzen
+        (event.target as HTMLFormElement)?.reset();
+      } else {
+        const error = await response.json();
+        alert(`Fehler: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Fehler beim Ändern des Passworts:', error);
+      alert('Fehler beim Ändern des Passworts');
+    }
+  }
+
   // Event-Listener
   document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('edit-user-form').addEventListener('submit', updateUser);
+    const editForm = document.getElementById('edit-user-form');
+    const passwordForm = document.getElementById('change-password-form');
+    const passwordInput = document.getElementById('new-password');
+    
+    if (editForm) editForm.addEventListener('submit', updateUser);
+    if (passwordForm) passwordForm.addEventListener('submit', changePassword);
+    
+    // Passwort-Stärke-Anzeige
+    if (passwordInput) {
+      passwordInput.addEventListener('input', (e) => {
+        const target = e.target as HTMLInputElement;
+        updatePasswordStrength(target.value);
+      });
+    }
   });
 </script>

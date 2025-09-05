@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +9,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const body = await request.json();
     const { email, password } = body;
 
-    // Einfache Authentifizierung für Tests (ohne Passwort-Validierung)
+    // Passwort-basierte Authentifizierung
     const user = await prisma.user.findUnique({
       where: { email },
       select: {
@@ -16,6 +17,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         name: true,
         email: true,
         role: true,
+        password: true,
       },
     });
 
@@ -28,7 +30,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Session-Cookie setzen (für Tests ohne Passwort-Validierung)
+    // Passwort validieren
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return new Response(JSON.stringify({ error: 'Ungültiges Passwort' }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+
+    // Session-Cookie setzen
     const sessionData = {
       userId: user.id,
       name: user.name,

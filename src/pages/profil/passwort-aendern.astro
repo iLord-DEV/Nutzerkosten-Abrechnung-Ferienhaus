@@ -1,0 +1,341 @@
+---
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
+import { requireAuth } from '../../utils/auth';
+import { PrismaClient } from '@prisma/client';
+
+// Authentifizierung prüfen
+try {
+  const user = await requireAuth(Astro);
+} catch (error) {
+  return Astro.redirect('/login');
+}
+
+const prisma = new PrismaClient();
+let currentUser = null;
+
+try {
+  const sessionCookie = Astro.cookies.get('session');
+  if (!sessionCookie?.value) {
+    return Astro.redirect('/login');
+  }
+  const sessionData = JSON.parse(sessionCookie.value);
+  
+  currentUser = await prisma.user.findUnique({
+    where: { id: sessionData.userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+    },
+  });
+} catch (error) {
+  console.error('Fehler beim Laden des Benutzers:', error);
+  return Astro.redirect('/login');
+} finally {
+  await prisma.$disconnect();
+}
+
+const userName = currentUser?.name || 'Unbekannt';
+const userEmail = currentUser?.email || '';
+const userIdValue = currentUser?.id || 0;
+---
+
+<ProtectedLayout title="Passwort ändern">
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Passwort ändern
+          </h1>
+          <p class="mt-2 text-gray-600 dark:text-gray-400">
+            Ändern Sie Ihr Passwort für <strong>{userName}</strong>
+          </p>
+        </div>
+        <div class="flex space-x-3">
+          <a href="/dashboard" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            ← Zurück zum Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passwort-Änderungsformular -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <form id="change-password-form" class="space-y-6">
+          <input type="hidden" id="user-id" value={userIdValue} />
+          
+          <div>
+            <label for="current-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Aktuelles Passwort
+            </label>
+            <input 
+              type="password" 
+              id="current-password" 
+              name="currentPassword" 
+              required 
+              class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Geben Sie Ihr aktuelles Passwort ein"
+            />
+          </div>
+
+          <div>
+            <label for="new-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Neues Passwort
+            </label>
+            <input 
+              type="password" 
+              id="new-password" 
+              name="newPassword" 
+              minlength="8"
+              required 
+              class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Mindestens 8 Zeichen mit Groß-/Kleinbuchstaben, Zahlen und Sonderzeichen"
+            />
+            <!-- Passwort-Stärke-Anzeige -->
+            <div id="password-strength" class="mt-2 hidden">
+              <div class="flex items-center space-x-2">
+                <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div id="password-strength-bar" class="h-2 rounded-full transition-all duration-300"></div>
+                </div>
+                <span id="password-strength-text" class="text-sm font-medium"></span>
+              </div>
+              <div id="password-requirements" class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                <div class="grid grid-cols-2 gap-1">
+                  <div id="req-length" class="flex items-center">
+                    <span class="w-2 h-2 rounded-full mr-2 bg-gray-300"></span>
+                    Mindestens 8 Zeichen
+                  </div>
+                  <div id="req-uppercase" class="flex items-center">
+                    <span class="w-2 h-2 rounded-full mr-2 bg-gray-300"></span>
+                    Großbuchstaben
+                  </div>
+                  <div id="req-lowercase" class="flex items-center">
+                    <span class="w-2 h-2 rounded-full mr-2 bg-gray-300"></span>
+                    Kleinbuchstaben
+                  </div>
+                  <div id="req-numbers" class="flex items-center">
+                    <span class="w-2 h-2 rounded-full mr-2 bg-gray-300"></span>
+                    Zahlen
+                  </div>
+                  <div id="req-special" class="flex items-center">
+                    <span class="w-2 h-2 rounded-full mr-2 bg-gray-300"></span>
+                    Sonderzeichen
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label for="confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Neues Passwort bestätigen
+            </label>
+            <input 
+              type="password" 
+              id="confirm-password" 
+              name="confirmPassword" 
+              minlength="4"
+              required 
+              class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Passwort wiederholen"
+            />
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <a href="/dashboard" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+              Abbrechen
+            </a>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+              Passwort ändern
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sicherheitshinweise -->
+    <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">
+            Sicherheitshinweise
+          </h3>
+          <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
+            <ul class="list-disc list-inside space-y-1">
+              <li>Mindestens 8 Zeichen lang</li>
+              <li>Groß- und Kleinbuchstaben (A-Z, a-z)</li>
+              <li>Zahlen (0-9)</li>
+              <li>Sonderzeichen (!@#$%^&*...)</li>
+              <li>Teilen Sie Ihr Passwort niemals mit anderen</li>
+              <li>Ändern Sie Ihr Passwort regelmäßig</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ProtectedLayout>
+
+<script>
+  // Passwort-Validierung (vereinfachte Version für Frontend)
+  function validatePassword(password: string) {
+    const errors: string[] = [];
+    
+    if (password.length < 8) {
+      errors.push('Mindestens 8 Zeichen');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Großbuchstaben');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('Kleinbuchstaben');
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push('Zahlen');
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password)) {
+      errors.push('Sonderzeichen');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  // Passwort-Stärke-Anzeige aktualisieren
+  function updatePasswordStrength(password: string) {
+    const strengthDiv = document.getElementById('password-strength');
+    const strengthBar = document.getElementById('password-strength-bar');
+    const strengthText = document.getElementById('password-strength-text');
+    
+    if (!strengthDiv || !strengthBar || !strengthText) return;
+
+    if (password.length === 0) {
+      strengthDiv.classList.add('hidden');
+      return;
+    }
+
+    strengthDiv.classList.remove('hidden');
+    
+    const validation = validatePassword(password);
+    const score = Math.max(0, 100 - (validation.errors.length * 20));
+    
+    // Stärke-Balken aktualisieren
+    strengthBar.style.width = `${score}%`;
+    
+    if (score < 40) {
+      strengthBar.className = 'h-2 rounded-full transition-all duration-300 bg-red-500';
+      strengthText.textContent = 'Schwach';
+      strengthText.className = 'text-sm font-medium text-red-600';
+    } else if (score < 70) {
+      strengthBar.className = 'h-2 rounded-full transition-all duration-300 bg-yellow-500';
+      strengthText.textContent = 'Mittel';
+      strengthText.className = 'text-sm font-medium text-yellow-600';
+    } else if (score < 90) {
+      strengthBar.className = 'h-2 rounded-full transition-all duration-300 bg-blue-500';
+      strengthText.textContent = 'Stark';
+      strengthText.className = 'text-sm font-medium text-blue-600';
+    } else {
+      strengthBar.className = 'h-2 rounded-full transition-all duration-300 bg-green-500';
+      strengthText.textContent = 'Sehr stark';
+      strengthText.className = 'text-sm font-medium text-green-600';
+    }
+
+    // Anforderungen aktualisieren
+    const requirements = [
+      { id: 'req-length', test: password.length >= 8 },
+      { id: 'req-uppercase', test: /[A-Z]/.test(password) },
+      { id: 'req-lowercase', test: /[a-z]/.test(password) },
+      { id: 'req-numbers', test: /[0-9]/.test(password) },
+      { id: 'req-special', test: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password) }
+    ];
+
+    requirements.forEach(req => {
+      const element = document.getElementById(req.id);
+      if (element) {
+        const indicator = element.querySelector('span');
+        if (indicator) {
+          indicator.className = `w-2 h-2 rounded-full mr-2 ${req.test ? 'bg-green-500' : 'bg-gray-300'}`;
+        }
+      }
+    });
+  }
+
+  // Passwort ändern
+  async function changePassword(event: Event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target as HTMLFormElement);
+    const userId = (document.getElementById('user-id') as HTMLInputElement)?.value;
+    const currentPassword = formData.get('currentPassword') as string;
+    const newPassword = formData.get('newPassword') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    // Passwort-Validierung
+    if (newPassword !== confirmPassword) {
+      alert('Die neuen Passwörter stimmen nicht überein!');
+      return;
+    }
+
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      alert('Passwort-Anforderungen nicht erfüllt:\n• ' + passwordValidation.errors.join('\n• '));
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      alert('Das neue Passwort muss sich vom aktuellen Passwort unterscheiden!');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/${userId}/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          newPassword,
+          currentPassword 
+        }),
+      });
+
+      if (response.ok) {
+        alert('Passwort erfolgreich geändert!');
+        // Formular zurücksetzen
+        (event.target as HTMLFormElement)?.reset();
+      } else {
+        const error = await response.json();
+        alert(`Fehler: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Fehler beim Ändern des Passworts:', error);
+      alert('Fehler beim Ändern des Passworts');
+    }
+  }
+
+  // Event-Listener
+  document.addEventListener('DOMContentLoaded', () => {
+    const passwordForm = document.getElementById('change-password-form');
+    const passwordInput = document.getElementById('new-password');
+    
+    if (passwordForm) passwordForm.addEventListener('submit', changePassword);
+    
+    // Passwort-Stärke-Anzeige
+    if (passwordInput) {
+      passwordInput.addEventListener('input', (e) => {
+        const target = e.target as HTMLInputElement;
+        updatePasswordStrength(target.value);
+      });
+    }
+  });
+</script>
