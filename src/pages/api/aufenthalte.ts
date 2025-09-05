@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../utils/auth';
+import { validateAufenthaltData, type AufenthaltData } from '../../utils/aufenthaltValidation';
 
 const prisma = new PrismaClient();
 
@@ -117,104 +118,48 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    // Zählerstand-Validierung
-    const zaehlerStart = parseFloat(body.zaehlerStart);
-    const zaehlerEnde = parseFloat(body.zaehlerEnde);
+    // Zählerstände validieren bevor Konvertierung
+    const zaehlerStartRaw = parseFloat(body.zaehlerStart);
+    const zaehlerEndeRaw = parseFloat(body.zaehlerEnde);
     
-    if (isNaN(zaehlerStart) || isNaN(zaehlerEnde)) {
-      return new Response(JSON.stringify({ 
-        error: 'Ungültige Zählerstände. Bitte geben Sie gültige Zahlen ein.' 
+    // Prüfe ob Dezimalzahlen eingegeben wurden
+    if (zaehlerStartRaw % 1 !== 0 || zaehlerEndeRaw % 1 !== 0) {
+      return new Response(JSON.stringify({
+        error: 'Zählerstände müssen ganze Zahlen sein (z.B. 1350, nicht 1350.5).'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // Zählerstand-Kontinuität prüfen: Keine rückwärtslaufenden Zähler
-    const eigeneAufenthalte = await prisma.aufenthalt.findMany({
-      where: {
-        userId: body.userId
-      },
-      orderBy: {
-        zaehlerAbreise: 'desc'
-      }
-    });
+    // Validierung mit neuer Validierungslogik
+    const aufenthaltData: AufenthaltData = {
+      userId: body.userId,
+      ankunft: body.ankunft,
+      abreise: body.abreise,
+      zaehlerStart: parseInt(body.zaehlerStart),
+      zaehlerEnde: parseInt(body.zaehlerEnde),
+      uebernachtungenMitglieder: parseInt(body.uebernachtungenMitglieder),
+      uebernachtungenGaeste: parseInt(body.uebernachtungenGaeste)
+    };
 
-    // Alle Aufenthalte für zeitliche Validierung
-    const alleAufenthalte = await prisma.aufenthalt.findMany({
-      orderBy: {
-        zaehlerAbreise: 'desc'
-      }
-    });
-
-    // Prüfe rückwärtslaufende Zähler: Finde eigene Aufenthalte, die nach dem neuen Startstand enden
-    const problematischeAufenthalte = eigeneAufenthalte.filter(a => 
-      a.zaehlerAbreise !== null && a.zaehlerAbreise > zaehlerStart
-    );
+    const validationErrors = await validateAufenthaltData(aufenthaltData);
     
-    if (problematischeAufenthalte.length > 0) {
-      const problematischerAufenthalt = problematischeAufenthalte[0];
+    if (validationErrors.length > 0) {
+      const firstError = validationErrors[0];
       return new Response(JSON.stringify({
-        error: `Zählerstand ${zaehlerStart} ist kleiner als der Endstand ${problematischerAufenthalt.zaehlerAbreise} vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Zähler können nicht rückwärts laufen.`
+        error: firstError.message
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // Prüfe zeitlich unmögliche Zählerstände: 
-    // Wenn jemand zeitlich nach einem anderen kommt, darf sein Zählerstart nicht im Bereich des Vorherigen liegen
-    const zeitlichVorherigeAufenthalte = alleAufenthalte.filter(a => {
-      const aAbreise = new Date(a.abreise);
-      return aAbreise < ankunftDate && a.zaehlerAbreise !== null && 
-             zaehlerStart >= a.zaehlerAnkunft && zaehlerStart <= a.zaehlerAbreise;
-    });
-    
-    if (zeitlichVorherigeAufenthalte.length > 0) {
-      const problematischerAufenthalt = zeitlichVorherigeAufenthalte[0];
-      return new Response(JSON.stringify({
-        error: `Zählerstand ${zaehlerStart} liegt im Bereich des vorherigen Aufenthalts (${problematischerAufenthalt.zaehlerAnkunft}-${problematischerAufenthalt.zaehlerAbreise}) vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Das ist zeitlich unmöglich.`
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    // Zählerstand-Variablen für nachfolgende Verwendung
+    const zaehlerStart = aufenthaltData.zaehlerStart;
+    const zaehlerEnde = aufenthaltData.zaehlerEnde;
 
-    // Prüfe nachfolgende Aufenthalte
-    const nachfolgenderAufenthalt = alleAufenthalte.find(a => 
-      a.zaehlerAnkunft !== null && a.zaehlerAnkunft >= zaehlerEnde
-    );
-
-    if (nachfolgenderAufenthalt && zaehlerEnde > nachfolgenderAufenthalt.zaehlerAnkunft) {
-      return new Response(JSON.stringify({
-        error: `Zählerstand ${zaehlerEnde} ist größer als der nächste Startstand ${nachfolgenderAufenthalt.zaehlerAnkunft} vom ${nachfolgenderAufenthalt.ankunft.toISOString().split('T')[0]}. Zähler können nicht rückwärts laufen.`
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Überlappungsprüfung: Nur für denselben Benutzer UND zeitliche Überschneidung
-    const existingAufenthalte = await prisma.aufenthalt.findMany({
-      where: {
-        userId: body.userId,
-        // Zeitliche Überschneidung prüfen
-        AND: [
-          { ankunft: { lt: abreiseDate } },
-          { abreise: { gt: ankunftDate } }
-        ]
-      }
-    });
-
-    if (existingAufenthalte.length > 0) {
-      const overlapping = existingAufenthalte[0];
-      return new Response(JSON.stringify({
-        error: `Sie haben bereits einen Aufenthalt in diesem Zeitraum (${overlapping.ankunft.toISOString().split('T')[0]} - ${overlapping.abreise.toISOString().split('T')[0]}). Bitte wählen Sie andere Daten.`
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    // Alle Validierungen wurden bereits in validateAufenthaltData durchgeführt
 
     const aufenthalt = await prisma.aufenthalt.create({
       data: {

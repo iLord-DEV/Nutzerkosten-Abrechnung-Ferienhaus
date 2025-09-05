@@ -449,8 +449,8 @@ const session = JSON.parse(sessionCookie.value);
       
       console.log(`  vs ${overlap.user.name} (${a2Start}-${a2Ende}): Overlap ${overlapStart}-${overlapEnd} = ${overlapHours}h`);
       
-      // Nur echte Überlappungen mit mindestens 0.1 Stunden
-      return overlapHours >= 0.1;
+      // Nur echte Überlappungen mit mindestens 1 Stunde
+      return overlapHours >= 1;
     });
     
     console.log(`✅ Gefundene Überlappungen für ${aufenthalt.user.name}:`, result.length);
@@ -608,7 +608,7 @@ const session = JSON.parse(sessionCookie.value);
           ${abreise}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${zaehlerStart.toFixed(1)} h → ${zaehlerEnde.toFixed(1)} h
+          ${zaehlerStart} h → ${zaehlerEnde} h
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
           ${(aufenthalt as any).uebernachtungenMitglieder || 0} Mitgl. + ${(aufenthalt as any).uebernachtungenGaeste || 0} Gäste
@@ -771,7 +771,7 @@ const session = JSON.parse(sessionCookie.value);
       const overlapStart = Math.max(aufenthalt.zaehlerAnkunft, overlap.zaehlerAnkunft);
       const overlapEnd = Math.min(aufenthalt.zaehlerAbreise, overlap.zaehlerAbreise);
       
-      // Validierung: Überlappung muss mindestens 0.1 Stunden haben
+      // Validierung: Überlappung muss mindestens 1 Stunde haben
       if (overlapEnd <= overlapStart) {
         console.warn(`⚠️ Keine echte Überlappung: Start=${overlapStart}, Ende=${overlapEnd}`);
         return; // Keine Einsparung bei ungültiger Überlappung
@@ -779,8 +779,8 @@ const session = JSON.parse(sessionCookie.value);
       
       const overlapHours = overlapEnd - overlapStart;
       
-      // Nur Einsparungen bei echten Überlappungen (mindestens 0.1 Stunden)
-      if (overlapHours >= 0.1) {
+      // Nur Einsparungen bei echten Überlappungen (mindestens 1 Stunde)
+      if (overlapHours >= 1) {
         // Ölkosten-Einsparung: Überlappungsstunden werden aufgeteilt
         // Für die Einsparungsberechnung verwenden wir den aktuellen Preis, da es sich um die gleiche Zeit handelt
         const oelKostenProStunde = (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
@@ -822,11 +822,11 @@ const session = JSON.parse(sessionCookie.value);
             const endZaehler = Math.min(aufenthalt.zaehlerAbreise, overlap.zaehlerAbreise);
             const overlapHours = endZaehler - startZaehler;
             
-            // Nur echte Überlappungen anzeigen (mindestens 0.1 Stunden)
-            if (overlapHours >= 0.1) {
-              return `${overlap.user.name} (${startZaehler.toFixed(1)}h - ${endZaehler.toFixed(1)}h, ${overlapHours.toFixed(1)}h)`;
+            // Nur echte Überlappungen anzeigen (mindestens 1 Stunde)
+            if (overlapHours >= 1) {
+              return `${overlap.user.name} (${startZaehler}h - ${endZaehler}h, ${overlapHours}h)`;
             } else {
-              return `${overlap.user.name} (nur geteilter Zeitpunkt: ${overlapHours.toFixed(1)}h)`;
+              return `${overlap.user.name} (nur geteilter Zeitpunkt: ${overlapHours}h)`;
             }
           }).filter((text: string) => text).join('<br>');
           

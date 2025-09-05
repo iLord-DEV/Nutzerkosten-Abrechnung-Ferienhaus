@@ -103,8 +103,8 @@ export const PUT: APIRoute = async (context) => {
     }
 
     // Validierung der Zählerstände
-    const zaehlerStart = parseFloat(body.zaehlerStart);
-    const zaehlerEnde = parseFloat(body.zaehlerEnde);
+    const zaehlerStart = parseInt(body.zaehlerStart);
+    const zaehlerEnde = parseInt(body.zaehlerEnde);
     const ankunftDate = new Date(body.ankunft + 'T00:00:00');
     const abreiseDate = new Date(body.abreise + 'T00:00:00');
 
@@ -121,6 +121,18 @@ export const PUT: APIRoute = async (context) => {
     if (zaehlerEnde <= zaehlerStart) {
       return new Response(JSON.stringify({
         error: 'Endzählerstand muss größer als Ankunftszählerstand sein.'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Zukunfts-Datum-Validierung
+    const heute = new Date();
+    heute.setHours(0, 0, 0, 0); // Auf Mitternacht setzen für faire Vergleich
+    if (ankunftDate > heute) {
+      return new Response(JSON.stringify({
+        error: 'Ankunft kann nicht in der Zukunft liegen. Bitte wählen Sie ein Datum von heute oder früher.'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -146,7 +158,7 @@ export const PUT: APIRoute = async (context) => {
     if (problematischeAufenthalte.length > 0) {
       const problematischerAufenthalt = problematischeAufenthalte[0];
       return new Response(JSON.stringify({
-        error: `Zählerstand ${zaehlerStart} ist kleiner als der Endstand ${problematischerAufenthalt.zaehlerAbreise} vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Zähler können nicht rückwärts laufen.`
+        error: `Zählerstand ${zaehlerStart} ist kleiner als der Endstand ${problematischerAufenthalt.zaehlerAbreise} vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Zähler können nicht rückwärts laufen. Bitte wählen Sie einen Zählerstand größer als ${problematischerAufenthalt.zaehlerAbreise}.`
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -173,7 +185,7 @@ export const PUT: APIRoute = async (context) => {
     if (zeitlichVorherigeAufenthalte.length > 0) {
       const problematischerAufenthalt = zeitlichVorherigeAufenthalte[0];
       return new Response(JSON.stringify({
-        error: `Zählerstand ${zaehlerStart} liegt im Bereich des vorherigen Aufenthalts (${problematischerAufenthalt.zaehlerAnkunft}-${problematischerAufenthalt.zaehlerAbreise}) vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Das ist zeitlich unmöglich.`
+        error: `Zählerstand ${zaehlerStart} liegt im Bereich des vorherigen Aufenthalts (${problematischerAufenthalt.zaehlerAnkunft}-${problematischerAufenthalt.zaehlerAbreise}) vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Das ist zeitlich unmöglich. Bitte wählen Sie einen Zählerstand außerhalb des Bereichs ${problematischerAufenthalt.zaehlerAnkunft}-${problematischerAufenthalt.zaehlerAbreise}.`
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },

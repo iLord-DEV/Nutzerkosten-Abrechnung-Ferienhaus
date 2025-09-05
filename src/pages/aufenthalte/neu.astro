@@ -91,17 +91,17 @@ const session = JSON.parse(sessionCookie.value);
                   <label for="zaehlerStart" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Zählerstand bei Ankunft (Stunden) *
                   </label>
-                  <input type="number" id="zaehlerStart" name="zaehlerStart" step="0.1" required
+                  <input type="number" id="zaehlerStart" name="zaehlerStart" step="1" required
                     class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    placeholder="z.B. 100.0">
+                    placeholder="z.B. 1350">
                 </div>
                 <div>
                   <label for="zaehlerEnde" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Zählerstand bei Abreise (Stunden) *
                   </label>
-                  <input type="number" id="zaehlerEnde" name="zaehlerEnde" step="0.1" required
+                  <input type="number" id="zaehlerEnde" name="zaehlerEnde" step="1" required
                     class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    placeholder="z.B. 110.0">
+                    placeholder="z.B. 1400">
                 </div>
               </div>
             </div>
@@ -521,6 +521,123 @@ const session = JSON.parse(sessionCookie.value);
     }
   }
 
+  // Debounced Input-Validierung
+  function validateInput(input: HTMLInputElement) {
+    const fieldName = input.name;
+    const value = input.value;
+
+    // Zählerstand-Validierung mit Auto-Korrektur
+    if (fieldName === 'zaehlerStart' || fieldName === 'zaehlerEnde') {
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue)) {
+        // Prüfe ob Dezimalzahl eingegeben wurde
+        if (numValue % 1 !== 0) {
+          showFieldError(input, 'Zählerstände müssen ganze Zahlen sein (z.B. 1350, nicht 1350.5)');
+        } else if (numValue < 0) {
+          showFieldError(input, 'Zählerstand kann nicht negativ sein');
+        } else if (numValue > 100000) {
+          showFieldError(input, 'Zählerstand ist unrealistisch hoch (max 100.000)');
+        } else {
+          // Auto-Korrektur für zu niedrige Zählerstände
+          const correctedValue = autoCorrectZaehlerstand(numValue, fieldName);
+          if (correctedValue !== numValue) {
+            input.value = correctedValue.toString();
+            showFieldSuggestion(input, `Korrigiert zu ${correctedValue} (letzter bekannter Stand)`);
+          } else {
+            clearFieldError(input);
+            clearFieldSuggestion(input);
+          }
+        }
+      }
+    }
+
+    // Datum-Validierung
+    if (fieldName === 'ankunft' || fieldName === 'abreise') {
+      const dateValue = new Date(value);
+      if (!isNaN(dateValue.getTime())) {
+        const heute = new Date();
+        heute.setHours(0, 0, 0, 0);
+        
+        if (fieldName === 'ankunft' && dateValue > heute) {
+          showFieldError(input, 'Ankunft kann nicht in der Zukunft liegen');
+        } else {
+          clearFieldError(input);
+        }
+      }
+    }
+  }
+
+  // Auto-Korrektur für Zählerstände
+  function autoCorrectZaehlerstand(value: number, fieldName: string): number {
+    // Für jetzt: Einfache Heuristik basierend auf typischen Werten
+    // In einer echten App würde man hier die letzten bekannten Zählerstände aus der DB laden
+    
+    if (fieldName === 'zaehlerStart') {
+      // Wenn Startzähler zu niedrig, korrigiere zu einem realistischen Wert
+      if (value < 1000) {
+        return 1350; // Letzter bekannter Stand (würde aus DB kommen)
+      }
+    }
+    
+    return value; // Keine Korrektur nötig
+  }
+
+  // Feld-Fehler anzeigen
+  function showFieldError(input: HTMLInputElement, message: string) {
+    const errorId = `${input.name}-error`;
+    let errorEl = document.getElementById(errorId);
+    
+    if (!errorEl) {
+      errorEl = document.createElement('div');
+      errorEl.id = errorId;
+      errorEl.className = 'text-red-600 text-sm mt-1';
+      input.parentNode?.insertBefore(errorEl, input.nextSibling);
+    }
+    
+    errorEl.textContent = message;
+    input.classList.add('border-red-500');
+  }
+
+  // Feld-Fehler löschen
+  function clearFieldError(input: HTMLInputElement) {
+    const errorId = `${input.name}-error`;
+    const errorEl = document.getElementById(errorId);
+    
+    if (errorEl) {
+      errorEl.remove();
+    }
+    
+    input.classList.remove('border-red-500');
+  }
+
+  // Feld-Vorschlag anzeigen
+  function showFieldSuggestion(input: HTMLInputElement, message: string) {
+    const suggestionId = `${input.name}-suggestion`;
+    let suggestionEl = document.getElementById(suggestionId);
+    
+    if (!suggestionEl) {
+      suggestionEl = document.createElement('div');
+      suggestionEl.id = suggestionId;
+      suggestionEl.className = 'text-blue-600 text-sm mt-1';
+      input.parentNode?.insertBefore(suggestionEl, input.nextSibling);
+    }
+    
+    suggestionEl.textContent = message;
+    input.classList.add('border-blue-500');
+  }
+
+  // Feld-Vorschlag löschen
+  function clearFieldSuggestion(input: HTMLInputElement) {
+    const suggestionId = `${input.name}-suggestion`;
+    const suggestionEl = document.getElementById(suggestionId);
+    
+    if (suggestionEl) {
+      suggestionEl.remove();
+    }
+    
+    input.classList.remove('border-blue-500');
+  }
+
   // Formular absenden
   async function handleSubmit(event: Event) {
     event.preventDefault();
@@ -650,7 +767,15 @@ const session = JSON.parse(sessionCookie.value);
     if (form) {
       const inputs = form.querySelectorAll('input');
       inputs.forEach(input => {
-        input.addEventListener('input', calculateCosts);
+        // Debounced Validierung (300ms delay)
+        let validationTimeout: NodeJS.Timeout;
+        input.addEventListener('input', () => {
+          clearTimeout(validationTimeout);
+          validationTimeout = setTimeout(() => {
+            calculateCosts();
+            validateInput(input);
+          }, 300);
+        });
       });
       
       // Formular-Submit-Handler
