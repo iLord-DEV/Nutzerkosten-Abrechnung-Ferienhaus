@@ -7,7 +7,9 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:backup": "./scripts/backup-database.sh",
+    "db:restore": "echo 'Verwende: gunzip -c backup.sql.gz | mysql -u root -p nutzerkosten_db'"
   },
   "dependencies": {
     "@astrojs/tailwind": "^6.0.2",
