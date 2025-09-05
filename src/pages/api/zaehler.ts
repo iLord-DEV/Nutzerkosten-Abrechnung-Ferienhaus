@@ -23,7 +23,8 @@ export const GET: APIRoute = async (context) => {
         },
         _count: {
           select: {
-            aufenthalte: true,
+            aufenthalteAnkunft: true,
+            aufenthalteAbreise: true,
             tankfuellungen: true,
           },
         },
@@ -74,7 +75,7 @@ export const POST: APIRoute = async (context) => {
 
     // Wenn ein aktiver Zähler ersetzt wird, diesen deaktivieren
     if (aktiverZaehler && body.ersetzeAktiven) {
-      const wechselDatum = new Date(body.einbauDatum + 'T12:00:00Z');
+      const wechselDatum = body.einbauDatum ? new Date(body.einbauDatum + 'T12:00:00Z') : new Date();
       
       await prisma.zaehler.update({
         where: { id: aktiverZaehler.id },
@@ -100,7 +101,7 @@ export const POST: APIRoute = async (context) => {
     // Neuen Zähler erstellen
     const neuerZaehler = await prisma.zaehler.create({
       data: {
-        einbauDatum: new Date(body.einbauDatum + 'T12:00:00Z'),
+        einbauDatum: body.einbauDatum ? new Date(body.einbauDatum + 'T12:00:00Z') : new Date(),
         letzterStand: 0, // Neuer Zähler startet bei 0
         notizen: body.notizen || null,
         istAktiv: true,

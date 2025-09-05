@@ -19,45 +19,28 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    // Für jeden eigenen Aufenthalt die überlappenden Aufenthalte anderer Benutzer finden
-    const relevanteAufenthalte = [];
-    
-    for (const eigenerAufenthalt of eigeneAufenthalte) {
-      const zaehlerStart = eigenerAufenthalt.zaehlerAnkunft || 0;
-      const zaehlerEnde = eigenerAufenthalt.zaehlerAbreise || 0;
-      
-      // Suche nach Aufenthalten anderer Benutzer, die überlappen
-      const ueberlappendeAufenthalte = await prisma.aufenthalt.findMany({
-        where: {
-          userId: { not: user.id }, // Nicht der eigene Benutzer
-          jahr: jahr ? parseInt(jahr) : undefined,
-          // Überlappungs-Bedingung: zaehlerAbreise > eigenerStart UND zaehlerAnkunft < eigenerEnde
-          AND: [
-            { zaehlerAbreise: { gt: zaehlerStart } },
-            { zaehlerAnkunft: { lt: zaehlerEnde } }
-          ]
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-            },
+    // Alle Aufenthalte laden - die Überlappungslogik erfolgt im Frontend
+    const alleAufenthalte = await prisma.aufenthalt.findMany({
+      where: {
+        // Alle Aufenthalte für das Jahr (falls jahr angegeben)
+        ...(jahr && { jahr: parseInt(jahr) })
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
           },
         },
-      });
-      
-      relevanteAufenthalte.push(...ueberlappendeAufenthalte);
-    }
+      },
+      orderBy: {
+        ankunft: 'desc'
+      }
+    });
 
-    // Duplikate entfernen (ein Aufenthalt kann mit mehreren eigenen überlappen)
-    const uniqueRelevanteAufenthalte = relevanteAufenthalte.filter((aufenthalt, index, self) => 
-      index === self.findIndex(a => a.id === aufenthalt.id)
-    );
-
-    return new Response(JSON.stringify(uniqueRelevanteAufenthalte), {
+    return new Response(JSON.stringify(alleAufenthalte), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

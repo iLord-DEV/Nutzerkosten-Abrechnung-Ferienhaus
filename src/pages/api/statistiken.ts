@@ -156,10 +156,9 @@ export const GET: APIRoute = async (context) => {
       const oelKosten = verbrauchteStunden * (preise?.verbrauchProStunde || 5.5) * (preise?.oelpreisProLiter || 1.01);
       
       // Übernachtungskosten
-      const anzahlNaechte = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
-      const uebernachtungKosten = anzahlNaechte * (
-        aufenthalt.anzahlMitglieder * (preise?.uebernachtungMitglied || 15) +
-        aufenthalt.anzahlGaeste * (preise?.uebernachtungGast || 25)
+      const uebernachtungKosten = (
+        aufenthalt.uebernachtungenMitglieder * (preise?.uebernachtungMitglied || 15) +
+        aufenthalt.uebernachtungenGaeste * (preise?.uebernachtungGast || 25)
       );
 
       const gesamtKosten = oelKosten + uebernachtungKosten;

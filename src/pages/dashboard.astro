@@ -147,10 +147,10 @@ import ProtectedLayout from '../layouts/ProtectedLayout.astro';
                   Zählerstand
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Mitglieder
+                  Übernachtungen Mitgl.
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Gäste
+                  Übernachtungen Gäste
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Kosten
@@ -263,10 +263,10 @@ import ProtectedLayout from '../layouts/ProtectedLayout.astro';
           ${aufenthalt.zaehlerAnkunft}h - ${aufenthalt.zaehlerAbreise}h
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${aufenthalt.anzahlMitglieder}
+          ${aufenthalt.uebernachtungenMitglieder}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${aufenthalt.anzahlGaeste}
+          ${aufenthalt.uebernachtungenGaeste}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
           € ${calculateKosten(aufenthalt).toFixed(2)}
@@ -280,8 +280,7 @@ import ProtectedLayout from '../layouts/ProtectedLayout.astro';
   function calculateKosten(aufenthalt: any) {
             const stunden = (aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft);
             const oelkosten = stunden * 5.5 * 1.01; // 5.5 L/h, 1.01€/L
-    const uebernachtungskosten = (aufenthalt.anzahlMitglieder * 15 + aufenthalt.anzahlGaeste * 25) * 
-      Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
+    const uebernachtungskosten = (aufenthalt.uebernachtungenMitglieder * 15 + aufenthalt.uebernachtungenGaeste * 25);
     
     return oelkosten + uebernachtungskosten;
   }

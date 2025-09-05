@@ -80,8 +80,8 @@ if (!aufenthalt) {
             <label for="ankunft" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Ankunft
             </label>
-            <input type="datetime-local" id="ankunft" required 
-                   value={new Date(aufenthalt.ankunft).toISOString().slice(0, 16)}
+            <input type="date" id="ankunft" required 
+                   value={new Date(aufenthalt.ankunft).toISOString().slice(0, 10)}
                    class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
           </div>
 
@@ -90,8 +90,8 @@ if (!aufenthalt) {
             <label for="abreise" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Abreise
             </label>
-            <input type="datetime-local" id="abreise" required 
-                   value={new Date(aufenthalt.abreise).toISOString().slice(0, 16)}
+            <input type="date" id="abreise" required 
+                   value={new Date(aufenthalt.abreise).toISOString().slice(0, 10)}
                    class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
           </div>
 
@@ -115,23 +115,23 @@ if (!aufenthalt) {
                    class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
           </div>
 
-          <!-- Anzahl Mitglieder -->
+          <!-- Übernachtungen Mitglieder -->
           <div>
-            <label for="anzahlMitglieder" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Anzahl Mitglieder
+            <label for="uebernachtungenMitglieder" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Übernachtungen Mitglieder
             </label>
-            <input type="number" id="anzahlMitglieder" min="1" required 
-                   value={aufenthalt.anzahlMitglieder}
+            <input type="number" id="uebernachtungenMitglieder" min="1" required 
+                   value={aufenthalt.uebernachtungenMitglieder}
                    class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
           </div>
 
-          <!-- Anzahl Gäste -->
+          <!-- Übernachtungen Gäste -->
           <div>
-            <label for="anzahlGaeste" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Anzahl Gäste
+            <label for="uebernachtungenGaeste" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Übernachtungen Gäste
             </label>
-            <input type="number" id="anzahlGaeste" min="0" required 
-                   value={aufenthalt.anzahlGaeste}
+            <input type="number" id="uebernachtungenGaeste" min="0" required 
+                   value={aufenthalt.uebernachtungenGaeste}
                    class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
           </div>
 
@@ -280,9 +280,18 @@ if (!aufenthalt) {
       abreise: (document.getElementById('abreise') as HTMLInputElement).value,
       zaehlerStart: (document.getElementById('zaehlerStart') as HTMLInputElement).value,
       zaehlerEnde: (document.getElementById('zaehlerEnde') as HTMLInputElement).value,
-      anzahlMitglieder: (document.getElementById('anzahlMitglieder') as HTMLInputElement).value,
-      anzahlGaeste: (document.getElementById('anzahlGaeste') as HTMLInputElement).value,
+      uebernachtungenMitglieder: (document.getElementById('uebernachtungenMitglieder') as HTMLInputElement).value,
+      uebernachtungenGaeste: (document.getElementById('uebernachtungenGaeste') as HTMLInputElement).value,
     };
+
+    // Validierung: Mitglieder-Übernachtungen müssen mindestens der Anzahl der Nächte entsprechen
+    const anzahlNaechte = Math.ceil((new Date(formData.abreise).getTime() - new Date(formData.ankunft).getTime()) / (1000 * 60 * 60 * 24));
+    const uebernachtungenMitglieder = parseInt(formData.uebernachtungenMitglieder);
+    
+    if (uebernachtungenMitglieder < anzahlNaechte) {
+      showNotification(`Die Übernachtungen für Mitglieder (${uebernachtungenMitglieder}) können nicht weniger als die Anzahl der Nächte (${anzahlNaechte}) betragen, da immer mindestens ein Mitglied anwesend sein muss.`, 'error');
+      return;
+    }
 
     try {
       const response = await fetch(`/api/aufenthalte/${formData.id}`, {

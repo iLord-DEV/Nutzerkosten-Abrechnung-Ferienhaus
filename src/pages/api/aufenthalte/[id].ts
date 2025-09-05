@@ -98,8 +98,86 @@ export const PUT: APIRoute = async (context) => {
     }
 
     // Normale Benutzer können den Benutzer nicht ändern
-    if (session.role !== 'ADMIN') {
+    if (user.role !== 'ADMIN') {
       body.userId = existingAufenthalt.userId;
+    }
+
+    // Validierung der Zählerstände
+    const zaehlerStart = parseFloat(body.zaehlerStart);
+    const zaehlerEnde = parseFloat(body.zaehlerEnde);
+    const ankunftDate = new Date(body.ankunft + 'T00:00:00');
+    const abreiseDate = new Date(body.abreise + 'T00:00:00');
+
+    // Grundlegende Validierung
+    if (isNaN(zaehlerStart) || isNaN(zaehlerEnde)) {
+      return new Response(JSON.stringify({
+        error: 'Ungültige Zählerstände. Bitte geben Sie gültige Zahlen ein.'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (zaehlerEnde <= zaehlerStart) {
+      return new Response(JSON.stringify({
+        error: 'Endzählerstand muss größer als Ankunftszählerstand sein.'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Zählerstand-Kontinuitätsprüfung: Prüfe rückwärtslaufende Zähler
+    const eigeneAufenthalte = await prisma.aufenthalt.findMany({
+      where: {
+        userId: body.userId,
+        id: { not: parseInt(id) } // Aktuellen Aufenthalt ausschließen
+      },
+      orderBy: {
+        zaehlerAbreise: 'desc'
+      }
+    });
+
+    // Prüfe rückwärtslaufende Zähler: Finde eigene Aufenthalte, die nach dem neuen Startstand enden
+    const problematischeAufenthalte = eigeneAufenthalte.filter(a =>
+      a.zaehlerAbreise !== null && a.zaehlerAbreise > zaehlerStart
+    );
+
+    if (problematischeAufenthalte.length > 0) {
+      const problematischerAufenthalt = problematischeAufenthalte[0];
+      return new Response(JSON.stringify({
+        error: `Zählerstand ${zaehlerStart} ist kleiner als der Endstand ${problematischerAufenthalt.zaehlerAbreise} vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Zähler können nicht rückwärts laufen.`
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Prüfe zeitlich unmögliche Zählerstände:
+    // Wenn jemand zeitlich nach einem anderen kommt, darf sein Zählerstart nicht im Bereich des Vorherigen liegen
+    const alleAufenthalte = await prisma.aufenthalt.findMany({
+      where: {
+        id: { not: parseInt(id) } // Aktuellen Aufenthalt ausschließen
+      },
+      orderBy: {
+        zaehlerAbreise: 'desc'
+      }
+    });
+
+    const zeitlichVorherigeAufenthalte = alleAufenthalte.filter(a => {
+      const aAbreise = new Date(a.abreise);
+      return aAbreise < ankunftDate && a.zaehlerAbreise !== null &&
+             zaehlerStart >= a.zaehlerAnkunft && zaehlerStart <= a.zaehlerAbreise;
+    });
+
+    if (zeitlichVorherigeAufenthalte.length > 0) {
+      const problematischerAufenthalt = zeitlichVorherigeAufenthalte[0];
+      return new Response(JSON.stringify({
+        error: `Zählerstand ${zaehlerStart} liegt im Bereich des vorherigen Aufenthalts (${problematischerAufenthalt.zaehlerAnkunft}-${problematischerAufenthalt.zaehlerAbreise}) vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Das ist zeitlich unmöglich.`
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Aktiven Zähler für Abreise finden
@@ -123,13 +201,13 @@ export const PUT: APIRoute = async (context) => {
       where: { id: parseInt(id) },
       data: {
         userId: parseInt(body.userId),
-        ankunft: new Date(body.ankunft),
-        abreise: new Date(body.abreise),
-        zaehlerAnkunft: parseFloat(body.zaehlerStart),
-        zaehlerAbreise: parseFloat(body.zaehlerEnde),
-        anzahlMitglieder: parseInt(body.anzahlMitglieder),
-        anzahlGaeste: parseInt(body.anzahlGaeste),
-        jahr: new Date(body.ankunft).getFullYear(),
+        ankunft: ankunftDate,
+        abreise: abreiseDate,
+        zaehlerAnkunft: zaehlerStart,
+        zaehlerAbreise: zaehlerEnde,
+        uebernachtungenMitglieder: parseInt(body.uebernachtungenMitglieder),
+        uebernachtungenGaeste: parseInt(body.uebernachtungenGaeste),
+        jahr: ankunftDate.getFullYear(),
         zaehlerAbreiseId: aktiverZaehler.id, // Zähler bei Abreise (kann sich von Ankunft unterscheiden)
       },
       include: {

@@ -15,6 +15,7 @@ export const GET: APIRoute = async (context) => {
         name: true,
         email: true,
         role: true,
+        createdAt: true,
       },
       orderBy: {
         name: 'asc',
@@ -99,7 +100,7 @@ export const PUT: APIRoute = async (context) => {
     const body = await request.json();
     const { id, name, email, role } = body;
 
-    if (!name || !email || !role) {
+    if (!id || !name || !email || !role) {
       return new Response(JSON.stringify({ error: 'Alle Felder sind erforderlich' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },

@@ -19,7 +19,7 @@ const session = JSON.parse(sessionCookie.value);
             Neuer Aufenthalt
           </h1>
           <p class="mt-2 text-gray-600 dark:text-gray-400">
-            Erfassen Sie einen neuen Aufenthalt mit Zählerständen und Personenanzahl
+            Erfassen Sie einen neuen Aufenthalt mit Zählerständen und Übernachtungen
           </p>
         </div>
         <a href="/aufenthalte" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
@@ -66,14 +66,14 @@ const session = JSON.parse(sessionCookie.value);
                   <label for="ankunft" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Ankunft *
                   </label>
-                  <input type="datetime-local" id="ankunft" name="ankunft" required
+                  <input type="date" id="ankunft" name="ankunft" required
                     class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                 </div>
                 <div>
                   <label for="abreise" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Abreise *
                   </label>
-                  <input type="datetime-local" id="abreise" name="abreise" required
+                  <input type="date" id="abreise" name="abreise" required
                     class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                 </div>
               </div>
@@ -84,26 +84,8 @@ const session = JSON.parse(sessionCookie.value);
               <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
                 Ölzählerstände
               </h3>
-              <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
-                <div class="flex">
-                  <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                  </div>
-                  <div class="ml-3">
-                    <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                      Wichtig: Zählerstände, nicht Datum!
-                    </h3>
-                    <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-                      <p>
-                        Die Kostenaufteilung basiert auf den Zählerständen, nicht auf den Aufenthaltsdaten. 
-                        Überlappende Zählerstände werden gleichmäßig aufgeteilt.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          
+              
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label for="zaehlerStart" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -124,27 +106,54 @@ const session = JSON.parse(sessionCookie.value);
               </div>
             </div>
 
-            <!-- Personenanzahl -->
+            <!-- Übernachtungen -->
             <div>
               <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Personenanzahl
+                Übernachtungen
               </h3>
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label for="anzahlMitglieder" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Anzahl Mitglieder *
-                  </label>
-                  <input type="number" id="anzahlMitglieder" name="anzahlMitglieder" min="1" value="1" required
-                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                </div>
-                <div>
-                  <label for="anzahlGaeste" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Anzahl Gäste
-                  </label>
-                  <input type="number" id="anzahlGaeste" name="anzahlGaeste" min="0" value="0"
-                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                <div class="flex">
+                  <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      Übernachtungen statt Personenanzahl
+                    </h3>
+                    <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                      <p>
+                        Geben Sie die Anzahl der Übernachtungen ein, nicht die Anzahl der Personen. 
+                        Beispiel: 2 Personen für 3 Nächte = 6 Übernachtungen.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="uebernachtungenMitglieder" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Übernachtungen Mitglieder *
+                  </label>
+                  <input type="number" id="uebernachtungenMitglieder" name="uebernachtungenMitglieder" min="1" value="1" required
+                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    placeholder="z.B. 3 (1 Person, 3 Nächte)">
+                </div>
+                <div>
+                  <label for="uebernachtungenGaeste" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Übernachtungen Gäste
+                  </label>
+                  <input type="number" id="uebernachtungenGaeste" name="uebernachtungenGaeste" min="0" value="0"
+                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    placeholder="z.B. 6 (2 Gäste, 3 Nächte)">
+                </div>
+              </div>
+            </div>
+
+            <!-- Validierungswarnung -->
+            <div id="mitglieder-warnung" class="hidden bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <!-- Wird dynamisch gefüllt -->
             </div>
 
             <!-- Kostenvorschau -->
@@ -352,27 +361,59 @@ const session = JSON.parse(sessionCookie.value);
     const zaehlerEndeEl = document.getElementById('zaehlerEnde') as HTMLInputElement;
     const ankunftEl = document.getElementById('ankunft') as HTMLInputElement;
     const abreiseEl = document.getElementById('abreise') as HTMLInputElement;
-    const anzahlMitgliederEl = document.getElementById('anzahlMitglieder') as HTMLInputElement;
-    const anzahlGaesteEl = document.getElementById('anzahlGaeste') as HTMLInputElement;
+    const uebernachtungenMitgliederEl = document.getElementById('uebernachtungenMitglieder') as HTMLInputElement;
+    const uebernachtungenGaesteEl = document.getElementById('uebernachtungenGaeste') as HTMLInputElement;
     
     const zaehlerStart = parseFloat(zaehlerStartEl?.value || '0');
     const zaehlerEnde = parseFloat(zaehlerEndeEl?.value || '0');
     const ankunft = ankunftEl?.value;
     const abreise = abreiseEl?.value;
-    const anzahlMitglieder = parseInt(anzahlMitgliederEl?.value || '1');
-    const anzahlGaeste = parseInt(anzahlGaesteEl?.value || '0');
+    const uebernachtungenMitglieder = parseInt(uebernachtungenMitgliederEl?.value || '1');
+    const uebernachtungenGaeste = parseInt(uebernachtungenGaesteEl?.value || '0');
 
     if (zaehlerStart && zaehlerEnde && ankunft && abreise) {
       const verbrauchteStunden = zaehlerEnde - zaehlerStart;
-      const startDate = new Date(ankunft);
-      const endDate = new Date(abreise);
-      const anzahlNaechte = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Validierung: Mitglieder-Übernachtungen prüfen
+      const anzahlNaechte = Math.ceil((new Date(abreise).getTime() - new Date(ankunft).getTime()) / (1000 * 60 * 60 * 24));
+      if (uebernachtungenMitglieder < anzahlNaechte) {
+        // Warnung anzeigen
+        const warningEl = document.getElementById('mitglieder-warnung');
+        if (warningEl) {
+          warningEl.classList.remove('hidden');
+          warningEl.innerHTML = `
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  Validierung: Mindestens ein Mitglied muss anwesend sein
+                </h3>
+                <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                  <p>
+                    Die Übernachtungen für Mitglieder (${uebernachtungenMitglieder}) müssen mindestens der Anzahl der Nächte (${anzahlNaechte}) entsprechen.
+                  </p>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        // Warnung verstecken
+        const warningEl = document.getElementById('mitglieder-warnung');
+        if (warningEl) {
+          warningEl.classList.add('hidden');
+        }
+      }
 
       // Kosten berechnen
       const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
-      const uebernachtungKosten = anzahlNaechte * (
-        anzahlMitglieder * (currentPreise.uebernachtungMitglied || 15) +
-        anzahlGaeste * (currentPreise.uebernachtungGast || 25)
+      const uebernachtungKosten = (
+        uebernachtungenMitglieder * (currentPreise.uebernachtungMitglied || 15) +
+        uebernachtungenGaeste * (currentPreise.uebernachtungGast || 25)
       );
       const gesamtKosten = oelKosten + uebernachtungKosten;
 
@@ -402,12 +443,41 @@ const session = JSON.parse(sessionCookie.value);
       const response = await fetch('/api/aufenthalte');
       if (response.ok) {
         const aufenthalte = await response.json();
-        const ueberlappungen = aufenthalte.filter((a: any) => 
-          a.zaehlerAbreise > start && a.zaehlerAnkunft < ende
-        );
+        const selectedUserId = parseInt((document.getElementById('userId') as HTMLSelectElement)?.value || '0');
+        
+        // Prüfe zuerst, ob der Benutzer bereits einen Aufenthalt mit diesen Zählerständen hat
+        const eigeneUeberlappungen = aufenthalte.filter((a: any) => {
+          if (a.userId !== selectedUserId) return false;
+          
+          // Überlappung prüfen: Zählerstände überschneiden sich
+          const overlapStart = Math.max(start, a.zaehlerAnkunft);
+          const overlapEnd = Math.min(ende, a.zaehlerAbreise);
+          const overlapHours = overlapEnd - overlapStart;
+          
+          // Nur echte Überlappungen mit mindestens 0.1 Stunden
+          return overlapHours >= 0.1;
+        });
 
-        if (ueberlappungen.length > 0) {
-          showUeberlappungsWarnung(ueberlappungen);
+        if (eigeneUeberlappungen.length > 0) {
+          showEigeneUeberlappungsWarnung(eigeneUeberlappungen);
+          return;
+        }
+
+        // Dann prüfe Überlappungen mit anderen Benutzern
+        const andereUeberlappungen = aufenthalte.filter((a: any) => {
+          if (a.userId === selectedUserId) return false;
+          
+          // Überlappung prüfen: Zählerstände überschneiden sich
+          const overlapStart = Math.max(start, a.zaehlerAnkunft);
+          const overlapEnd = Math.min(ende, a.zaehlerAbreise);
+          const overlapHours = overlapEnd - overlapStart;
+          
+          // Nur echte Überlappungen mit mindestens 0.1 Stunden
+          return overlapHours >= 0.1;
+        });
+
+        if (andereUeberlappungen.length > 0) {
+          showUeberlappungsWarnung(andereUeberlappungen);
         } else {
           hideUeberlappungsWarnung();
         }
@@ -417,7 +487,20 @@ const session = JSON.parse(sessionCookie.value);
     }
   }
 
-  // Überlappungs-Warnung anzeigen
+  // Eigene Überlappungs-Warnung anzeigen (Fehler)
+  function showEigeneUeberlappungsWarnung(ueberlappungen: any[]) {
+    const warning = document.getElementById('ueberlappungs-warnung');
+    const details = document.getElementById('ueberlappungs-details');
+    
+    if (warning && details) {
+      const overlapping = ueberlappungen[0];
+      details.innerHTML = `⚠️ <strong>Fehler:</strong> Sie haben bereits einen Aufenthalt mit diesen Zählerständen (${overlapping.ankunft.split('T')[0]} - ${overlapping.abreise.split('T')[0]}, Zähler ${overlapping.zaehlerAnkunft}-${overlapping.zaehlerAbreise}). Bitte wählen Sie andere Zählerstände.`;
+      warning.className = 'mt-4 p-4 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800';
+      warning.classList.remove('hidden');
+    }
+  }
+
+  // Überlappungs-Warnung anzeigen (mit anderen Benutzern)
   function showUeberlappungsWarnung(ueberlappungen: any[]) {
     const warning = document.getElementById('ueberlappungs-warnung');
     const details = document.getElementById('ueberlappungs-details');
@@ -425,6 +508,7 @@ const session = JSON.parse(sessionCookie.value);
     if (warning && details) {
       const names = ueberlappungen.map((u: any) => u.user.name).join(', ');
       details.innerHTML = `Ihr Aufenthalt überschneidet sich mit: <strong>${names}</strong>. Die Kosten werden gleichmäßig aufgeteilt.`;
+      warning.className = 'mt-4 p-4 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800';
       warning.classList.remove('hidden');
     }
   }
@@ -447,8 +531,8 @@ const session = JSON.parse(sessionCookie.value);
     const abreise = formData.get('abreise') as string;
     const zaehlerStart = parseFloat(formData.get('zaehlerStart') as string);
     const zaehlerEnde = parseFloat(formData.get('zaehlerEnde') as string);
-    const anzahlMitglieder = parseInt(formData.get('anzahlMitglieder') as string);
-    const anzahlGaeste = parseInt(formData.get('anzahlGaeste') as string);
+    const uebernachtungenMitglieder = parseInt(formData.get('uebernachtungenMitglieder') as string);
+    const uebernachtungenGaeste = parseInt(formData.get('uebernachtungenGaeste') as string);
 
     // Validierung
     if (!userId || !ankunft || !abreise || !zaehlerStart || !zaehlerEnde) {
@@ -466,15 +550,59 @@ const session = JSON.parse(sessionCookie.value);
       return;
     }
 
+    if (uebernachtungenMitglieder < 1) {
+      showNotification('Es muss mindestens eine Übernachtung für Mitglieder angegeben werden.', 'error');
+      return;
+    }
+
+    // Validierung: Mitglieder-Übernachtungen müssen mindestens der Anzahl der Nächte entsprechen
+    const anzahlNaechte = Math.ceil((new Date(abreise).getTime() - new Date(ankunft).getTime()) / (1000 * 60 * 60 * 24));
+    if (uebernachtungenMitglieder < anzahlNaechte) {
+      showNotification(`Die Übernachtungen für Mitglieder (${uebernachtungenMitglieder}) können nicht weniger als die Anzahl der Nächte (${anzahlNaechte}) betragen, da immer mindestens ein Mitglied anwesend sein muss.`, 'error');
+      return;
+    }
+
+    // Validierung: Eigene Überlappungen prüfen
+    try {
+      const response = await fetch('/api/aufenthalte');
+      if (response.ok) {
+        const aufenthalte = await response.json();
+        const eigeneUeberlappungen = aufenthalte.filter((a: any) => {
+          if (a.userId !== userId) return false;
+          
+          // Überlappung prüfen: Zählerstände überschneiden sich
+          const overlapStart = Math.max(zaehlerStart, a.zaehlerAnkunft);
+          const overlapEnd = Math.min(zaehlerEnde, a.zaehlerAbreise);
+          const overlapHours = overlapEnd - overlapStart;
+          
+          // Nur echte Überlappungen mit mindestens 0.1 Stunden
+          return overlapHours >= 0.1;
+        });
+
+        if (eigeneUeberlappungen.length > 0) {
+          const overlapping = eigeneUeberlappungen[0];
+          showNotification(`Sie haben bereits einen Aufenthalt mit diesen Zählerständen (${overlapping.ankunft.split('T')[0]} - ${overlapping.abreise.split('T')[0]}, Zähler ${overlapping.zaehlerAnkunft}-${overlapping.zaehlerAbreise}). Bitte wählen Sie andere Zählerstände.`, 'error');
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Prüfen der eigenen Überlappungen:', error);
+    }
+
+    // Benutzer-Name für die API finden (für Admins)
+    const selectedUser = users.find(u => u.id === userId);
+    const personName = selectedUser ? selectedUser.name : null;
+
     // Daten für die API vorbereiten
     const aufenthaltData = {
       userId: userId,
-      ankunft: new Date(ankunft).toISOString(),
-      abreise: new Date(abreise).toISOString(),
-              zaehlerAnkunft: zaehlerStart,
-        zaehlerAbreise: zaehlerEnde,
-      anzahlMitglieder: anzahlMitglieder,
-      anzahlGaeste: anzahlGaeste,
+      personName: personName, // Für Admin-API
+      ankunft: ankunft, // Datum als String senden, nicht als ISO
+      abreise: abreise, // Datum als String senden, nicht als ISO
+      zaehlerStart: zaehlerStart,
+      zaehlerEnde: zaehlerEnde,
+      uebernachtungenMitglieder: uebernachtungenMitglieder,
+      uebernachtungenGaeste: uebernachtungenGaeste,
       jahr: new Date(ankunft).getFullYear()
     };
     
@@ -509,13 +637,13 @@ const session = JSON.parse(sessionCookie.value);
     
     // Aktuelles Datum setzen
     const now = new Date();
-    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    const localDate = now.toISOString().slice(0, 10);
     
     const ankunftInput = document.getElementById('ankunft') as HTMLInputElement;
     const abreiseInput = document.getElementById('abreise') as HTMLInputElement;
     
-    if (ankunftInput) ankunftInput.value = localDateTime;
-    if (abreiseInput) abreiseInput.value = localDateTime;
+    if (ankunftInput) ankunftInput.value = localDate;
+    if (abreiseInput) abreiseInput.value = localDate;
     
     // Event-Listener für Formularfelder
     const form = document.getElementById('aufenthalt-form');

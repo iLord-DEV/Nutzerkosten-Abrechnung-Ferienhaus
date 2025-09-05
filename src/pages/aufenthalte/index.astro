@@ -39,8 +39,7 @@ const session = JSON.parse(sessionCookie.value);
               Jahr
             </label>
             <select id="jahr" class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
+              <!-- Wird dynamisch geladen -->
             </select>
           </div>
           <div>
@@ -92,7 +91,7 @@ const session = JSON.parse(sessionCookie.value);
                   Zählerstand
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Personen
+                  Übernachtungen
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Kosten (vor Einsparungen)
@@ -224,7 +223,7 @@ const session = JSON.parse(sessionCookie.value);
     verbrauchProStunde?: number;
   } = {};
   
-  let allUeberlappungsAufenthalte: any[] = [];
+  let alleAufenthalte: any[] = [];
 
   // Toast-Benachrichtigung anzeigen
   function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
@@ -371,11 +370,11 @@ const session = JSON.parse(sessionCookie.value);
     }
   }
 
-  // Alle Caches leeren
+      // Alle Caches leeren
   function clearAllCaches() {
     // JavaScript-Variablen zurücksetzen
     currentAufenthalte = [];
-    allUeberlappungsAufenthalte = [];
+    alleAufenthalte = [];
     currentPreise = {};
     
     // localStorage leeren (falls vorhanden)
@@ -415,18 +414,28 @@ const session = JSON.parse(sessionCookie.value);
       });
       
       if (response.ok) {
-        allUeberlappungsAufenthalte = await response.json();
-        console.log('📊 Überlappungsaufenthalte geladen:', allUeberlappungsAufenthalte.length);
+        alleAufenthalte = await response.json();
+        console.log('📊 Alle Aufenthalte geladen:', alleAufenthalte.length);
+        console.log('🔍 Alle Aufenthalte Details:', alleAufenthalte);
       }
     } catch (error) {
       console.error('❌ Fehler beim Laden der Überlappungsaufenthalte:', error);
     }
   }
   
-      // Überlappungsinfo für einen Aufenthalt ermitteln
-    function getUeberlappungsInfo(aufenthalt: any, alleUeberlappungen: any[]) {
-      return alleUeberlappungen.filter((overlap: any) => {
-      // Überlappung prüfen: Zählerstände überschneiden sich
+        // Überlappungsinfo für einen Aufenthalt ermitteln
+  function getUeberlappungsInfo(aufenthalt: any, alleAufenthalte: any[]) {
+    console.log(`🔍 Prüfe Überlappungen für ${aufenthalt.user.name} (${aufenthalt.zaehlerAnkunft}-${aufenthalt.zaehlerAbreise})`);
+    console.log(`📋 Verfügbare Aufenthalte:`, alleAufenthalte.length);
+    
+    const result = alleAufenthalte.filter((overlap: any) => {
+      // Wichtig: Aufenthalt kann nicht mit sich selbst überlappen
+      if (aufenthalt.id === overlap.id) {
+        return false;
+      }
+      
+      // Überlappung prüfen: NUR Zählerstände überschneiden sich
+      // (Zeitliche Validierung erfolgt bereits bei der Erstellung im Frontend)
       const a1Start = aufenthalt.zaehlerAnkunft;
       const a1Ende = aufenthalt.zaehlerAbreise;
       const a2Start = overlap.zaehlerAnkunft;
@@ -438,9 +447,14 @@ const session = JSON.parse(sessionCookie.value);
       const overlapEnd = Math.min(a1Ende, a2Ende);
       const overlapHours = overlapEnd - overlapStart;
       
+      console.log(`  vs ${overlap.user.name} (${a2Start}-${a2Ende}): Overlap ${overlapStart}-${overlapEnd} = ${overlapHours}h`);
+      
       // Nur echte Überlappungen mit mindestens 0.1 Stunden
       return overlapHours >= 0.1;
     });
+    
+    console.log(`✅ Gefundene Überlappungen für ${aufenthalt.user.name}:`, result.length);
+    return result;
   }
 
   // Aufenthalte aus der API laden
@@ -472,6 +486,37 @@ const session = JSON.parse(sessionCookie.value);
       showNoData();
     } finally {
       showLoading(false);
+    }
+  }
+
+  // Verfügbare Jahre laden
+  async function loadAvailableYears() {
+    try {
+      const response = await fetch('/api/aufenthalte/years');
+      if (response.ok) {
+        const years = await response.json();
+        const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
+        
+        if (jahrSelect) {
+          jahrSelect.innerHTML = '';
+          years.forEach((year: number) => {
+            const option = document.createElement('option');
+            option.value = year.toString();
+            option.textContent = year.toString();
+            if (year === 2024) {
+              option.selected = true; // Aktuelles Jahr als Standard
+            }
+            jahrSelect.appendChild(option);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der verfügbaren Jahre:', error);
+      // Fallback: Standard-Jahre
+      const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
+      if (jahrSelect) {
+        jahrSelect.innerHTML = '<option value="2024">2024</option>';
+      }
     }
   }
 
@@ -532,9 +577,9 @@ const session = JSON.parse(sessionCookie.value);
       // Für die Anzeige verwenden wir den aktuellen Preis, die korrekte Berechnung erfolgt später
       const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
       const anzahlNaechte = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
-      const uebernachtungKosten = anzahlNaechte * (
-        aufenthalt.anzahlMitglieder * (currentPreise.uebernachtungMitglied || 15) +
-        aufenthalt.anzahlGaeste * (currentPreise.uebernachtungGast || 25)
+      const uebernachtungKosten = (
+        ((aufenthalt as any).uebernachtungenMitglieder || 0) * (currentPreise.uebernachtungMitglied || 15) +
+        ((aufenthalt as any).uebernachtungenGaeste || 0) * (currentPreise.uebernachtungGast || 25)
       );
       const gesamtKosten = oelKosten + uebernachtungKosten;
 
@@ -566,7 +611,7 @@ const session = JSON.parse(sessionCookie.value);
           ${zaehlerStart.toFixed(1)} h → ${zaehlerEnde.toFixed(1)} h
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${aufenthalt.anzahlMitglieder} + ${aufenthalt.anzahlGaeste} Gäste
+          ${(aufenthalt as any).uebernachtungenMitglieder || 0} Mitgl. + ${(aufenthalt as any).uebernachtungenGaeste || 0} Gäste
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
           € ${gesamtKosten.toFixed(2)}
@@ -702,10 +747,9 @@ const session = JSON.parse(sessionCookie.value);
     const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * oelpreis;
     
     // Übernachtungskosten
-    const anzahlNaechte = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
-    const uebernachtungKosten = anzahlNaechte * (
-      aufenthalt.anzahlMitglieder * (currentPreise.uebernachtungMitglied || 15) +
-      aufenthalt.anzahlGaeste * (currentPreise.uebernachtungGast || 25)
+    const uebernachtungKosten = (
+      ((aufenthalt as any).uebernachtungenMitglieder || 0) * (currentPreise.uebernachtungMitglied || 15) +
+      ((aufenthalt as any).uebernachtungenGaeste || 0) * (currentPreise.uebernachtungGast || 25)
     );
     
     return oelKosten + uebernachtungKosten;
@@ -718,6 +762,11 @@ const session = JSON.parse(sessionCookie.value);
     let totalSavings = 0;
     
     overlaps.forEach((overlap: any) => {
+      // Wichtig: Aufenthalt kann nicht mit sich selbst überlappen
+      if (aufenthalt.id === overlap.id) {
+        return;
+      }
+      
       // Überlappungsbereich berechnen
       const overlapStart = Math.max(aufenthalt.zaehlerAnkunft, overlap.zaehlerAnkunft);
       const overlapEnd = Math.min(aufenthalt.zaehlerAbreise, overlap.zaehlerAbreise);
@@ -755,7 +804,7 @@ const session = JSON.parse(sessionCookie.value);
   // Überlappungsinfo für einzelnen Aufenthalt laden
   async function loadOverlapInfo(aufenthalt: typeof currentAufenthalte[0]) {
     try {
-      const overlaps = getUeberlappungsInfo(aufenthalt, allUeberlappungsAufenthalte);
+      const overlaps = getUeberlappungsInfo(aufenthalt, alleAufenthalte);
       const overlapDiv = document.getElementById(`overlap-info-${aufenthalt.id}`);
       const savingsDiv = document.getElementById(`savings-info-${aufenthalt.id}`);
       const totalCostsDiv = document.getElementById(`total-costs-${aufenthalt.id}`);
@@ -892,6 +941,9 @@ const session = JSON.parse(sessionCookie.value);
     console.log('🚀 DOM geladen, starte Initialisierung...');
     
     try {
+      await loadAvailableYears();
+      console.log('✅ Verfügbare Jahre geladen');
+      
       await loadPreise('2024');
       console.log('✅ Preise geladen');
       

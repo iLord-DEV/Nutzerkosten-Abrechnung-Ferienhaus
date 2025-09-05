@@ -10,8 +10,13 @@ export interface Props {
 const { title, description } = Astro.props;
 
 // Authentifizierung prüfen
-const user = await getUser(Astro);
-if (!user) {
+try {
+  const user = await getUser(Astro);
+  if (!user) {
+    return Astro.redirect('/login');
+  }
+} catch (error) {
+  console.error('Authentifizierungsfehler:', error);
   return Astro.redirect('/login');
 }
 ---
