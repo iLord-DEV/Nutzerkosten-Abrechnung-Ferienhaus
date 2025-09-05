@@ -376,6 +376,6 @@ Bei Fragen oder Problemen erstelle ein Issue oder kontaktiere den Entwickler.
 
 Wenn dir dieses Projekt gefällt und du den Entwickler unterstützen möchtest:
 
-[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/christoph.heim)
+<a href="https://www.buymeacoffee.com/Christoph.Heim" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 **Entwickelt mit ❤️ und Spaß an der Sache**
