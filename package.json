@@ -9,7 +9,12 @@
     "astro": "astro",
     "db:seed": "tsx prisma/seed.ts",
     "db:backup": "./scripts/backup-database.sh",
-    "db:restore": "echo 'Verwende: gunzip -c backup.sql.gz | mysql -u root -p nutzerkosten_db'"
+    "db:backup:prod": "./scripts/backup-production.sh",
+    "db:restore": "echo 'Verwende: gunzip -c backup.sql.gz | mysql -u root -p nutzerkosten_db'",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop astro-app",
+    "pm2:restart": "pm2 restart astro-app",
+    "pm2:logs": "pm2 logs astro-app"
   },
   "dependencies": {
     "@astrojs/tailwind": "^6.0.2",

@@ -5,10 +5,11 @@ Eine moderne Web-Anwendung zur Verwaltung und Abrechnung von Nutzerkosten in Woh
 ## 🚀 Features
 
 ### Benutzerverwaltung
-- **Sichere Authentifizierung** mit Passwort-basierter Anmeldung
+- **Sichere Passwort-Authentifizierung** mit bcrypt-Hashing
 - **Rollenbasierte Berechtigung** (Admin/Benutzer)
-- **Passwort-Sicherheit** mit starker Validierung (8+ Zeichen, Groß-/Kleinbuchstaben, Zahlen, Sonderzeichen)
+- **Starke Passwort-Validierung** (8+ Zeichen, Groß-/Kleinbuchstaben, Zahlen, Sonderzeichen)
 - **Passwort-Änderung** für Admins und Benutzer
+- **Session-Management** mit sicheren Cookies
 
 ### Aufenthaltsverwaltung
 - **Aufenthalte erfassen** mit Ankunft/Abreise
@@ -37,7 +38,7 @@ Eine moderne Web-Anwendung zur Verwaltung und Abrechnung von Nutzerkosten in Woh
 - **Frontend**: Astro 5, Tailwind CSS 4, Vue 3
 - **Backend**: Astro API Routes
 - **Datenbank**: MySQL mit Prisma ORM
-- **Authentifizierung**: bcrypt für Passwort-Hashing
+- **Authentifizierung**: bcrypt für Passwort-Hashing, Session-basierte Auth
 - **Charts**: Chart.js mit Vue-ChartJS
 
 ## 📋 Voraussetzungen
@@ -83,14 +84,19 @@ Eine moderne Web-Anwendung zur Verwaltung und Abrechnung von Nutzerkosten in Woh
    npm run dev
    ```
 
-## 🔐 Standard-Anmeldedaten
+## 🔐 Authentifizierung
 
-Nach dem ersten Setup haben alle Benutzer das Passwort `1234`:
+Die App verwendet eine **sichere Passwort-basierte Authentifizierung**:
 
-- **Admin**: post@christoph-heim.de
-- **Benutzer**: usheim@t-online.de, markus.wilson-zwilling@gmx.de, etc.
+- **Passwort-Hashing** mit bcrypt
+- **Starke Passwort-Validierung** (8+ Zeichen, Groß-/Kleinbuchstaben, Zahlen, Sonderzeichen)
+- **Rollenbasierte Berechtigung** (Admin/Benutzer)
+- **Passwort-Änderung** für alle Benutzer möglich
 
-⚠️ **Wichtig**: Ändere alle Passwörter nach dem ersten Login!
+### Erste Einrichtung
+Nach dem ersten Setup müssen alle Benutzer ihre Passwörter ändern. Die App leitet neue Benutzer automatisch zur Passwort-Änderung weiter.
+
+⚠️ **Sicherheit**: Verwende starke, einzigartige Passwörter!
 
 ## 📊 Datenbank-Backup
 
@@ -138,7 +144,12 @@ scripts/
 - `npm run build` - Produktions-Build
 - `npm run preview` - Build-Vorschau
 - `npm run db:seed` - Testdaten laden
-- `npm run db:backup` - Datenbank-Backup
+- `npm run db:backup` - Datenbank-Backup (lokal)
+- `npm run db:backup:prod` - Produktions-Backup
+- `npm run pm2:start` - App mit PM2 starten
+- `npm run pm2:stop` - App mit PM2 stoppen
+- `npm run pm2:restart` - App mit PM2 neustarten
+- `npm run pm2:logs` - PM2-Logs anzeigen
 
 ### Datenbank-Migrationen
 ```bash
@@ -154,14 +165,202 @@ npx prisma generate
 
 ## 🚀 Deployment
 
-1. **Produktions-Build**
-   ```bash
-   npm run build
-   ```
+### Lokale Entwicklung
+```bash
+npm run dev
+```
 
-2. **Umgebungsvariablen** für Produktion konfigurieren
-3. **Datenbank** für Produktion einrichten
-4. **Webserver** (z.B. Nginx) konfigurieren
+### Produktions-Build
+```bash
+npm run build
+npm run preview
+```
+
+## ☁️ Cloudways Deployment
+
+### Voraussetzungen
+- Cloudways Account mit MySQL-Server
+- Domain oder Subdomain
+- SSH-Zugang zum Server
+
+### 1. Server vorbereiten
+```bash
+# Node.js 18+ installieren
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# PM2 für Process Management
+sudo npm install -g pm2
+
+# Git installieren (falls nicht vorhanden)
+sudo apt-get install git
+```
+
+### 2. Projekt deployen
+```bash
+# Repository klonen
+git clone <repository-url>
+cd astro-app
+
+# Dependencies installieren
+npm ci --production
+
+# Build erstellen
+npm run build
+
+# Prisma Client generieren
+npx prisma generate
+
+# Datenbank migrieren
+npx prisma migrate deploy
+```
+
+### 3. Umgebungsvariablen konfigurieren
+```bash
+# .env Datei erstellen
+nano .env
+```
+
+```env
+# .env für Production
+DATABASE_URL="mysql://username:password@your-cloudways-mysql-host:3306/database_name"
+NODE_ENV="production"
+```
+
+### 4. PM2 Konfiguration
+```bash
+# ecosystem.config.js erstellen
+nano ecosystem.config.js
+```
+
+```javascript
+module.exports = {
+  apps: [{
+    name: 'astro-app',
+    script: 'npm',
+    args: 'run preview',
+    cwd: '/path/to/your/astro-app',
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 4321
+    }
+  }]
+}
+```
+
+### 5. App starten
+```bash
+# Mit PM2 starten
+pm2 start ecosystem.config.js
+
+# PM2 beim Boot starten
+pm2 startup
+pm2 save
+
+# Status prüfen
+pm2 status
+pm2 logs astro-app
+```
+
+### 6. Nginx Konfiguration (Cloudways)
+```nginx
+# In Cloudways Panel: Nginx Settings
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    location / {
+        proxy_pass http://localhost:4321;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+### 7. SSL-Zertifikat (Cloudways)
+- Im Cloudways Panel: SSL Certificate hinzufügen
+- Let's Encrypt oder eigenes Zertifikat verwenden
+
+### 8. Datenbank-Backup einrichten
+```bash
+# Backup-Script erstellen
+nano backup.sh
+```
+
+```bash
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+mysqldump -h your-mysql-host -u username -p database_name > backup_$DATE.sql
+gzip backup_$DATE.sql
+```
+
+```bash
+# Cron-Job für tägliche Backups
+crontab -e
+# Füge hinzu: 0 2 * * * /path/to/backup.sh
+```
+
+### 9. Monitoring & Wartung
+```bash
+# App-Logs anzeigen
+pm2 logs astro-app --lines 100
+
+# App neustarten
+pm2 restart astro-app
+
+# App stoppen
+pm2 stop astro-app
+
+# App-Status
+pm2 status
+pm2 monit
+```
+
+### 10. Updates deployen
+```bash
+# Code aktualisieren
+git pull origin main
+
+# Dependencies aktualisieren
+npm ci --production
+
+# Neuen Build erstellen
+npm run build
+
+# Prisma Client aktualisieren
+npx prisma generate
+
+# Datenbank-Migrationen ausführen
+npx prisma migrate deploy
+
+# App neustarten
+pm2 restart astro-app
+```
+
+### Troubleshooting
+```bash
+# Port prüfen
+netstat -tlnp | grep :4321
+
+# Prozesse anzeigen
+ps aux | grep node
+
+# Nginx-Status
+sudo systemctl status nginx
+
+# MySQL-Verbindung testen
+mysql -h your-mysql-host -u username -p
+```
 
 ## 📝 Lizenz
 
@@ -173,4 +372,10 @@ Bei Fragen oder Problemen erstelle ein Issue oder kontaktiere den Entwickler.
 
 ---
 
-**Entwickelt mit ❤️ für Wohngemeinschaften**
+## ☕ Support
+
+Wenn dir dieses Projekt gefällt und du den Entwickler unterstützen möchtest:
+
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/christoph.heim)
+
+**Entwickelt mit ❤️ und Spaß an der Sache**

@@ -9,8 +9,11 @@ export const GET: APIRoute = async (context) => {
     // Authentifizierung prüfen
     const user = await requireAuth(context);
     
-    // Verfügbare Jahre aus Aufenthalten laden
+    // Verfügbare Jahre aus Aufenthalten des angemeldeten Benutzers laden
     const years = await prisma.aufenthalt.findMany({
+      where: {
+        userId: user.id, // Nur Aufenthalte des angemeldeten Benutzers
+      },
       select: {
         jahr: true,
       },
