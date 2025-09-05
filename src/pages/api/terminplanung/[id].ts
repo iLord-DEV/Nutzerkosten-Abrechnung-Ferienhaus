@@ -68,6 +68,7 @@ export const GET: APIRoute = async (context) => {
       });
     }
 
+
     return new Response(JSON.stringify(terminplanung), {
       status: 200,
       headers: {
@@ -169,10 +170,9 @@ export const PUT: APIRoute = async (context) => {
           }
         });
 
-        // Alle bestehenden Abstimmungen auf ungültig setzen (Version erhöhen)
-        await tx.terminAbstimmung.updateMany({
-          where: { terminPlanungId: id },
-          data: { version: existingTermin.version + 1 }
+        // Alle bestehenden Abstimmungen löschen
+        await tx.terminAbstimmung.deleteMany({
+          where: { terminPlanungId: id }
         });
       }
 

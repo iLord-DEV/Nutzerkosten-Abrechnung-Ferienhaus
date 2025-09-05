@@ -35,10 +35,36 @@ export const GET: APIRoute = async (context) => {
                 id: true,
                 name: true
               }
+            },
+            parent: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
+            },
+            replies: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              },
+              orderBy: {
+                createdAt: 'asc'
+              }
             }
           },
+          where: {
+            parentId: null // Nur Top-Level-Kommentare
+          },
           orderBy: {
-            createdAt: 'asc'
+            createdAt: 'desc'
           }
         },
         aenderungen: {

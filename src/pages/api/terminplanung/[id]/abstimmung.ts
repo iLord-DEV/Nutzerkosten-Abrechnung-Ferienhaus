@@ -98,16 +98,9 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    // Status der Terminplanung aktualisieren (vereinfacht)
+    // Status der Terminplanung automatisch aktualisieren
     try {
-      // Einfach auf DISCUSSING setzen wenn jemand "NEED_INFO" hat, sonst PENDING
-      const hasNeedInfo = stimme === 'NEED_INFO';
-      const newStatus = hasNeedInfo ? 'DISCUSSING' : 'PENDING';
-      
-      await prisma.terminPlanung.update({
-        where: { id: terminplanungId },
-        data: { status: newStatus }
-      });
+      await updateTerminplanungStatus(terminplanungId);
     } catch (statusError) {
       console.error('Fehler beim Aktualisieren des Status:', statusError);
       // Status-Update-Fehler ignorieren, Abstimmung war erfolgreich
@@ -202,3 +195,55 @@ export const DELETE: APIRoute = async (context) => {
     });
   }
 };
+
+// Hilfsfunktion: Status der Terminplanung basierend auf Abstimmungen aktualisieren
+async function updateTerminplanungStatus(terminplanungId: number) {
+  try {
+    const terminplanung = await prisma.terminPlanung.findUnique({
+      where: { id: terminplanungId },
+      include: {
+        abstimmungen: {
+          where: {
+            version: terminplanung.version
+          }
+        }
+      }
+    });
+
+    if (!terminplanung) return;
+
+    // Alle User abrufen (außer dem Ersteller)
+    const allUsers = await prisma.user.findMany({
+      where: {
+        id: { not: terminplanung.userId }
+      }
+    });
+
+    const currentVersionAbstimmungen = terminplanung.abstimmungen;
+
+    let newStatus = terminplanung.status;
+
+    if (currentVersionAbstimmungen.length === 0) {
+      newStatus = 'PENDING';
+    } else if (currentVersionAbstimmungen.length === allUsers.length) {
+      // Alle User haben abgestimmt
+      const alleZugestimmt = currentVersionAbstimmungen.every(a => a.stimme === 'APPROVE');
+      newStatus = alleZugestimmt ? 'APPROVED' : 'DISCUSSING';
+    } else {
+      // Nicht alle User haben abgestimmt
+      const hatDiskussion = currentVersionAbstimmungen.some(a => a.stimme === 'NEED_INFO');
+      newStatus = hatDiskussion ? 'DISCUSSING' : 'PENDING';
+    }
+
+    // Status nur aktualisieren wenn er sich geändert hat
+    if (newStatus !== terminplanung.status) {
+      await prisma.terminPlanung.update({
+        where: { id: terminplanungId },
+        data: { status: newStatus }
+      });
+    }
+  } catch (error) {
+    console.error('Fehler in updateTerminplanungStatus:', error);
+    throw error;
+  }
+}

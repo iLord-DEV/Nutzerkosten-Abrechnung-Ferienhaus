@@ -1,9 +1,99 @@
 ---
 import Layout from '../../layouts/ProtectedLayout.astro';
 import { getUser } from '../../utils/auth';
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const user = await getUser(Astro);
 const { id } = Astro.params;
+
+// Terminplanung server-seitig laden
+let terminplanung = null;
+try {
+  terminplanung = await prisma.terminPlanung.findUnique({
+    where: { id: parseInt(id!) },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      },
+      abstimmungen: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
+      },
+      kommentare: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          parent: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
+          },
+          replies: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            },
+            orderBy: {
+              createdAt: 'asc'
+            }
+          }
+        },
+        where: {
+          parentId: null
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      },
+      aenderungen: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }
+    }
+  });
+} catch (error) {
+  console.error('Fehler beim Laden der Terminplanung:', error);
+}
+
+if (!terminplanung) {
+  await prisma.$disconnect();
+  return new Response('Terminplanung nicht gefunden', { status: 404 });
+}
+
+await prisma.$disconnect();
 ---
 
 <Layout title="Terminplanung Details">
@@ -17,6 +107,12 @@ const { id } = Astro.params;
     <div id="terminplanung-details" class="max-w-4xl mx-auto">
       <!-- Terminplanung wird hier dynamisch geladen -->
     </div>
+    
+    <!-- Versteckte Daten für JavaScript -->
+    <script>
+      window.terminplanungData = {JSON.stringify(terminplanung)};
+    </script>
+    
   </div>
 
   <!-- Abstimmungs-Modal -->
@@ -70,12 +166,81 @@ const { id } = Astro.params;
     </div>
   </div>
 
+  <!-- Bearbeitungs-Modal -->
+  <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg max-w-md w-full p-6">
+        <h3 class="text-lg font-semibold mb-4">Terminplanung bearbeiten</h3>
+        <form id="editForm">
+          <input type="hidden" id="editTerminplanungId" name="terminplanungId">
+          <div class="mb-4">
+            <label for="editTitel" class="block text-sm font-medium text-gray-700 mb-2">Titel</label>
+            <input 
+              type="text" 
+              id="editTitel" 
+              name="titel" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div class="mb-4">
+            <label for="editStartDatum" class="block text-sm font-medium text-gray-700 mb-2">Startdatum</label>
+            <input 
+              type="date" 
+              id="editStartDatum" 
+              name="startDatum" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div class="mb-4">
+            <label for="editEndDatum" class="block text-sm font-medium text-gray-700 mb-2">Enddatum</label>
+            <input 
+              type="date" 
+              id="editEndDatum" 
+              name="endDatum" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div class="mb-6">
+            <label for="editBeschreibung" class="block text-sm font-medium text-gray-700 mb-2">Beschreibung</label>
+            <textarea 
+              id="editBeschreibung" 
+              name="beschreibung" 
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            ></textarea>
+          </div>
+          
+          <div class="flex justify-end gap-3">
+            <button 
+              type="button" 
+              id="editCancelBtn"
+              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Abbrechen
+            </button>
+            <button 
+              type="submit" 
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Speichern
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Kommentar-Modal -->
   <div id="kommentarModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="bg-white rounded-lg max-w-md w-full p-6">
         <h3 class="text-lg font-semibold mb-4">Kommentar hinzufügen</h3>
         <form id="kommentarForm">
+          <input type="hidden" id="kommentarTerminplanungId" name="terminplanungId">
+          <input type="hidden" id="kommentarParentId" name="parentId">
           <div class="mb-6">
             <label class="block text-sm font-medium text-gray-700 mb-2">Dein Kommentar:</label>
             <textarea 
@@ -111,49 +276,81 @@ const { id } = Astro.params;
 
 <script>
   const terminplanungId = parseInt(window.location.pathname.split('/').pop());
-  let terminplanung = null;
   let currentUser = null;
-
+  
+  // Terminplanung-Daten vom Server übernehmen
+  let terminplanung = null;
+  
   // User-Info laden
   async function loadCurrentUser() {
     try {
       const response = await fetch('/api/auth/me');
       if (response.ok) {
         currentUser = await response.json();
+        // Terminplanung-Daten vom Server laden
+        if (window.terminplanungData) {
+          terminplanung = JSON.parse(window.terminplanungData);
+          renderTerminplanung();
+        } else {
+          loadTerminplanung();
+        }
+      } else {
+        console.error('User-Auth fehlgeschlagen:', response.status);
       }
     } catch (error) {
       console.error('Fehler beim Laden der User-Info:', error);
     }
   }
+  
+  // Sofortige Initialisierung
+  if (window.terminplanungData) {
+    terminplanung = JSON.parse(window.terminplanungData);
+    loadCurrentUser();
+  } else {
+    loadCurrentUser();
+  }
 
-  // Terminplanung laden
+  // Terminplanung neu laden (für Updates)
   async function loadTerminplanung() {
     try {
+      console.log('Lade Terminplanung für ID:', terminplanungId);
       const response = await fetch(`/api/terminplanung/${terminplanungId}`);
       if (response.ok) {
         terminplanung = await response.json();
+        console.log('Terminplanung geladen:', terminplanung);
         renderTerminplanung();
       } else {
         const error = await response.json();
-        document.getElementById('terminplanung-details').innerHTML = `
-          <div class="text-center py-8">
-            <p class="text-red-600">Fehler: ${error.error}</p>
-          </div>
-        `;
+        console.error('API-Fehler:', error);
+        const detailsEl = document.getElementById('terminplanung-details');
+        if (detailsEl) {
+          detailsEl.innerHTML = `
+            <div class="text-center py-8">
+              <p class="text-red-600">Fehler: ${error.error}</p>
+            </div>
+          `;
+        }
       }
     } catch (error) {
       console.error('Fehler beim Laden der Terminplanung:', error);
-      document.getElementById('terminplanung-details').innerHTML = `
-        <div class="text-center py-8">
-          <p class="text-red-600">Fehler beim Laden der Terminplanung</p>
-        </div>
-      `;
+      const detailsEl = document.getElementById('terminplanung-details');
+      if (detailsEl) {
+        detailsEl.innerHTML = `
+          <div class="text-center py-8">
+            <p class="text-red-600">Fehler beim Laden der Terminplanung</p>
+          </div>
+        `;
+      }
     }
   }
 
   // Terminplanung rendern
   function renderTerminplanung() {
-    if (!terminplanung) return;
+    console.log('renderTerminplanung aufgerufen, terminplanung:', terminplanung);
+    if (!terminplanung) {
+      console.log('Keine Terminplanung gefunden');
+      return;
+    }
 
     const statusColor = 
       terminplanung.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
@@ -172,10 +369,16 @@ const { id } = Astro.params;
       a.userId === currentUser?.id && a.version === terminplanung.version
     );
 
-    const canEdit = (terminplanung.userId === currentUser?.id || currentUser?.role === 'ADMIN') && terminplanung.status !== 'APPROVED';
+    const canEdit = (terminplanung.userId === currentUser?.id || currentUser?.role === 'ADMIN');
     const canVote = terminplanung.userId !== currentUser?.id && terminplanung.status !== 'CANCELLED';
 
-    document.getElementById('terminplanung-details').innerHTML = `
+    const detailsEl = document.getElementById('terminplanung-details');
+    if (!detailsEl) {
+      console.error('terminplanung-details Element nicht gefunden');
+      return;
+    }
+    
+    detailsEl.innerHTML = `
       <div class="bg-white rounded-lg shadow-lg p-6">
         <!-- Header -->
         <div class="flex justify-between items-start mb-6">
@@ -219,7 +422,7 @@ const { id } = Astro.params;
 
         <!-- Aktionen -->
         <div class="flex gap-3 mb-6">
-          ${canEdit ? `
+          ${(terminplanung.userId === currentUser?.id || currentUser?.role === 'ADMIN') ? `
             <button 
               onclick="editTerminplanung()"
               class="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
@@ -236,14 +439,14 @@ const { id } = Astro.params;
           ${canVote ? `
             ${terminplanung.abstimmungen.some(a => a.userId === currentUser?.id && a.stimme === 'APPROVE' && a.version === terminplanung.version) ? `
               <button 
-                onclick="zustimmungEntziehen(${terminplanung.id})"
+                onclick="window.zustimmungEntziehen(${terminplanung.id})"
                 class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-medium"
               >
                 ❌ Zustimmung entziehen
               </button>
             ` : `
               <button 
-                onclick="zustimmen(${terminplanung.id})"
+                onclick="window.zustimmen(${terminplanung.id})"
                 class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium"
               >
                 ✅ Zustimmen
@@ -251,7 +454,7 @@ const { id } = Astro.params;
             `}
           ` : ''}
           <button 
-            onclick="openKommentarModal()"
+            onclick="window.openKommentarModal()"
             class="px-4 py-2 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200"
           >
             Kommentieren
@@ -333,6 +536,32 @@ const { id } = Astro.params;
                   </span>
                 </div>
                 <p class="text-gray-700">${kommentar.inhalt}</p>
+                
+                <!-- Antworten anzeigen -->
+                ${kommentar.replies && kommentar.replies.length > 0 ? `
+                  <div class="mt-2 ml-6 space-y-2 border-l-2 border-gray-300 pl-3">
+                    ${kommentar.replies.map(reply => `
+                      <div class="bg-gray-100 p-2 rounded">
+                        <div class="flex items-center justify-between mb-1">
+                          <span class="font-medium text-xs">${reply.user.name}</span>
+                          <span class="text-xs text-gray-500">
+                            ${new Date(reply.createdAt).toLocaleDateString('de-DE')} 
+                            ${new Date(reply.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <p class="text-xs text-gray-700">${reply.inhalt}</p>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : ''}
+                
+                <!-- Antwort-Button -->
+                <button 
+                  onclick="window.antworten(${terminplanung.id}, ${kommentar.id})"
+                  class="mt-2 text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Antworten
+                </button>
               </div>
             `).join('')}
             ${terminplanung.kommentare.length === 0 ? 
@@ -391,82 +620,122 @@ const { id } = Astro.params;
     document.getElementById('abstimmungModal').classList.add('hidden');
   }
 
-  function openKommentarModal() {
-    document.getElementById('kommentarModal').classList.remove('hidden');
-  }
+  // Globale Funktionen
+  window.openKommentarModal = function() {
+    const terminplanungIdEl = document.getElementById('kommentarTerminplanungId') as HTMLInputElement;
+    const parentIdEl = document.getElementById('kommentarParentId') as HTMLInputElement;
+    const modal = document.getElementById('kommentarModal');
+    
+    if (terminplanungIdEl && parentIdEl && modal) {
+      terminplanungIdEl.value = terminplanung.id.toString();
+      parentIdEl.value = '';
+      modal.classList.remove('hidden');
+    }
+  };
 
-  function closeKommentarModal() {
-    document.getElementById('kommentarModal').classList.add('hidden');
-    document.getElementById('kommentarForm').reset();
-  }
+  window.closeKommentarModal = function() {
+    const modal = document.getElementById('kommentarModal');
+    const form = document.getElementById('kommentarForm') as HTMLFormElement;
+    
+    if (modal) modal.classList.add('hidden');
+    if (form) form.reset();
+  };
+
+  window.antworten = function(terminplanungId: number, parentId: number) {
+    const terminplanungIdEl = document.getElementById('kommentarTerminplanungId') as HTMLInputElement;
+    const parentIdEl = document.getElementById('kommentarParentId') as HTMLInputElement;
+    const modal = document.getElementById('kommentarModal');
+    
+    if (terminplanungIdEl && parentIdEl && modal) {
+      terminplanungIdEl.value = terminplanungId.toString();
+      parentIdEl.value = parentId.toString();
+      modal.classList.remove('hidden');
+    }
+  };
 
   // Event Listeners
-  document.getElementById('abstimmungCancelBtn').addEventListener('click', closeAbstimmungModal);
-  document.getElementById('kommentarCancelBtn').addEventListener('click', closeKommentarModal);
-
-  document.getElementById('abstimmungForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const data = {
-      stimme: formData.get('stimme'),
-      kommentar: formData.get('kommentar')
-    };
-    
-    try {
-      const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      
-      if (response.ok) {
-        closeAbstimmungModal();
-        loadTerminplanung();
-      } else {
-        const error = await response.json();
-        alert('Fehler: ' + error.error);
-      }
-    } catch (error) {
-      console.error('Fehler beim Abgeben der Abstimmung:', error);
-      alert('Fehler beim Abgeben der Abstimmung');
-    }
+  const abstimmungCancelBtn = document.getElementById('abstimmungCancelBtn');
+  const kommentarCancelBtn = document.getElementById('kommentarCancelBtn');
+  const editCancelBtn = document.getElementById('editCancelBtn');
+  
+  if (abstimmungCancelBtn) abstimmungCancelBtn.addEventListener('click', closeAbstimmungModal);
+  if (kommentarCancelBtn) kommentarCancelBtn.addEventListener('click', window.closeKommentarModal);
+  if (editCancelBtn) editCancelBtn.addEventListener('click', () => {
+    const modal = document.getElementById('editModal');
+    if (modal) modal.classList.add('hidden');
   });
 
-  document.getElementById('kommentarForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const data = {
-      inhalt: formData.get('kommentarInhalt')
-    };
-    
-    try {
-      const response = await fetch(`/api/terminplanung/${terminplanungId}/kommentar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
+  const abstimmungForm = document.getElementById('abstimmungForm') as HTMLFormElement;
+  const kommentarForm = document.getElementById('kommentarForm') as HTMLFormElement;
+  
+  if (abstimmungForm) {
+    abstimmungForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
       
-      if (response.ok) {
-        closeKommentarModal();
-        loadTerminplanung();
-      } else {
-        const error = await response.json();
-        alert('Fehler: ' + error.error);
+      const formData = new FormData(e.target as HTMLFormElement);
+      const data = {
+        stimme: formData.get('stimme'),
+        kommentar: formData.get('kommentar')
+      };
+      
+      try {
+        const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+          closeAbstimmungModal();
+          loadTerminplanung();
+        } else {
+          const error = await response.json();
+          alert('Fehler: ' + error.error);
+        }
+      } catch (error) {
+        console.error('Fehler beim Abgeben der Abstimmung:', error);
+        alert('Fehler beim Abgeben der Abstimmung');
       }
-    } catch (error) {
-      console.error('Fehler beim Erstellen des Kommentars:', error);
-      alert('Fehler beim Erstellen des Kommentars');
-    }
-  });
+    });
+  }
+
+  if (kommentarForm) {
+    kommentarForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(e.target as HTMLFormElement);
+      const data = {
+        inhalt: formData.get('kommentarInhalt'),
+        parentId: formData.get('parentId') ? parseInt(formData.get('parentId') as string) : null
+      };
+      
+      try {
+        const response = await fetch(`/api/terminplanung/${terminplanungId}/kommentar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+          window.closeKommentarModal();
+          loadTerminplanung();
+        } else {
+          const error = await response.json();
+          alert('Fehler: ' + error.error);
+        }
+      } catch (error) {
+        console.error('Fehler beim Erstellen des Kommentars:', error);
+        alert('Fehler beim Erstellen des Kommentars');
+      }
+    });
+  }
 
   // Funktionen
-  window.zustimmen = async function(terminplanungId) {
+  window.zustimmen = async function(terminplanungId: number) {
     try {
       const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
         method: 'POST',
@@ -492,7 +761,7 @@ const { id } = Astro.params;
     }
   };
 
-  window.zustimmungEntziehen = async function(terminplanungId) {
+  window.zustimmungEntziehen = async function(terminplanungId: number) {
     try {
       const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
         method: 'DELETE',
@@ -514,10 +783,24 @@ const { id } = Astro.params;
     }
   };
 
-  function editTerminplanung() {
-    // TODO: Bearbeitungs-UI implementieren
-    alert('Bearbeitung wird implementiert...');
-  }
+  window.editTerminplanung = function() {
+    // Modal für Bearbeitung öffnen und Werte vorausfüllen
+    const modal = document.getElementById('editModal');
+    if (modal) {
+      // Werte vorausfüllen
+      const titelInput = document.getElementById('editTitel');
+      const startDatumInput = document.getElementById('editStartDatum');
+      const endDatumInput = document.getElementById('editEndDatum');
+      const beschreibungInput = document.getElementById('editBeschreibung');
+      
+      if (titelInput) titelInput.value = terminplanung.titel || '';
+      if (startDatumInput) startDatumInput.value = new Date(terminplanung.startDatum).toISOString().split('T')[0];
+      if (endDatumInput) endDatumInput.value = new Date(terminplanung.endDatum).toISOString().split('T')[0];
+      if (beschreibungInput) beschreibungInput.value = terminplanung.beschreibung || '';
+      
+      modal.classList.remove('hidden');
+    }
+  };
 
   function cancelTerminplanung() {
     if (confirm('Möchtest du diese Terminplanung wirklich stornieren?')) {
@@ -526,8 +809,49 @@ const { id } = Astro.params;
     }
   }
 
+  const editForm = document.getElementById('editForm') as HTMLFormElement;
+  
+  if (editForm) {
+    editForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(e.target as HTMLFormElement);
+      const data = {
+        titel: formData.get('titel'),
+        startDatum: new Date(formData.get('startDatum') as string).toISOString(),
+        endDatum: new Date(formData.get('endDatum') as string).toISOString(),
+        beschreibung: formData.get('beschreibung')
+      };
+      
+      try {
+        const response = await fetch(`/api/terminplanung/${terminplanung.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+          alert('Terminplanung erfolgreich aktualisiert! Alle Abstimmungen wurden zurückgesetzt.');
+          const modal = document.getElementById('editModal');
+          if (modal) modal.classList.add('hidden');
+          // Terminplanung neu laden um aktualisierte Daten anzuzeigen
+          loadTerminplanung();
+        } else {
+          const error = await response.json();
+          alert('Fehler: ' + error.error);
+        }
+      } catch (error) {
+        console.error('Fehler beim Aktualisieren der Terminplanung:', error);
+        alert('Fehler beim Aktualisieren der Terminplanung');
+      }
+    });
+  }
+
   // Initialisierung
-  loadCurrentUser().then(() => {
-    loadTerminplanung();
-  });
+  console.log('Initialisierung gestartet');
+  
+  // Sofortige Initialisierung
+  loadCurrentUser();
 </script>

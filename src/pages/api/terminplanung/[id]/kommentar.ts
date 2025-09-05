@@ -11,7 +11,7 @@ export const POST: APIRoute = async (context) => {
     const terminplanungId = parseInt(context.params.id!);
     const body = await context.request.json();
     
-    const { inhalt } = body;
+    const { inhalt, parentId } = body;
     
     if (!inhalt || inhalt.trim().length === 0) {
       return new Response(JSON.stringify({ error: 'Kommentar darf nicht leer sein' }), {
@@ -45,19 +45,49 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
+    // Prüfen ob Parent-Kommentar existiert (falls es eine Antwort ist)
+    if (parentId) {
+      const parentKommentar = await prisma.terminKommentar.findFirst({
+        where: {
+          id: parseInt(parentId),
+          terminPlanungId: terminplanungId
+        }
+      });
+      
+      if (!parentKommentar) {
+        return new Response(JSON.stringify({ error: 'Parent-Kommentar nicht gefunden' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+    }
+
     // Kommentar erstellen
     const kommentar = await prisma.terminKommentar.create({
       data: {
         terminPlanungId: terminplanungId,
         userId: user.id,
         inhalt: inhalt.trim(),
-        version: terminplanung.version
+        version: terminplanung.version,
+        parentId: parentId ? parseInt(parentId) : null
       },
       include: {
         user: {
           select: {
             id: true,
             name: true
+          }
+        },
+        parent: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         }
       }

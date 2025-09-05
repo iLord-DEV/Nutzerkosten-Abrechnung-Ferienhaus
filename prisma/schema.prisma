@@ -132,10 +132,13 @@ model TerminKommentar {
   userId          Int
   inhalt          String
   version         Int      // Version des Kommentars
+  parentId        Int?     // ID des übergeordneten Kommentars (für Antworten)
   createdAt       DateTime @default(now())
   
   terminPlanung   TerminPlanung @relation(fields: [terminPlanungId], references: [id])
   user            User @relation(fields: [userId], references: [id])
+  parent          TerminKommentar? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies         TerminKommentar[] @relation("CommentReplies")
 }
 
 model TerminAenderung {
