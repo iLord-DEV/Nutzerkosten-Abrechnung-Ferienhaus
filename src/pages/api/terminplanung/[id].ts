@@ -217,7 +217,7 @@ export const PUT: APIRoute = async (context) => {
   }
 };
 
-// DELETE /api/terminplanung/[id] - Terminplanung stornieren
+// DELETE /api/terminplanung/[id] - Terminplanung komplett löschen
 export const DELETE: APIRoute = async (context) => {
   try {
     const user = await requireAuth(context);
@@ -236,7 +236,7 @@ export const DELETE: APIRoute = async (context) => {
       });
     }
 
-    // Nur der Ersteller oder Admin kann stornieren
+    // Nur der Ersteller oder Admin kann löschen
     if (existingTermin.userId !== user.id && user.role !== 'ADMIN') {
       return new Response(JSON.stringify({ error: 'Keine Berechtigung' }), {
         status: 403,
@@ -246,22 +246,38 @@ export const DELETE: APIRoute = async (context) => {
       });
     }
 
-    const updatedTermin = await prisma.terminPlanung.update({
-      where: { id },
-      data: {
-        status: 'CANCELLED'
-      }
+    // Kaskadierte Löschung: Zuerst alle verknüpften Daten löschen
+    await prisma.$transaction(async (tx) => {
+      // 1. Alle Kommentare löschen (inklusive Antworten)
+      await tx.terminKommentar.deleteMany({
+        where: { terminPlanungId: id }
+      });
+
+      // 2. Alle Abstimmungen löschen
+      await tx.terminAbstimmung.deleteMany({
+        where: { terminPlanungId: id }
+      });
+
+      // 3. Alle Änderungen löschen
+      await tx.terminAenderung.deleteMany({
+        where: { terminPlanungId: id }
+      });
+
+      // 4. Schließlich die Terminplanung selbst löschen
+      await tx.terminPlanung.delete({
+        where: { id }
+      });
     });
 
-    return new Response(JSON.stringify(updatedTermin), {
+    return new Response(JSON.stringify({ message: 'Terminplanung erfolgreich gelöscht' }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json'
       }
     });
   } catch (error) {
-    console.error('Fehler beim Stornieren der Terminplanung:', error);
-    return new Response(JSON.stringify({ error: 'Fehler beim Stornieren der Terminplanung' }), {
+    console.error('Fehler beim Löschen der Terminplanung:', error);
+    return new Response(JSON.stringify({ error: 'Fehler beim Löschen der Terminplanung' }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json'
