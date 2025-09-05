@@ -6,20 +6,20 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
   <div class="px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-        Statistiken & Analysen
+        📊 Meine Verbrauchsstatistiken
       </h1>
       <p class="mt-2 text-gray-600 dark:text-gray-400">
-        Detaillierte Auswertungen zu Verbrauch, Kosten und Trends
+        Detaillierte Analyse deines Verbrauchs im Vergleich zu anderen Nutzern
       </p>
     </div>
 
     <!-- Filter -->
     <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
       <div class="px-4 py-5 sm:p-6">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label for="jahr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Jahr
+              📅 Jahr
             </label>
             <select id="jahr" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
               <!-- Wird dynamisch geladen -->
@@ -27,129 +27,249 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
           </div>
           <div>
             <label for="zeitraum" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Zeitraum
+              📈 Ansicht
             </label>
             <select id="zeitraum" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-              <option value="monatlich">Monatlich</option>
-              <option value="quartal">Quartal</option>
-              <option value="jahresvergleich">Jahresvergleich</option>
+              <option value="uebersicht">Übersicht</option>
+              <option value="aufenthalte">Aufenthalte im Detail</option>
+              <option value="abwesenheit">Abwesenheitsverbrauch</option>
             </select>
           </div>
-          <div>
-            <label for="kategorie" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Kategorie
-            </label>
-            <select id="kategorie" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-              <option value="alle">Alle Kosten</option>
-              <option value="oel">Nur Ölkosten</option>
-              <option value="uebernachtung">Nur Übernachtungskosten</option>
-            </select>
+          <div class="flex items-end">
+            <button id="filter-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+              🔍 Daten laden
+            </button>
           </div>
-          <div id="person-filter" class="hidden">
-            <label for="person" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Person
-            </label>
-            <select id="person" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-              <option value="">Alle Personen</option>
-              <!-- Wird dynamisch geladen -->
-            </select>
-          </div>
-        </div>
-        <div class="mt-4 flex justify-end">
-          <button id="filter-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-            🔍 Filter anwenden
-          </button>
         </div>
       </div>
     </div>
 
     <!-- Übersichtskarten -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">⛽</span>
-              </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-6 shadow-lg">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-white bg-opacity-20 rounded-md flex items-center justify-center">
+              <span class="text-white text-sm font-medium">⛽</span>
             </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Gesamtverbrauch
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="gesamt-verbrauch">
-                  -
-                </dd>
-              </dl>
-            </div>
+          </div>
+          <div class="ml-4">
+            <p class="text-blue-100 text-sm font-medium">Gesamtverbrauch</p>
+            <p class="text-2xl font-bold" id="gesamt-verbrauch">-</p>
           </div>
         </div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">💰</span>
-              </div>
+      <div class="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-6 shadow-lg">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-white bg-opacity-20 rounded-md flex items-center justify-center">
+              <span class="text-white text-sm font-medium">💰</span>
             </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Gesamtkosten
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="gesamt-kosten">
-                  -
-                </dd>
-              </dl>
-            </div>
+          </div>
+          <div class="ml-4">
+            <p class="text-green-100 text-sm font-medium">Gesamtkosten</p>
+            <p class="text-2xl font-bold" id="gesamt-kosten">-</p>
           </div>
         </div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">📊</span>
-              </div>
+      <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-6 shadow-lg">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-white bg-opacity-20 rounded-md flex items-center justify-center">
+              <span class="text-white text-sm font-medium">📊</span>
             </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Durchschnitt/Stunde
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="durchschnitt-verbrauch">
-                  -
-                </dd>
-              </dl>
-            </div>
+          </div>
+          <div class="ml-4">
+            <p class="text-purple-100 text-sm font-medium">Ø Verbrauch/Tag</p>
+            <p class="text-2xl font-bold" id="durchschnitt-verbrauch-tag">-</p>
           </div>
         </div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">🏠</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Aufenthalte
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="anzahl-aufenthalte">
-                  -
-                </dd>
-              </dl>
+      <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg p-6 shadow-lg">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-white bg-opacity-20 rounded-md flex items-center justify-center">
+              <span class="text-white text-sm font-medium">🏠</span>
             </div>
           </div>
+          <div class="ml-4">
+            <p class="text-yellow-100 text-sm font-medium">Aufenthalte</p>
+            <p class="text-2xl font-bold" id="anzahl-aufenthalte">-</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vergleich mit anderen Nutzern -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          📈 Vergleich mit anderen Nutzern
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="text-center">
+            <div class="text-3xl font-bold text-blue-600 dark:text-blue-400" id="mein-verbrauch-pro-tag">-</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">Dein Verbrauch/Tag</div>
+            <div class="text-xs text-gray-400 mt-1" id="vergleich-verbrauch-tag">-</div>
+          </div>
+          <div class="text-center">
+            <div class="text-3xl font-bold text-green-600 dark:text-green-400" id="mein-verbrauch-pro-aufenthalt">-</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">Dein Verbrauch/Aufenthalt</div>
+            <div class="text-xs text-gray-400 mt-1" id="vergleich-verbrauch-aufenthalt">-</div>
+          </div>
+          <div class="text-center">
+            <div class="text-3xl font-bold text-purple-600 dark:text-purple-400" id="meine-kosten-pro-aufenthalt">-</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">Deine Kosten/Aufenthalt</div>
+            <div class="text-xs text-gray-400 mt-1" id="vergleich-kosten-aufenthalt">-</div>
+          </div>
+        </div>
+        <div class="mt-4 text-center text-sm text-gray-500 dark:text-gray-400" id="referenz-info">
+          Vergleich mit <span id="anzahl-andere-user">-</span> anderen Nutzern
+        </div>
+      </div>
+    </div>
+
+    <!-- Aufenthalte im Detail -->
+    <div id="aufenthalte-detail" class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8" style="display: none;">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          🏠 Deine Aufenthalte im Detail
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Zeitraum
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Tage
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Verbrauch (h)
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Verbrauch/Tag
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Ölkosten
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Übernachtung
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Gesamt
+                </th>
+              </tr>
+            </thead>
+            <tbody id="aufenthalte-tbody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <!-- Wird dynamisch gefüllt -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Abwesenheitsverbrauch -->
+    <div id="abwesenheit-detail" class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8" style="display: none;">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+          🏠➡️🏠 Verbrauch während Abwesenheit aller Nutzer
+        </h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Diese Werte zeigen, wie viel verbraucht wurde, während niemand anwesend war.
+        </p>
+        
+        <!-- Gesamtübersicht Abwesenheitskosten -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
+                  <span class="text-white text-sm font-medium">💰</span>
+                </div>
+              </div>
+              <div class="ml-3">
+                <p class="text-red-600 dark:text-red-400 text-sm font-medium">Gesamtkosten Abwesenheit</p>
+                <p class="text-red-900 dark:text-red-100 text-xl font-bold" id="abwesenheit-gesamtkosten">-</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
+                  <span class="text-white text-sm font-medium">⛽</span>
+                </div>
+              </div>
+              <div class="ml-3">
+                <p class="text-orange-600 dark:text-orange-400 text-sm font-medium">Gesamtliter Abwesenheit</p>
+                <p class="text-orange-900 dark:text-orange-100 text-xl font-bold" id="abwesenheit-gesamtliter">-</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                  <span class="text-white text-sm font-medium">📅</span>
+                </div>
+              </div>
+              <div class="ml-3">
+                <p class="text-purple-600 dark:text-purple-400 text-sm font-medium">Abwesenheitsperioden</p>
+                <p class="text-purple-900 dark:text-purple-100 text-xl font-bold" id="abwesenheit-perioden">-</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monatliche Abwesenheitsübersicht -->
+        <div class="mb-6">
+          <h4 class="text-md font-medium text-gray-900 dark:text-white mb-3">📊 Monatliche Abwesenheitsverbräuche</h4>
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div id="monatliche-abwesenheit-container">
+              <!-- Wird dynamisch gefüllt -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Detaillierte Tabelle -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Zeitraum
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Monat
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Tage
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Verbrauchte Liter
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Kosten
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Liter/Tag
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Übergang
+                </th>
+              </tr>
+            </thead>
+            <tbody id="abwesenheit-tbody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <!-- Wird dynamisch gefüllt -->
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -160,7 +280,7 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
       <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
         <div class="px-4 py-5 sm:p-6">
           <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-            Monatlicher Verbrauch
+            📅 Monatlicher Verbrauch
           </h3>
           <div class="h-64">
             <canvas id="verbrauch-chart" width="400" height="200"></canvas>
@@ -172,7 +292,7 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
       <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
         <div class="px-4 py-5 sm:p-6">
           <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-            Kostenverteilung
+            💰 Kostenverteilung
           </h3>
           <div class="h-64">
             <canvas id="kosten-chart" width="400" height="200"></canvas>
@@ -181,167 +301,13 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
       </div>
     </div>
 
-    <!-- Jahresvergleich -->
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
-      <div class="px-4 py-5 sm:p-6">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-          Jahresvergleich
-        </h3>
-        <div class="h-64">
-          <canvas id="jahresvergleich-chart" width="400" height="200"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Personenvergleich -->
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
-      <div class="px-4 py-5 sm:p-6">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-          Kosten pro Person
-        </h3>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Person
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Aufenthalte
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Verbrauchte Stunden
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Ölkosten
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Übernachtungskosten
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Gesamtkosten
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Anteil
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="flex-shrink-0 h-8 w-8">
-                      <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-                        <span class="text-white text-xs font-medium">M</span>
-                      </div>
-                    </div>
-                    <div class="ml-3">
-                      <div class="text-sm font-medium text-gray-900 dark:text-white">
-                        Max Mustermann
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  8
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  320 h
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  € 2,112
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  € 960
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                  € 3,072
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  37.2%
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="flex-shrink-0 h-8 w-8">
-                      <div class="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
-                        <span class="text-white text-xs font-medium">A</span>
-                      </div>
-                    </div>
-                    <div class="ml-3">
-                      <div class="text-sm font-medium text-gray-900 dark:text-white">
-                        Anna Schmidt
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  6
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  240 h
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  € 1,584
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  € 720
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                  € 2,304
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  27.9%
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="flex-shrink-0 h-8 w-8">
-                      <div class="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center">
-                        <span class="text-white text-xs font-medium">T</span>
-                      </div>
-                    </div>
-                    <div class="ml-3">
-                      <div class="text-sm font-medium text-gray-900 dark:text-white">
-                        Tom Weber
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  10
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  690 h
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  € 4,554
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  € 1,200
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                  € 5,754
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  34.9%
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
     <!-- Export-Optionen -->
     <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
       <div class="px-4 py-5 sm:p-6">
         <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-          Daten exportieren
+          📤 Daten exportieren
         </h3>
-        <div class="flex space-x-4">
+        <div class="flex flex-wrap gap-4">
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
             📊 PDF-Report
           </button>
@@ -363,69 +329,20 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
 
   let verbrauchChart: Chart | null = null;
   let kostenChart: Chart | null = null;
-  let jahresvergleichChart: Chart | null = null;
-  let users: Array<{id: number, name: string, email: string, role: string}> = [];
-
-  // Benutzer laden
-  async function loadUsers() {
-    try {
-      const response = await fetch('/api/users');
-      if (response.ok) {
-        users = await response.json();
-        renderUserSelect();
-        checkUserRole();
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Benutzer:', error);
-    }
-  }
-
-  // Benutzerrolle prüfen und Person-Filter entsprechend ein-/ausblenden
-  async function checkUserRole() {
-    try {
-      const response = await fetch('/api/auth/me');
-      if (response.ok) {
-        const user = await response.json();
-        const personFilter = document.getElementById('person-filter');
-        
-        if (personFilter) {
-          if (user.role === 'ADMIN') {
-            personFilter.classList.remove('hidden');
-          } else {
-            personFilter.classList.add('hidden');
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Fehler beim Prüfen der Benutzerrolle:', error);
-    }
-  }
-
-  // Benutzer-Select rendern
-  function renderUserSelect() {
-    const select = document.getElementById('person') as HTMLSelectElement;
-    if (select) {
-      select.innerHTML = '<option value="">Alle Personen</option>';
-      users.forEach(user => {
-        const option = document.createElement('option');
-        option.value = user.name; // Namen statt ID senden
-        option.textContent = user.name;
-        select.appendChild(option);
-      });
-    }
-  }
+  let currentData: any = null;
 
   // Statistiken laden
   async function loadStatistiken() {
     const jahr = (document.getElementById('jahr') as HTMLSelectElement)?.value || '2024';
-    const person = (document.getElementById('person') as HTMLSelectElement)?.value || '';
     
     try {
-      const response = await fetch(`/api/statistiken?jahr=${jahr}${person ? `&person=${person}` : ''}`);
+      const response = await fetch(`/api/statistiken?jahr=${jahr}`);
       if (response.ok) {
-        const data = await response.json();
-        updateUebersichtskarten(data);
-        updateCharts(data);
+        currentData = await response.json();
+        updateUebersichtskarten(currentData);
+        updateCharts(currentData);
+        updateVergleich(currentData);
+        updateDetailViews(currentData);
       }
     } catch (error) {
       console.error('Fehler beim Laden der Statistiken:', error);
@@ -436,20 +353,216 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
   function updateUebersichtskarten(data: any) {
     const gesamtVerbrauchEl = document.getElementById('gesamt-verbrauch');
     const gesamtKostenEl = document.getElementById('gesamt-kosten');
-    const durchschnittVerbrauchEl = document.getElementById('durchschnitt-verbrauch');
+    const durchschnittVerbrauchTagEl = document.getElementById('durchschnitt-verbrauch-tag');
     const anzahlAufenthalteEl = document.getElementById('anzahl-aufenthalte');
 
     if (gesamtVerbrauchEl) gesamtVerbrauchEl.textContent = `${data.gesamtVerbrauch?.toFixed(1) || 0} h`;
     if (gesamtKostenEl) gesamtKostenEl.textContent = `€ ${data.gesamtKosten?.toFixed(2) || 0}`;
-    if (durchschnittVerbrauchEl) durchschnittVerbrauchEl.textContent = `${data.durchschnittVerbrauchProStunde?.toFixed(1) || 0} L/h`;
+    if (durchschnittVerbrauchTagEl) durchschnittVerbrauchTagEl.textContent = `${data.durchschnittVerbrauchProTag?.toFixed(1) || 0} h`;
     if (anzahlAufenthalteEl) anzahlAufenthalteEl.textContent = data.anzahlAufenthalte || 0;
+  }
+
+  // Vergleich mit anderen Nutzern aktualisieren
+  function updateVergleich(data: any) {
+    const meinVerbrauchProTagEl = document.getElementById('mein-verbrauch-pro-tag');
+    const meinVerbrauchProAufenthaltEl = document.getElementById('mein-verbrauch-pro-aufenthalt');
+    const meineKostenProAufenthaltEl = document.getElementById('meine-kosten-pro-aufenthalt');
+    const vergleichVerbrauchTagEl = document.getElementById('vergleich-verbrauch-tag');
+    const vergleichVerbrauchAufenthaltEl = document.getElementById('vergleich-verbrauch-aufenthalt');
+    const vergleichKostenAufenthaltEl = document.getElementById('vergleich-kosten-aufenthalt');
+    const anzahlAndereUserEl = document.getElementById('anzahl-andere-user');
+
+    const meinVerbrauchProTag = data.durchschnittVerbrauchProTag || 0;
+    const meinVerbrauchProAufenthalt = data.anzahlAufenthalte > 0 ? data.gesamtVerbrauch / data.anzahlAufenthalte : 0;
+    const meineKostenProAufenthalt = data.anzahlAufenthalte > 0 ? data.gesamtKosten / data.anzahlAufenthalte : 0;
+
+    const refVerbrauchProTag = data.referenceValues?.durchschnittVerbrauchProTag || 0;
+    const refVerbrauchProAufenthalt = data.referenceValues?.durchschnittVerbrauchProAufenthalt || 0;
+    const refKostenProAufenthalt = data.referenceValues?.durchschnittKostenProAufenthalt || 0;
+
+    if (meinVerbrauchProTagEl) meinVerbrauchProTagEl.textContent = `${meinVerbrauchProTag.toFixed(1)} h`;
+    if (meinVerbrauchProAufenthaltEl) meinVerbrauchProAufenthaltEl.textContent = `${meinVerbrauchProAufenthalt.toFixed(1)} h`;
+    if (meineKostenProAufenthaltEl) meineKostenProAufenthaltEl.textContent = `€ ${meineKostenProAufenthalt.toFixed(2)}`;
+
+    // Vergleichstexte
+    if (vergleichVerbrauchTagEl) {
+      const diff = refVerbrauchProTag > 0 ? ((meinVerbrauchProTag - refVerbrauchProTag) / refVerbrauchProTag * 100) : 0;
+      const text = refVerbrauchProTag > 0 ? 
+        `${diff > 0 ? '+' : ''}${diff.toFixed(1)}% vs. Durchschnitt` : 
+        'Kein Vergleich möglich';
+      vergleichVerbrauchTagEl.textContent = text;
+      vergleichVerbrauchTagEl.className = `text-xs mt-1 ${diff > 0 ? 'text-red-500' : diff < 0 ? 'text-green-500' : 'text-gray-400'}`;
+    }
+
+    if (vergleichVerbrauchAufenthaltEl) {
+      const diff = refVerbrauchProAufenthalt > 0 ? ((meinVerbrauchProAufenthalt - refVerbrauchProAufenthalt) / refVerbrauchProAufenthalt * 100) : 0;
+      const text = refVerbrauchProAufenthalt > 0 ? 
+        `${diff > 0 ? '+' : ''}${diff.toFixed(1)}% vs. Durchschnitt` : 
+        'Kein Vergleich möglich';
+      vergleichVerbrauchAufenthaltEl.textContent = text;
+      vergleichVerbrauchAufenthaltEl.className = `text-xs mt-1 ${diff > 0 ? 'text-red-500' : diff < 0 ? 'text-green-500' : 'text-gray-400'}`;
+    }
+
+    if (vergleichKostenAufenthaltEl) {
+      const diff = refKostenProAufenthalt > 0 ? ((meineKostenProAufenthalt - refKostenProAufenthalt) / refKostenProAufenthalt * 100) : 0;
+      const text = refKostenProAufenthalt > 0 ? 
+        `${diff > 0 ? '+' : ''}${diff.toFixed(1)}% vs. Durchschnitt` : 
+        'Kein Vergleich möglich';
+      vergleichKostenAufenthaltEl.textContent = text;
+      vergleichKostenAufenthaltEl.className = `text-xs mt-1 ${diff > 0 ? 'text-red-500' : diff < 0 ? 'text-green-500' : 'text-gray-400'}`;
+    }
+
+    if (anzahlAndereUserEl) anzahlAndereUserEl.textContent = data.referenceValues?.anzahlAndereUser || 0;
+  }
+
+  // Detail-Ansichten aktualisieren
+  function updateDetailViews(data: any) {
+    const zeitraum = (document.getElementById('zeitraum') as HTMLSelectElement)?.value || 'uebersicht';
+    
+    // Alle Detail-Ansichten verstecken
+    document.getElementById('aufenthalte-detail')?.style.setProperty('display', 'none');
+    document.getElementById('abwesenheit-detail')?.style.setProperty('display', 'none');
+
+    if (zeitraum === 'aufenthalte') {
+      updateAufenthalteDetail(data);
+      document.getElementById('aufenthalte-detail')?.style.setProperty('display', 'block');
+    } else if (zeitraum === 'abwesenheit') {
+      updateAbwesenheitDetail(data);
+      document.getElementById('abwesenheit-detail')?.style.setProperty('display', 'block');
+    }
+  }
+
+  // Aufenthalte-Detail aktualisieren
+  function updateAufenthalteDetail(data: any) {
+    const tbody = document.getElementById('aufenthalte-tbody');
+    if (!tbody || !data.aufenthaltsDetails) return;
+
+    tbody.innerHTML = '';
+    data.aufenthaltsDetails.forEach((aufenthalt: any) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${new Date(aufenthalt.ankunft).toLocaleDateString('de-DE')} - ${new Date(aufenthalt.abreise).toLocaleDateString('de-DE')}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${aufenthalt.tage}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${aufenthalt.verbrauchteLiter.toFixed(1)} L
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${aufenthalt.verbrauchProTag.toFixed(1)} L
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          € ${aufenthalt.oelKosten.toFixed(2)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          € ${aufenthalt.uebernachtungKosten.toFixed(2)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+          € ${aufenthalt.gesamtKosten.toFixed(2)}
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  // Abwesenheits-Detail aktualisieren
+  function updateAbwesenheitDetail(data: any) {
+    // Gesamtübersicht aktualisieren
+    const gesamtKostenEl = document.getElementById('abwesenheit-gesamtkosten');
+    const gesamtLiterEl = document.getElementById('abwesenheit-gesamtliter');
+    const periodenEl = document.getElementById('abwesenheit-perioden');
+
+    if (gesamtKostenEl) gesamtKostenEl.textContent = `€ ${data.absenceTotals?.gesamtKosten?.toFixed(2) || 0}`;
+    if (gesamtLiterEl) gesamtLiterEl.textContent = `${data.absenceTotals?.gesamtLiter?.toFixed(1) || 0} L`;
+    if (periodenEl) periodenEl.textContent = data.absenceTotals?.anzahlPerioden || 0;
+
+    // Monatliche Übersicht aktualisieren
+    updateMonatlicheAbwesenheit(data.monatlicheAbwesenheit);
+
+    // Detaillierte Tabelle aktualisieren
+    const tbody = document.getElementById('abwesenheit-tbody');
+    if (!tbody || !data.absenceConsumption) return;
+
+    tbody.innerHTML = '';
+    if (data.absenceConsumption.length === 0) {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+          Keine Abwesenheitsperioden gefunden
+        </td>
+      `;
+      tbody.appendChild(row);
+      return;
+    }
+
+    data.absenceConsumption.forEach((periode: any) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${periode.periode}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${periode.monat}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${periode.tage}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${periode.liter.toFixed(1)} L
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          € ${periode.kosten.toFixed(2)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${periode.literProTag.toFixed(1)} L/Tag
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          ${periode.letzterNutzer} → ${periode.naechsterNutzer}
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  // Monatliche Abwesenheitsübersicht aktualisieren
+  function updateMonatlicheAbwesenheit(monatlicheAbwesenheit: any[]) {
+    const container = document.getElementById('monatliche-abwesenheit-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    
+    if (!monatlicheAbwesenheit || monatlicheAbwesenheit.length === 0) {
+      container.innerHTML = '<div class="col-span-full text-center text-gray-500 dark:text-gray-400">Keine Daten verfügbar</div>';
+      return;
+    }
+
+    monatlicheAbwesenheit.forEach(monat => {
+      if (monat.liter > 0 || monat.kosten > 0) {
+        const card = document.createElement('div');
+        card.className = 'bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center';
+        card.innerHTML = `
+          <div class="text-sm font-medium text-gray-900 dark:text-white">${monat.monat}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            ${monat.liter.toFixed(1)} L
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">
+            € ${monat.kosten.toFixed(0)}
+          </div>
+          <div class="text-xs text-gray-400 dark:text-gray-500">
+            ${monat.perioden} Periode${monat.perioden !== 1 ? 'n' : ''}
+          </div>
+        `;
+        container.appendChild(card);
+      }
+    });
   }
 
   // Charts aktualisieren
   function updateCharts(data: any) {
     updateVerbrauchChart(data);
     updateKostenChart(data);
-    updateJahresvergleichChart(data);
   }
 
   // Verbrauch-Chart aktualisieren
@@ -468,7 +581,7 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
       data: {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
         datasets: [{
-          label: 'Verbrauch (Stunden)',
+          label: 'Dein Verbrauch (Stunden)',
           data: monatlicheDaten,
           borderColor: 'rgb(59, 130, 246)',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -512,9 +625,7 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
   // Kosten-Chart aktualisieren
   function updateKostenChart(data: any) {
     const ctx = document.getElementById('kosten-chart') as HTMLCanvasElement;
-    if (!ctx) {
-      return;
-    }
+    if (!ctx) return;
 
     if (kostenChart) {
       kostenChart.destroy();
@@ -552,65 +663,6 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
     });
   }
 
-  // Jahresvergleich-Chart aktualisieren
-  function updateJahresvergleichChart(data: any) {
-    const ctx = document.getElementById('jahresvergleich-chart') as HTMLCanvasElement;
-    if (!ctx) return;
-
-    if (jahresvergleichChart) {
-      jahresvergleichChart.destroy();
-    }
-
-    // Hier würden wir Daten für mehrere Jahre laden
-    // Für jetzt zeigen wir nur das aktuelle Jahr
-    const jahr = (document.getElementById('jahr') as HTMLSelectElement)?.value || '2024';
-    const gesamtKosten = data.gesamtKosten || 0;
-    
-    jahresvergleichChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: [jahr],
-        datasets: [{
-          label: 'Gesamtkosten (€)',
-          data: [gesamtKosten],
-          backgroundColor: ['rgba(59, 130, 246, 0.8)'],
-          borderColor: ['rgb(59, 130, 246)'],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: {
-              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: {
-              color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
-            },
-            ticks: {
-              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
-            }
-          },
-          x: {
-            grid: {
-              color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
-            },
-            ticks: {
-              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
-            }
-          }
-        }
-      }
-    });
-  }
-
   // Verfügbare Jahre laden
   async function loadAvailableYears() {
     try {
@@ -626,7 +678,7 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
             option.value = year.toString();
             option.textContent = year.toString();
             if (year === 2024) {
-              option.selected = true; // Aktuelles Jahr als Standard
+              option.selected = true;
             }
             jahrSelect.appendChild(option);
           });
@@ -634,7 +686,6 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
       }
     } catch (error) {
       console.error('Fehler beim Laden der verfügbaren Jahre:', error);
-      // Fallback: Standard-Jahre
       const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
       if (jahrSelect) {
         jahrSelect.innerHTML = '<option value="2024">2024</option>';
@@ -645,7 +696,6 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
   // Event-Listener
   document.addEventListener('DOMContentLoaded', async () => {
     await loadAvailableYears();
-    await loadUsers();
     await loadStatistiken();
     
     // Filter-Button
@@ -657,13 +707,17 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
     // Jahr-Änderung
     const jahrSelect = document.getElementById('jahr');
     if (jahrSelect) {
-      jahrSelect.addEventListener('click', loadStatistiken);
+      jahrSelect.addEventListener('change', loadStatistiken);
     }
     
-    // Person-Änderung
-    const personSelect = document.getElementById('person');
-    if (personSelect) {
-      personSelect.addEventListener('change', loadStatistiken);
+    // Zeitraum-Änderung
+    const zeitraumSelect = document.getElementById('zeitraum');
+    if (zeitraumSelect) {
+      zeitraumSelect.addEventListener('change', () => {
+        if (currentData) {
+          updateDetailViews(currentData);
+        }
+      });
     }
   });
 

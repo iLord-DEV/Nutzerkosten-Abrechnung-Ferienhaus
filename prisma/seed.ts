@@ -1,24 +1,35 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starte Datenbank-Seeding...');
 
-  // Alle bestehenden Daten löschen
+  // Alle bestehenden Daten löschen (in korrekter Reihenfolge wegen Foreign Keys)
   await prisma.jahresAbschluss.deleteMany();
   await prisma.aufenthalt.deleteMany();
   await prisma.tankfuellung.deleteMany();
   await prisma.zaehler.deleteMany();
   await prisma.preise.deleteMany();
+  // Alle Termin-bezogenen Tabellen löschen
+  await prisma.terminKommentar.deleteMany();
+  await prisma.terminAenderung.deleteMany();
+  await prisma.terminAbstimmung.deleteMany();
+  await prisma.terminPlanung.deleteMany();
+  // User zuletzt löschen wegen Foreign Key Constraints
   await prisma.user.deleteMany();
 
   // 1. Echte Benutzer erstellen
+  const hashedAdminPassword = await bcrypt.hash('admin123', 10);
+  const hashedUserPassword = await bcrypt.hash('user123', 10);
+
   const christoph = await prisma.user.create({
     data: {
       email: 'post@christoph-heim.de',
       name: 'Christoph Heim',
       role: 'ADMIN',
+      password: hashedAdminPassword,
     },
   });
 
@@ -27,6 +38,7 @@ async function main() {
       email: 'usheim@t-online.de',
       name: 'Ulrich Heim',
       role: 'USER',
+      password: hashedUserPassword,
     },
   });
 
@@ -35,6 +47,7 @@ async function main() {
       email: 'markus.wilson-zwilling@gmx.de',
       name: 'Markus Wilson-Zwilling',
       role: 'USER',
+      password: hashedUserPassword,
     },
   });
 
@@ -43,6 +56,7 @@ async function main() {
       email: 'okatomi.wilson@googlemail.com',
       name: 'Andreas Wilson',
       role: 'USER',
+      password: hashedUserPassword,
     },
   });
 
@@ -51,6 +65,7 @@ async function main() {
       email: 'mail@tanzinbewegung.de',
       name: 'Astrid Tiedemann',
       role: 'USER',
+      password: hashedUserPassword,
     },
   });
 
@@ -59,6 +74,7 @@ async function main() {
       email: 'andra.heim@gmx.de',
       name: 'Alexandra Heim',
       role: 'USER',
+      password: hashedUserPassword,
     },
   });
 
