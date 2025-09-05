@@ -31,11 +31,27 @@ export const GET: APIRoute = async (context) => {
           }
         },
         kommentare: {
+          where: {
+            parentId: null // Nur Top-Level Kommentare
+          },
           include: {
             user: {
               select: {
                 id: true,
                 name: true
+              }
+            },
+            replies: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              },
+              orderBy: {
+                createdAt: 'asc'
               }
             }
           },

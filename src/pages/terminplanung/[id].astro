@@ -1,99 +1,9 @@
 ---
 import Layout from '../../layouts/ProtectedLayout.astro';
 import { getUser } from '../../utils/auth';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
 const user = await getUser(Astro);
 const { id } = Astro.params;
-
-// Terminplanung server-seitig laden
-let terminplanung = null;
-try {
-  terminplanung = await prisma.terminPlanung.findUnique({
-    where: { id: parseInt(id!) },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true
-        }
-      },
-      abstimmungen: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        }
-      },
-      kommentare: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true
-            }
-          },
-          parent: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true
-                }
-              }
-            }
-          },
-          replies: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true
-                }
-              }
-            },
-            orderBy: {
-              createdAt: 'asc'
-            }
-          }
-        },
-        where: {
-          parentId: null
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      },
-      aenderungen: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      }
-    }
-  });
-} catch (error) {
-  console.error('Fehler beim Laden der Terminplanung:', error);
-}
-
-if (!terminplanung) {
-  await prisma.$disconnect();
-  return new Response('Terminplanung nicht gefunden', { status: 404 });
-}
-
-await prisma.$disconnect();
 ---
 
 <Layout title="Terminplanung Details">
@@ -103,16 +13,10 @@ await prisma.$disconnect();
         ← Zurück zur Übersicht
       </a>
     </div>
-
+    
     <div id="terminplanung-details" class="max-w-4xl mx-auto">
       <!-- Terminplanung wird hier dynamisch geladen -->
     </div>
-    
-    <!-- Versteckte Daten für JavaScript -->
-    <script>
-      window.terminplanungData = {JSON.stringify(terminplanung)};
-    </script>
-    
   </div>
 
   <!-- Abstimmungs-Modal -->
@@ -134,30 +38,15 @@ await prisma.$disconnect();
               </label>
             </div>
           </div>
-          
           <div class="mb-6">
             <label class="block text-sm font-medium text-gray-700 mb-2">Kommentar (optional)</label>
-            <textarea 
-              id="kommentar" 
-              name="kommentar" 
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Deine Gedanken zu diesem Termin..."
-            ></textarea>
+            <textarea id="kommentar" name="kommentar" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Deine Gedanken zu diesem Termin..."></textarea>
           </div>
-          
           <div class="flex justify-end gap-3">
-            <button 
-              type="button" 
-              id="abstimmungCancelBtn"
-              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
+            <button type="button" id="abstimmungCancelBtn" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
               Abbrechen
             </button>
-            <button 
-              type="submit" 
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
               Stimme abgeben
             </button>
           </div>
@@ -175,56 +64,25 @@ await prisma.$disconnect();
           <input type="hidden" id="editTerminplanungId" name="terminplanungId">
           <div class="mb-4">
             <label for="editTitel" class="block text-sm font-medium text-gray-700 mb-2">Titel</label>
-            <input 
-              type="text" 
-              id="editTitel" 
-              name="titel" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+            <input type="text" id="editTitel" name="titel" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
           </div>
           <div class="mb-4">
             <label for="editStartDatum" class="block text-sm font-medium text-gray-700 mb-2">Startdatum</label>
-            <input 
-              type="date" 
-              id="editStartDatum" 
-              name="startDatum" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+            <input type="date" id="editStartDatum" name="startDatum" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
           </div>
           <div class="mb-4">
             <label for="editEndDatum" class="block text-sm font-medium text-gray-700 mb-2">Enddatum</label>
-            <input 
-              type="date" 
-              id="editEndDatum" 
-              name="endDatum" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+            <input type="date" id="editEndDatum" name="endDatum" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
           </div>
           <div class="mb-6">
             <label for="editBeschreibung" class="block text-sm font-medium text-gray-700 mb-2">Beschreibung</label>
-            <textarea 
-              id="editBeschreibung" 
-              name="beschreibung" 
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            ></textarea>
+            <textarea id="editBeschreibung" name="beschreibung" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
           </div>
-          
           <div class="flex justify-end gap-3">
-            <button 
-              type="button" 
-              id="editCancelBtn"
-              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
+            <button type="button" id="editCancelBtn" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
               Abbrechen
             </button>
-            <button 
-              type="submit" 
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
               Speichern
             </button>
           </div>
@@ -243,28 +101,13 @@ await prisma.$disconnect();
           <input type="hidden" id="kommentarParentId" name="parentId">
           <div class="mb-6">
             <label class="block text-sm font-medium text-gray-700 mb-2">Dein Kommentar:</label>
-            <textarea 
-              id="kommentarInhalt" 
-              name="kommentarInhalt" 
-              rows="4"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Was möchtest du zu diesem Termin sagen?"
-            ></textarea>
+            <textarea id="kommentarInhalt" name="kommentarInhalt" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Was möchtest du zu diesem Termin sagen?"></textarea>
           </div>
-          
           <div class="flex justify-end gap-3">
-            <button 
-              type="button" 
-              id="kommentarCancelBtn"
-              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
+            <button type="button" id="kommentarCancelBtn" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
               Abbrechen
             </button>
-            <button 
-              type="submit" 
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
               Kommentar hinzufügen
             </button>
           </div>
@@ -276,52 +119,43 @@ await prisma.$disconnect();
 
 <script>
   const terminplanungId = parseInt(window.location.pathname.split('/').pop());
-  let currentUser = null;
-  
-  // Terminplanung-Daten vom Server übernehmen
   let terminplanung = null;
-  
+  let currentUser = null;
+
   // User-Info laden
   async function loadCurrentUser() {
     try {
       const response = await fetch('/api/auth/me');
       if (response.ok) {
         currentUser = await response.json();
-        // Terminplanung-Daten vom Server laden
-        if (window.terminplanungData) {
-          terminplanung = JSON.parse(window.terminplanungData);
-          renderTerminplanung();
-        } else {
-          loadTerminplanung();
-        }
-      } else {
-        console.error('User-Auth fehlgeschlagen:', response.status);
+        console.log('🔍 DEBUG: Current user loaded:', currentUser);
       }
     } catch (error) {
       console.error('Fehler beim Laden der User-Info:', error);
     }
   }
-  
-  // Sofortige Initialisierung
-  if (window.terminplanungData) {
-    terminplanung = JSON.parse(window.terminplanungData);
-    loadCurrentUser();
-  } else {
-    loadCurrentUser();
-  }
 
-  // Terminplanung neu laden (für Updates)
+  // Terminplanung laden
   async function loadTerminplanung() {
+    console.log('🔍 DEBUG: loadTerminplanung() gestartet');
+    console.log('🔍 DEBUG: terminplanungId =', terminplanungId);
+    
     try {
-      console.log('Lade Terminplanung für ID:', terminplanungId);
+      console.log('🔍 DEBUG: Fetching API...');
       const response = await fetch(`/api/terminplanung/${terminplanungId}`);
+      console.log('🔍 DEBUG: Response status =', response.status);
+      
       if (response.ok) {
+        console.log('🔍 DEBUG: Response OK, parsing JSON...');
         terminplanung = await response.json();
-        console.log('Terminplanung geladen:', terminplanung);
+        console.log('🔍 DEBUG: Terminplanung geladen:', terminplanung);
+        console.log('🔍 DEBUG: Calling renderTerminplanung()...');
         renderTerminplanung();
+        console.log('🔍 DEBUG: renderTerminplanung() completed');
       } else {
+        console.log('🔍 DEBUG: Response not OK, parsing error...');
         const error = await response.json();
-        console.error('API-Fehler:', error);
+        console.log('🔍 DEBUG: Error:', error);
         const detailsEl = document.getElementById('terminplanung-details');
         if (detailsEl) {
           detailsEl.innerHTML = `
@@ -332,7 +166,7 @@ await prisma.$disconnect();
         }
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Terminplanung:', error);
+      console.error('🔍 DEBUG: Catch block - Fehler beim Laden der Terminplanung:', error);
       const detailsEl = document.getElementById('terminplanung-details');
       if (detailsEl) {
         detailsEl.innerHTML = `
@@ -346,11 +180,15 @@ await prisma.$disconnect();
 
   // Terminplanung rendern
   function renderTerminplanung() {
-    console.log('renderTerminplanung aufgerufen, terminplanung:', terminplanung);
+    console.log('🔍 DEBUG: renderTerminplanung() gestartet');
+    console.log('🔍 DEBUG: terminplanung =', terminplanung);
+    
     if (!terminplanung) {
-      console.log('Keine Terminplanung gefunden');
+      console.log('🔍 DEBUG: Keine Terminplanung vorhanden, return');
       return;
     }
+    
+    console.log('🔍 DEBUG: Terminplanung vorhanden, starte Rendering...');
 
     const statusColor = 
       terminplanung.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
@@ -369,15 +207,15 @@ await prisma.$disconnect();
       a.userId === currentUser?.id && a.version === terminplanung.version
     );
 
-    const canEdit = (terminplanung.userId === currentUser?.id || currentUser?.role === 'ADMIN');
+    const canEdit = (terminplanung.userId === currentUser?.id || currentUser?.role === 'ADMIN') && terminplanung.status !== 'APPROVED';
     const canVote = terminplanung.userId !== currentUser?.id && terminplanung.status !== 'CANCELLED';
 
     const detailsEl = document.getElementById('terminplanung-details');
     if (!detailsEl) {
-      console.error('terminplanung-details Element nicht gefunden');
+      console.error('🔍 DEBUG: terminplanung-details element not found');
       return;
     }
-    
+
     detailsEl.innerHTML = `
       <div class="bg-white rounded-lg shadow-lg p-6">
         <!-- Header -->
@@ -399,18 +237,8 @@ await prisma.$disconnect();
         <div class="mb-6 p-4 bg-gray-50 rounded-lg">
           <h3 class="font-semibold text-gray-900 mb-2">Termin</h3>
           <div class="text-lg">
-            ${new Date(terminplanung.startDatum).toLocaleDateString('de-DE', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })} - 
-            ${new Date(terminplanung.endDatum).toLocaleDateString('de-DE', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+            ${new Date(terminplanung.startDatum).toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} - 
+            ${new Date(terminplanung.endDatum).toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </div>
           ${terminplanung.beschreibung ? `
             <div class="mt-2 text-gray-700">
@@ -422,41 +250,26 @@ await prisma.$disconnect();
 
         <!-- Aktionen -->
         <div class="flex gap-3 mb-6">
-          ${(terminplanung.userId === currentUser?.id || currentUser?.role === 'ADMIN') ? `
-            <button 
-              onclick="editTerminplanung()"
-              class="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-            >
+          ${canEdit ? `
+            <button onclick="editTerminplanung()" class="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
               Bearbeiten
             </button>
-            <button 
-              onclick="cancelTerminplanung()"
-              class="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
-            >
+            <button onclick="cancelTerminplanung()" class="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200">
               Stornieren
             </button>
           ` : ''}
           ${canVote ? `
             ${terminplanung.abstimmungen.some(a => a.userId === currentUser?.id && a.stimme === 'APPROVE' && a.version === terminplanung.version) ? `
-              <button 
-                onclick="window.zustimmungEntziehen(${terminplanung.id})"
-                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-medium"
-              >
+              <button onclick="window.zustimmungEntziehen(${terminplanung.id})" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-medium">
                 ❌ Zustimmung entziehen
               </button>
             ` : `
-              <button 
-                onclick="window.zustimmen(${terminplanung.id})"
-                class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium"
-              >
+              <button onclick="window.zustimmen(${terminplanung.id})" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
                 ✅ Zustimmen
               </button>
             `}
           ` : ''}
-          <button 
-            onclick="window.openKommentarModal()"
-            class="px-4 py-2 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200"
-          >
+          <button onclick="window.openKommentarModal()" class="px-4 py-2 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200">
             Kommentieren
           </button>
         </div>
@@ -490,43 +303,46 @@ await prisma.$disconnect();
             ${terminplanung.abstimmungen.filter(a => a.version === terminplanung.version).length === 0 ? 
               '<p class="text-gray-500 text-sm">Noch keine Abstimmungen</p>' : ''}
           </div>
-          
-          <!-- Status-Info -->
-          ${terminplanung.status === 'PENDING' ? `
-            <div class="mt-4 p-3 bg-orange-50 border border-orange-200 rounded">
-              <div class="flex items-center gap-2">
-                <span class="text-orange-600">⏳</span>
-                <span class="text-sm text-orange-800">
-                  Warten auf Abstimmungen der anderen Mitglieder
-                </span>
-              </div>
-            </div>
-          ` : terminplanung.status === 'DISCUSSING' ? `
-            <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-              <div class="flex items-center gap-2">
-                <span class="text-yellow-600">💬</span>
-                <span class="text-sm text-yellow-800">
-                  In Diskussion - es gibt Kommentare oder "Mehr Infos" Stimmen
-                </span>
-              </div>
-            </div>
-          ` : terminplanung.status === 'APPROVED' ? `
-            <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded">
-              <div class="flex items-center gap-2">
-                <span class="text-green-600">✅</span>
-                <span class="text-sm text-green-800">
-                  Termin ist freigegeben - alle haben zugestimmt!
-                </span>
-              </div>
-            </div>
-          ` : ''}
         </div>
 
-        <!-- Kommentare -->
-        <div class="mb-6">
-          <h3 class="font-semibold text-gray-900 mb-3">Kommentare</h3>
-          <div class="space-y-3">
-            ${terminplanung.kommentare.map(kommentar => `
+        <!-- Status-Info -->
+        ${terminplanung.status === 'PENDING' ? `
+          <div class="mt-4 p-3 bg-orange-50 border border-orange-200 rounded">
+            <div class="flex items-center gap-2">
+              <span class="text-orange-600">⏳</span>
+              <span class="text-sm text-orange-800">
+                Warten auf Abstimmungen der anderen Mitglieder
+              </span>
+            </div>
+          </div>
+        ` : terminplanung.status === 'DISCUSSING' ? `
+          <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <div class="flex items-center gap-2">
+              <span class="text-yellow-600">💬</span>
+              <span class="text-sm text-yellow-800">
+                In Diskussion - es gibt Kommentare oder "Mehr Infos" Stimmen
+              </span>
+            </div>
+          </div>
+        ` : terminplanung.status === 'APPROVED' ? `
+          <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+            <div class="flex items-center gap-2">
+              <span class="text-green-600">✅</span>
+              <span class="text-sm text-green-800">
+                Termin ist freigegeben - alle haben zugestimmt!
+              </span>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Kommentare -->
+      <div class="mb-6">
+        <h3 class="font-semibold text-gray-900 mb-3">Kommentare</h3>
+        <div class="space-y-3">
+          ${terminplanung.kommentare
+            .filter(kommentar => !kommentar.parentId) // Nur Top-Level Kommentare
+            .map(kommentar => `
               <div class="p-3 bg-gray-50 rounded">
                 <div class="flex items-center justify-between mb-1">
                   <span class="font-medium text-sm">${kommentar.user.name}</span>
@@ -556,76 +372,49 @@ await prisma.$disconnect();
                 ` : ''}
                 
                 <!-- Antwort-Button -->
-                <button 
-                  onclick="window.antworten(${terminplanung.id}, ${kommentar.id})"
-                  class="mt-2 text-xs text-blue-600 hover:text-blue-800"
-                >
+                <button onclick="window.antworten(${terminplanung.id}, ${kommentar.id})" class="mt-2 text-xs text-blue-600 hover:text-blue-800">
                   Antworten
                 </button>
               </div>
             `).join('')}
-            ${terminplanung.kommentare.length === 0 ? 
-              '<p class="text-gray-500 text-sm">Noch keine Kommentare</p>' : ''}
+          ${terminplanung.kommentare.filter(k => !k.parentId).length === 0 ? 
+            '<p class="text-gray-500 text-sm">Noch keine Kommentare</p>' : ''}
+        </div>
+      </div>
+
+      <!-- Änderungshistorie -->
+      ${terminplanung.aenderungen.length > 0 ? `
+        <div>
+          <h3 class="font-semibold text-gray-900 mb-3">Änderungshistorie</h3>
+          <div class="space-y-2">
+            ${terminplanung.aenderungen.map(aenderung => `
+              <div class="p-3 bg-blue-50 rounded text-sm">
+                <div class="font-medium">${aenderung.user.name} hat die Termine geändert</div>
+                <div class="text-gray-600 mt-1">
+                  <strong>Von:</strong> ${new Date(aenderung.alteStartDatum).toLocaleDateString('de-DE')} - 
+                  ${new Date(aenderung.alteEndDatum).toLocaleDateString('de-DE')}<br>
+                  <strong>Zu:</strong> ${new Date(aenderung.neueStartDatum).toLocaleDateString('de-DE')} - 
+                  ${new Date(aenderung.neueEndDatum).toLocaleDateString('de-DE')}
+                </div>
+                ${aenderung.grund ? `
+                  <div class="mt-1 text-gray-700">"${aenderung.grund}"</div>
+                ` : ''}
+                <div class="text-xs text-gray-500 mt-1">
+                  ${new Date(aenderung.createdAt).toLocaleDateString('de-DE')}
+                </div>
+              </div>
+            `).join('')}
           </div>
         </div>
-
-        <!-- Änderungshistorie -->
-        ${terminplanung.aenderungen.length > 0 ? `
-          <div>
-            <h3 class="font-semibold text-gray-900 mb-3">Änderungshistorie</h3>
-            <div class="space-y-2">
-              ${terminplanung.aenderungen.map(aenderung => `
-                <div class="p-3 bg-blue-50 rounded text-sm">
-                  <div class="font-medium">${aenderung.user.name} hat die Termine geändert</div>
-                  <div class="text-gray-600 mt-1">
-                    <strong>Von:</strong> ${new Date(aenderung.alteStartDatum).toLocaleDateString('de-DE')} - 
-                    ${new Date(aenderung.alteEndDatum).toLocaleDateString('de-DE')}<br>
-                    <strong>Zu:</strong> ${new Date(aenderung.neueStartDatum).toLocaleDateString('de-DE')} - 
-                    ${new Date(aenderung.neueEndDatum).toLocaleDateString('de-DE')}
-                  </div>
-                  ${aenderung.grund ? `<div class="mt-1 text-gray-700">"${aenderung.grund}"</div>` : ''}
-                  <div class="text-xs text-gray-500 mt-1">
-                    ${new Date(aenderung.createdAt).toLocaleDateString('de-DE')}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        ` : ''}
-      </div>
+      ` : ''}
     `;
-  }
-
-  // Modal-Funktionen
-  function openAbstimmungModal() {
-    const modal = document.getElementById('abstimmungModal');
-    const form = document.getElementById('abstimmungForm');
-    
-    // Bestehende Abstimmung vorausfüllen
-    const userAbstimmung = terminplanung.abstimmungen.find(a => 
-      a.userId === currentUser?.id && a.version === terminplanung.version
-    );
-    
-    if (userAbstimmung) {
-      form.querySelector(`input[value="${userAbstimmung.stimme}"]`).checked = true;
-      document.getElementById('kommentar').value = userAbstimmung.kommentar || '';
-    } else {
-      form.reset();
-    }
-    
-    modal.classList.remove('hidden');
-  }
-
-  function closeAbstimmungModal() {
-    document.getElementById('abstimmungModal').classList.add('hidden');
   }
 
   // Globale Funktionen
   window.openKommentarModal = function() {
-    const terminplanungIdEl = document.getElementById('kommentarTerminplanungId') as HTMLInputElement;
-    const parentIdEl = document.getElementById('kommentarParentId') as HTMLInputElement;
+    const terminplanungIdEl = document.getElementById('kommentarTerminplanungId');
+    const parentIdEl = document.getElementById('kommentarParentId');
     const modal = document.getElementById('kommentarModal');
-    
     if (terminplanungIdEl && parentIdEl && modal) {
       terminplanungIdEl.value = terminplanung.id.toString();
       parentIdEl.value = '';
@@ -635,17 +424,15 @@ await prisma.$disconnect();
 
   window.closeKommentarModal = function() {
     const modal = document.getElementById('kommentarModal');
-    const form = document.getElementById('kommentarForm') as HTMLFormElement;
-    
+    const form = document.getElementById('kommentarForm');
     if (modal) modal.classList.add('hidden');
     if (form) form.reset();
   };
 
-  window.antworten = function(terminplanungId: number, parentId: number) {
-    const terminplanungIdEl = document.getElementById('kommentarTerminplanungId') as HTMLInputElement;
-    const parentIdEl = document.getElementById('kommentarParentId') as HTMLInputElement;
+  window.antworten = function(terminplanungId, parentId) {
+    const terminplanungIdEl = document.getElementById('kommentarTerminplanungId');
+    const parentIdEl = document.getElementById('kommentarParentId');
     const modal = document.getElementById('kommentarModal');
-    
     if (terminplanungIdEl && parentIdEl && modal) {
       terminplanungIdEl.value = terminplanungId.toString();
       parentIdEl.value = parentId.toString();
@@ -653,101 +440,13 @@ await prisma.$disconnect();
     }
   };
 
-  // Event Listeners
-  const abstimmungCancelBtn = document.getElementById('abstimmungCancelBtn');
-  const kommentarCancelBtn = document.getElementById('kommentarCancelBtn');
-  const editCancelBtn = document.getElementById('editCancelBtn');
-  
-  if (abstimmungCancelBtn) abstimmungCancelBtn.addEventListener('click', closeAbstimmungModal);
-  if (kommentarCancelBtn) kommentarCancelBtn.addEventListener('click', window.closeKommentarModal);
-  if (editCancelBtn) editCancelBtn.addEventListener('click', () => {
-    const modal = document.getElementById('editModal');
-    if (modal) modal.classList.add('hidden');
-  });
-
-  const abstimmungForm = document.getElementById('abstimmungForm') as HTMLFormElement;
-  const kommentarForm = document.getElementById('kommentarForm') as HTMLFormElement;
-  
-  if (abstimmungForm) {
-    abstimmungForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const formData = new FormData(e.target as HTMLFormElement);
-      const data = {
-        stimme: formData.get('stimme'),
-        kommentar: formData.get('kommentar')
-      };
-      
-      try {
-        const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
-        });
-        
-        if (response.ok) {
-          closeAbstimmungModal();
-          loadTerminplanung();
-        } else {
-          const error = await response.json();
-          alert('Fehler: ' + error.error);
-        }
-      } catch (error) {
-        console.error('Fehler beim Abgeben der Abstimmung:', error);
-        alert('Fehler beim Abgeben der Abstimmung');
-      }
-    });
-  }
-
-  if (kommentarForm) {
-    kommentarForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const formData = new FormData(e.target as HTMLFormElement);
-      const data = {
-        inhalt: formData.get('kommentarInhalt'),
-        parentId: formData.get('parentId') ? parseInt(formData.get('parentId') as string) : null
-      };
-      
-      try {
-        const response = await fetch(`/api/terminplanung/${terminplanungId}/kommentar`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
-        });
-        
-        if (response.ok) {
-          window.closeKommentarModal();
-          loadTerminplanung();
-        } else {
-          const error = await response.json();
-          alert('Fehler: ' + error.error);
-        }
-      } catch (error) {
-        console.error('Fehler beim Erstellen des Kommentars:', error);
-        alert('Fehler beim Erstellen des Kommentars');
-      }
-    });
-  }
-
-  // Funktionen
-  window.zustimmen = async function(terminplanungId: number) {
+  window.zustimmen = async function(terminplanungId) {
     try {
       const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          stimme: 'APPROVE',
-          kommentar: ''
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stimme: 'APPROVE', kommentar: '' })
       });
-      
       if (response.ok) {
         alert('Zustimmung erfolgreich abgegeben!');
         loadTerminplanung();
@@ -761,15 +460,12 @@ await prisma.$disconnect();
     }
   };
 
-  window.zustimmungEntziehen = async function(terminplanungId: number) {
+  window.zustimmungEntziehen = async function(terminplanungId) {
     try {
       const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
-      
       if (response.ok) {
         alert('Zustimmung erfolgreich entzogen!');
         loadTerminplanung();
@@ -784,10 +480,8 @@ await prisma.$disconnect();
   };
 
   window.editTerminplanung = function() {
-    // Modal für Bearbeitung öffnen und Werte vorausfüllen
     const modal = document.getElementById('editModal');
     if (modal) {
-      // Werte vorausfüllen
       const titelInput = document.getElementById('editTitel');
       const startDatumInput = document.getElementById('editStartDatum');
       const endDatumInput = document.getElementById('editEndDatum');
@@ -804,39 +498,112 @@ await prisma.$disconnect();
 
   function cancelTerminplanung() {
     if (confirm('Möchtest du diese Terminplanung wirklich stornieren?')) {
-      // TODO: Stornierung implementieren
       alert('Stornierung wird implementiert...');
     }
   }
 
-  const editForm = document.getElementById('editForm') as HTMLFormElement;
-  
+  // Event Listeners
+  const abstimmungCancelBtn = document.getElementById('abstimmungCancelBtn');
+  const kommentarCancelBtn = document.getElementById('kommentarCancelBtn');
+  const editCancelBtn = document.getElementById('editCancelBtn');
+
+  if (abstimmungCancelBtn) {
+    abstimmungCancelBtn.addEventListener('click', () => {
+      document.getElementById('abstimmungModal').classList.add('hidden');
+    });
+  }
+
+  if (kommentarCancelBtn) {
+    kommentarCancelBtn.addEventListener('click', window.closeKommentarModal);
+  }
+
+  if (editCancelBtn) {
+    editCancelBtn.addEventListener('click', () => {
+      const modal = document.getElementById('editModal');
+      if (modal) modal.classList.add('hidden');
+    });
+  }
+
+  const abstimmungForm = document.getElementById('abstimmungForm');
+  const kommentarForm = document.getElementById('kommentarForm');
+  const editForm = document.getElementById('editForm');
+
+  if (abstimmungForm) {
+    abstimmungForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = {
+        stimme: formData.get('stimme'),
+        kommentar: formData.get('kommentar')
+      };
+      try {
+        const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (response.ok) {
+          document.getElementById('abstimmungModal').classList.add('hidden');
+          loadTerminplanung();
+        } else {
+          const error = await response.json();
+          alert('Fehler: ' + error.error);
+        }
+      } catch (error) {
+        console.error('Fehler beim Abgeben der Abstimmung:', error);
+        alert('Fehler beim Abgeben der Abstimmung');
+      }
+    });
+  }
+
+  if (kommentarForm) {
+    kommentarForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = {
+        inhalt: formData.get('kommentarInhalt'),
+        parentId: formData.get('parentId') ? parseInt(formData.get('parentId')) : null
+      };
+      try {
+        const response = await fetch(`/api/terminplanung/${terminplanungId}/kommentar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (response.ok) {
+          window.closeKommentarModal();
+          loadTerminplanung();
+        } else {
+          const error = await response.json();
+          alert('Fehler: ' + error.error);
+        }
+      } catch (error) {
+        console.error('Fehler beim Erstellen des Kommentars:', error);
+        alert('Fehler beim Erstellen des Kommentars');
+      }
+    });
+  }
+
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      const formData = new FormData(e.target as HTMLFormElement);
+      const formData = new FormData(e.target);
       const data = {
         titel: formData.get('titel'),
-        startDatum: new Date(formData.get('startDatum') as string).toISOString(),
-        endDatum: new Date(formData.get('endDatum') as string).toISOString(),
+        startDatum: new Date(formData.get('startDatum')).toISOString(),
+        endDatum: new Date(formData.get('endDatum')).toISOString(),
         beschreibung: formData.get('beschreibung')
       };
-      
       try {
         const response = await fetch(`/api/terminplanung/${terminplanung.id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
-        
         if (response.ok) {
           alert('Terminplanung erfolgreich aktualisiert! Alle Abstimmungen wurden zurückgesetzt.');
           const modal = document.getElementById('editModal');
           if (modal) modal.classList.add('hidden');
-          // Terminplanung neu laden um aktualisierte Daten anzuzeigen
           loadTerminplanung();
         } else {
           const error = await response.json();
@@ -850,8 +617,8 @@ await prisma.$disconnect();
   }
 
   // Initialisierung
-  console.log('Initialisierung gestartet');
-  
-  // Sofortige Initialisierung
-  loadCurrentUser();
+  console.log('🔍 DEBUG: Initialisierung gestartet');
+  loadCurrentUser().then(() => {
+    loadTerminplanung();
+  });
 </script>
