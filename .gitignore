@@ -19,6 +19,9 @@ pnpm-debug.log*
 .env.local
 .env.development
 
+# Symlinks (falls .env ein Symlink auf .env.local ist)
+# .env wird ignoriert, aber .env.local sollte auch ignoriert werden
+
 # macOS-specific files
 .DS_Store
 

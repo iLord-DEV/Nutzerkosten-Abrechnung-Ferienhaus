@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,38 +8,40 @@ datasource db {
 }
 
 model User {
-  id              Int      @id @default(autoincrement())
-  email           String   @unique
-  name            String
-  password        String   // Gehashtes Passwort
-  role            Role     @default(USER)
-  createdAt       DateTime @default(now())
-  
-  aufenthalte     Aufenthalt[]
-  terminPlanungen TerminPlanung[]
+  id                 Int                @id @default(autoincrement())
+  email              String             @unique
+  name               String
+  role               Role               @default(USER)
+  createdAt          DateTime           @default(now())
+  password           String
+  aufenthalte        Aufenthalt[]
   terminAbstimmungen TerminAbstimmung[]
-  terminKommentare TerminKommentar[]
-  terminAenderungen TerminAenderung[]
+  terminAenderungen  TerminAenderung[]
+  terminKommentare   TerminKommentar[]
+  terminPlanungen    TerminPlanung[]
 }
 
 model Aufenthalt {
-  id                      Int      @id @default(autoincrement())
-  userId                  Int
-  ankunft                 DateTime
-  abreise                 DateTime
-  zaehlerAnkunft          Float    // Ölzählerstand bei Ankunft
-  zaehlerAbreise          Float    // Ölzählerstand bei Abreise  
-  uebernachtungenMitglieder Int    @default(0) // Anzahl Übernachtungen für WG-Mitglieder
-  uebernachtungenGaeste   Int      @default(0) // Anzahl Übernachtungen für Gäste
-  jahr                    Int      // Für Abschluss-Logic
-  zaehlerId               Int?     // Referenz zum Zähler bei Ankunft
-  zaehlerAbreiseId        Int?     // Referenz zum Zähler bei Abreise (falls gewechselt)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  
-  user User @relation(fields: [userId], references: [id])
-  zaehler Zaehler? @relation("AufenthaltAnkunft", fields: [zaehlerId], references: [id])
-  zaehlerAbreiseRef Zaehler? @relation("AufenthaltAbreise", fields: [zaehlerAbreiseId], references: [id])
+  id                        Int      @id @default(autoincrement())
+  userId                    Int
+  ankunft                   DateTime
+  abreise                   DateTime
+  zaehlerAnkunft            Float
+  zaehlerAbreise            Float
+  uebernachtungenMitglieder Int      @default(0)
+  uebernachtungenGaeste     Int      @default(0)
+  jahr                      Int
+  zaehlerId                 Int?
+  zaehlerAbreiseId          Int?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  user                      User     @relation(fields: [userId], references: [id])
+  zaehlerAbreiseRef         Zaehler? @relation("AufenthaltAbreise", fields: [zaehlerAbreiseId], references: [id])
+  zaehler                   Zaehler? @relation("AufenthaltAnkunft", fields: [zaehlerId], references: [id])
+
+  @@index([userId], map: "Aufenthalt_userId_fkey")
+  @@index([zaehlerAbreiseId], map: "Aufenthalt_zaehlerAbreiseId_fkey")
+  @@index([zaehlerId], map: "Aufenthalt_zaehlerId_fkey")
 }
 
 model Tankfuellung {
@@ -53,121 +49,129 @@ model Tankfuellung {
   datum         DateTime
   liter         Float
   preisProLiter Float
-  zaehlerstand  Float    // Zählerstand nach Tankfüllung
-  zaehlerId     Int?     // Referenz zum aktuellen Zähler
+  zaehlerstand  Float
+  zaehlerId     Int?
   createdAt     DateTime @default(now())
-  
   zaehler       Zaehler? @relation(fields: [zaehlerId], references: [id])
+
+  @@index([zaehlerId], map: "Tankfuellung_zaehlerId_fkey")
 }
 
 model Zaehler {
-  id              Int      @id @default(autoincrement())
-  einbauDatum     DateTime // Datum des Einbaus
-  ausbauDatum     DateTime? // Datum des Ausbaus (null = aktuell aktiv)
-  letzterStand    Float    // Letzter gemessener Stand vor Ausbau
-  istAktiv        Boolean  @default(true) // Ist der Zähler aktuell aktiv?
-  notizen         String?  // Notizen zum Zähler (Grund für Wechsel, etc.)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  tankfuellungen  Tankfuellung[]
-  aufenthalteAnkunft   Aufenthalt[] @relation("AufenthaltAnkunft")
-  aufenthalteAbreise   Aufenthalt[] @relation("AufenthaltAbreise")
+  id                 Int            @id @default(autoincrement())
+  einbauDatum        DateTime
+  ausbauDatum        DateTime?
+  letzterStand       Float
+  istAktiv           Boolean        @default(true)
+  notizen            String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  aufenthalteAbreise Aufenthalt[]   @relation("AufenthaltAbreise")
+  aufenthalteAnkunft Aufenthalt[]   @relation("AufenthaltAnkunft")
+  tankfuellungen     Tankfuellung[]
 }
 
 model Preise {
-  jahr                      Int      @id
-  oelpreisProLiter          Float
-  uebernachtungMitglied     Float // Preis pro Nacht für WG-Mitglieder
-  uebernachtungGast         Float // Preis pro Nacht für Gäste
-  verbrauchProStunde        Float @default(5.5) // Liter Öl pro Brennerstunde (Fallback)
-  istBerechnet              Boolean @default(false) // true wenn aus Tankdaten berechnet
-  gueltigAb                 DateTime? // Ab wann gelten diese Übernachtungspreise (optional)
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  jahr                  Int       @id
+  oelpreisProLiter      Float
+  uebernachtungMitglied Float
+  uebernachtungGast     Float
+  verbrauchProStunde    Float     @default(5.5)
+  istBerechnet          Boolean   @default(false)
+  gueltigAb             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model JahresAbschluss {
-  jahr                Int      @id
-  zaehlerstand        Float    // Zählerstand am Jahresende
-  gesamtKosten        Float    // Gesamtkosten des Jahres
-  anzahlAufenthalte   Int      // Anzahl Aufenthalte im Jahr
-  verbrauchProStunde  Float    // Verbrauch pro Stunde (Fallback oder berechnet)
+  jahr               Int   @id
+  zaehlerstand       Float
+  gesamtKosten       Float
+  anzahlAufenthalte  Int
+  verbrauchProStunde Float
 }
 
 model TerminPlanung {
-  id              Int      @id @default(autoincrement())
-  userId          Int      // Wer plant den Termin
-  titel           String   // z.B. "Sommerferien 2024"
-  startDatum      DateTime // Geplantes Startdatum
-  endDatum        DateTime // Geplantes Enddatum
-  beschreibung    String?  // Zusätzliche Infos
-  status          TerminStatus @default(PENDING)
-  version         Int      @default(1) // Version für Änderungen
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  user            User @relation(fields: [userId], references: [id])
-  abstimmungen    TerminAbstimmung[]
-  kommentare      TerminKommentar[]
-  aenderungen     TerminAenderung[]
+  id           Int                @id @default(autoincrement())
+  userId       Int
+  titel        String
+  startDatum   DateTime
+  endDatum     DateTime
+  beschreibung String?
+  status       TerminStatus       @default(PENDING)
+  version      Int                @default(1)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  abstimmungen TerminAbstimmung[]
+  aenderungen  TerminAenderung[]
+  kommentare   TerminKommentar[]
+  user         User               @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "TerminPlanung_userId_fkey")
 }
 
 model TerminAbstimmung {
-  id              Int      @id @default(autoincrement())
+  id              Int            @id @default(autoincrement())
   terminPlanungId Int
-  userId          Int      // Wer abstimmt
+  userId          Int
   stimme          AbstimmungsTyp
-  kommentar       String?  // Optionaler Kommentar zur Stimme
-  version         Int      // Version der Abstimmung (bei Änderungen)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  terminPlanung   TerminPlanung @relation(fields: [terminPlanungId], references: [id])
-  user            User @relation(fields: [userId], references: [id])
+  kommentar       String?
+  version         Int
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  terminPlanung   TerminPlanung  @relation(fields: [terminPlanungId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
+
+  @@index([terminPlanungId], map: "TerminAbstimmung_terminPlanungId_fkey")
+  @@index([userId], map: "TerminAbstimmung_userId_fkey")
 }
 
 model TerminKommentar {
-  id              Int      @id @default(autoincrement())
+  id              Int               @id @default(autoincrement())
   terminPlanungId Int
   userId          Int
   inhalt          String
-  version         Int      // Version des Kommentars
-  parentId        Int?     // ID des übergeordneten Kommentars (für Antworten)
-  createdAt       DateTime @default(now())
-  
-  terminPlanung   TerminPlanung @relation(fields: [terminPlanungId], references: [id])
-  user            User @relation(fields: [userId], references: [id])
-  parent          TerminKommentar? @relation("CommentReplies", fields: [parentId], references: [id])
+  version         Int
+  createdAt       DateTime          @default(now())
+  parentId        Int?
+  parent          TerminKommentar?  @relation("CommentReplies", fields: [parentId], references: [id])
   replies         TerminKommentar[] @relation("CommentReplies")
+  terminPlanung   TerminPlanung     @relation(fields: [terminPlanungId], references: [id])
+  user            User              @relation(fields: [userId], references: [id])
+
+  @@index([parentId], map: "TerminKommentar_parentId_fkey")
+  @@index([terminPlanungId], map: "TerminKommentar_terminPlanungId_fkey")
+  @@index([userId], map: "TerminKommentar_userId_fkey")
 }
 
 model TerminAenderung {
-  id              Int      @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   terminPlanungId Int
-  userId          Int      // Wer hat die Änderung gemacht
+  userId          Int
   alteStartDatum  DateTime
   alteEndDatum    DateTime
   neueStartDatum  DateTime
   neueEndDatum    DateTime
-  grund           String?  // Grund für die Änderung
-  version         Int      // Version der Änderung
-  createdAt       DateTime @default(now())
-  
+  grund           String?
+  version         Int
+  createdAt       DateTime      @default(now())
   terminPlanung   TerminPlanung @relation(fields: [terminPlanungId], references: [id])
-  user            User @relation(fields: [userId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
+
+  @@index([terminPlanungId], map: "TerminAenderung_terminPlanungId_fkey")
+  @@index([userId], map: "TerminAenderung_userId_fkey")
 }
 
 enum TerminStatus {
-  PENDING     // Warten auf Abstimmungen
-  APPROVED    // Freigegeben (alle haben zugestimmt)
-  DISCUSSING  // In Diskussion (Kommentare/Änderungen vorhanden)
-  CANCELLED   // Storniert
+  PENDING
+  APPROVED
+  DISCUSSING
+  CANCELLED
 }
 
 enum AbstimmungsTyp {
-  APPROVE     // Zustimmen
-  NEED_INFO   // Brauche mehr Infos / Diskussion
+  APPROVE
+  NEED_INFO
 }
 
 enum Role {
