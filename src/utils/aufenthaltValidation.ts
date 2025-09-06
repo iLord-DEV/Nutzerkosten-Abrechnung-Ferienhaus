@@ -141,14 +141,14 @@ export async function validateZeitlicheKonsistenz(data: AufenthaltData, excludeI
   const zeitlichVorherigeAufenthalte = alleAufenthalte.filter(a => {
     const aAbreise = new Date(a.abreise);
     return aAbreise < ankunftDate && a.zaehlerAbreise !== null &&
-           data.zaehlerStart >= a.zaehlerAnkunft && data.zaehlerStart <= a.zaehlerAbreise;
+           data.zaehlerStart < a.zaehlerAbreise;
   });
 
   if (zeitlichVorherigeAufenthalte.length > 0) {
     const problematischerAufenthalt = zeitlichVorherigeAufenthalte[0];
     errors.push({
       field: 'zaehlerStart',
-      message: `Zählerstand ${data.zaehlerStart} liegt im Bereich des vorherigen Aufenthalts (${problematischerAufenthalt.zaehlerAnkunft}-${problematischerAufenthalt.zaehlerAbreise}) vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Das ist zeitlich unmöglich. Bitte wählen Sie einen Zählerstand außerhalb des Bereichs ${problematischerAufenthalt.zaehlerAnkunft}-${problematischerAufenthalt.zaehlerAbreise}.`
+      message: `Zählerstand ${data.zaehlerStart} ist kleiner als der letzte Abreise-Stand ${problematischerAufenthalt.zaehlerAbreise} vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Zähler können nicht rückwärts laufen. Bitte wählen Sie einen Zählerstand größer oder gleich ${problematischerAufenthalt.zaehlerAbreise}.`
     });
   }
 

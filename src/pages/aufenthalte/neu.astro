@@ -352,6 +352,18 @@ const session = JSON.parse(sessionCookie.value);
         option.textContent = `${user.name} (${user.role})`;
         select.appendChild(option);
       });
+      
+      // Event-Listener für User-Auswahl
+      select.addEventListener('change', async (e) => {
+        const userId = parseInt((e.target as HTMLSelectElement).value);
+        if (userId) {
+          selectedUserId = userId;
+          await loadLastZaehlerstand(userId);
+        } else {
+          selectedUserId = null;
+          lastZaehlerstand = null;
+        }
+      });
     }
   }
 
@@ -371,10 +383,8 @@ const session = JSON.parse(sessionCookie.value);
     const uebernachtungenMitglieder = parseInt(uebernachtungenMitgliederEl?.value || '1');
     const uebernachtungenGaeste = parseInt(uebernachtungenGaesteEl?.value || '0');
 
-    if (zaehlerStart && zaehlerEnde && ankunft && abreise) {
-      const verbrauchteStunden = zaehlerEnde - zaehlerStart;
-      
-      // Validierung: Mitglieder-Übernachtungen prüfen
+    // Validierung: Mitglieder-Übernachtungen prüfen (nur wenn alle relevanten Daten vorhanden)
+    if (ankunft && abreise && !isNaN(zaehlerStart) && !isNaN(zaehlerEnde) && uebernachtungenMitgliederEl?.value) {
       const anzahlNaechte = Math.ceil((new Date(abreise).getTime() - new Date(ankunft).getTime()) / (1000 * 60 * 60 * 24));
       if (uebernachtungenMitglieder < anzahlNaechte) {
         // Warnung anzeigen
@@ -408,8 +418,12 @@ const session = JSON.parse(sessionCookie.value);
           warningEl.classList.add('hidden');
         }
       }
+    }
 
-      // Kosten berechnen
+    // Kosten berechnen (nur wenn alle Zählerstände vorhanden)
+    if (!isNaN(zaehlerStart) && !isNaN(zaehlerEnde) && ankunft && abreise) {
+      const verbrauchteStunden = zaehlerEnde - zaehlerStart;
+      
       const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
       const uebernachtungKosten = (
         uebernachtungenMitglieder * (currentPreise.uebernachtungMitglied || 15) +
@@ -538,11 +552,13 @@ const session = JSON.parse(sessionCookie.value);
         } else if (numValue > 100000) {
           showFieldError(input, 'Zählerstand ist unrealistisch hoch (max 100.000)');
         } else {
-          // Auto-Korrektur für zu niedrige Zählerstände
-          const correctedValue = autoCorrectZaehlerstand(numValue, fieldName);
+          // Auto-Korrektur für zu niedrige Zählerstände (nur bei anschließenden Aufenthalten)
+          const ankunftInput = document.getElementById('ankunft') as HTMLInputElement;
+          const ankunftDate = ankunftInput?.value;
+          const correctedValue = autoCorrectZaehlerstand(numValue, fieldName, ankunftDate);
           if (correctedValue !== numValue) {
             input.value = correctedValue.toString();
-            showFieldSuggestion(input, `Korrigiert zu ${correctedValue} (letzter bekannter Stand)`);
+            showFieldSuggestion(input, `Korrigiert zu ${correctedValue} (letzter bekannter Stand: ${lastZaehlerstand || 'unbekannt'})`);
           } else {
             clearFieldError(input);
             clearFieldSuggestion(input);
@@ -567,15 +583,49 @@ const session = JSON.parse(sessionCookie.value);
     }
   }
 
-  // Auto-Korrektur für Zählerstände
-  function autoCorrectZaehlerstand(value: number, fieldName: string): number {
-    // Für jetzt: Einfache Heuristik basierend auf typischen Werten
-    // In einer echten App würde man hier die letzten bekannten Zählerstände aus der DB laden
-    
-    if (fieldName === 'zaehlerStart') {
-      // Wenn Startzähler zu niedrig, korrigiere zu einem realistischen Wert
-      if (value < 1000) {
-        return 1350; // Letzter bekannter Stand (würde aus DB kommen)
+  // Letzten Zählerstand aus der DB laden (nur für anschließende Aufenthalte)
+  let lastZaehlerstand: number | null = null;
+  let selectedUserId: number | null = null;
+
+  async function loadLastZaehlerstand(userId: number) {
+    try {
+      const response = await fetch('/api/aufenthalte');
+      if (response.ok) {
+        const aufenthalte = await response.json();
+        
+        // Nur Aufenthalte des ausgewählten Users betrachten
+        const userAufenthalte = aufenthalte.filter((a: any) => a.userId === userId);
+        
+        if (userAufenthalte.length > 0) {
+          // Sortiere nach Abreise-Datum (neueste zuerst)
+          userAufenthalte.sort((a: any, b: any) => new Date(b.abreise).getTime() - new Date(a.abreise).getTime());
+          
+          // Nimm den letzten Abreise-Zählerstand als Referenz
+          const letzterAufenthalt = userAufenthalte[0];
+          lastZaehlerstand = letzterAufenthalt.zaehlerAbreise;
+        } else {
+          lastZaehlerstand = null; // Keine vorherigen Aufenthalte
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des letzten Zählerstands:', error);
+      lastZaehlerstand = null;
+    }
+  }
+
+  // Auto-Korrektur für Zählerstände (nur bei anschließenden Aufenthalten)
+  function autoCorrectZaehlerstand(value: number, fieldName: string, ankunftDate?: string): number {
+    if (fieldName === 'zaehlerStart' && lastZaehlerstand !== null && ankunftDate) {
+      // Prüfe ob es ein anschließender Aufenthalt ist (nach dem letzten Abreise-Datum)
+      const ankunft = new Date(ankunftDate);
+      const heute = new Date();
+      
+      // Nur korrigieren wenn:
+      // 1. Wert ist unrealistisch niedrig (< 100) - nicht 0, da 0 realistisch sein kann
+      // 2. Ankunft ist nach dem letzten Aufenthalt (anschließend)
+      // 3. Ankunft ist nicht in der Zukunft (realistisch)
+      if (value < 100 && ankunft <= heute) {
+        return lastZaehlerstand; // Gleicher Stand wie beim letzten Abreise (Heizung war aus)
       }
     }
     
@@ -652,7 +702,7 @@ const session = JSON.parse(sessionCookie.value);
     const uebernachtungenGaeste = parseInt(formData.get('uebernachtungenGaeste') as string);
 
     // Validierung
-    if (!userId || !ankunft || !abreise || !zaehlerStart || !zaehlerEnde) {
+    if (!userId || !ankunft || !abreise || isNaN(zaehlerStart) || isNaN(zaehlerEnde)) {
       showNotification('Bitte füllen Sie alle Pflichtfelder aus.', 'error');
       return;
     }
@@ -751,6 +801,20 @@ const session = JSON.parse(sessionCookie.value);
   document.addEventListener('DOMContentLoaded', async () => {
     await loadUsers();
     await loadPreise();
+    
+    // Für normale Benutzer: letzten Zählerstand laden
+    const sessionCookie = document.cookie.split(';').find(c => c.trim().startsWith('session='));
+    if (sessionCookie) {
+      try {
+        const session = JSON.parse(decodeURIComponent(sessionCookie.split('=')[1]));
+        if (session.userId) {
+          selectedUserId = session.userId;
+          await loadLastZaehlerstand(session.userId);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Session:', error);
+      }
+    }
     
     // Aktuelles Datum setzen
     const now = new Date();
