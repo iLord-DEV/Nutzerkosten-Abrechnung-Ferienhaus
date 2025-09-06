@@ -184,32 +184,35 @@ npm run build
 npm run preview
 ```
 
-## ☁️ Cloudways Deployment
+## ☁️ Uberspace Deployment (Empfohlen)
 
-### Voraussetzungen
-- Cloudways Account mit MySQL-Server
+**Uberspace ist die beste Option für deine Astro-App:**
+- ✅ **Node.js 18+** bereits installiert
+- ✅ **MySQL-Datenbank** inklusive
+- ✅ **PM2** bereits verfügbar
+- ✅ **Günstiger** (ab 5€/Monat)
+- ✅ **Deutsche Firma** (Datenschutz)
+- ✅ **SSH-Zugang** für volle Kontrolle
+- ✅ **Einfaches Deployment** - alles vorinstalliert
+
+#### Voraussetzungen
+- Uberspace Account
 - Domain oder Subdomain
-- Application über Cloudways Backend erstellt
+- SSH-Zugang
 
-### 1. Application in Cloudways erstellen
-1. **Neue Application hinzufügen**
-   - Application Type: **"Custom App"** (angezeigt PHP, wird aber von uns nicht genutzt)
-   - Node.js Version: **18+** (empfohlen: Node.js 20)
-   - Application Name: `Nutzerkosten-Abrechnung`
+#### 1. Server vorbereiten
+```bash
+# Node.js ist bereits installiert (verschiedene Versionen verfügbar)
+node --version
 
-2. **Services aktivieren**
-   - ✅ **MySQL** (für Datenbank)
-   - ✅ **NGINX** (als Reverse Proxy)
-   - ✅ **Varnish** (für Caching)
+# PM2 ist bereits installiert und verfügbar
+pm2 --version
 
-3. **Wichtige Settings konfigurieren**
-   - **Node.js Version**: 18+ (empfohlen: 20)
-   - **Environment**: Production
-   - **Memory Limit**: 1GB+ (für Prisma + Astro)
-   - **Timeout**: 300s (für Datenbank-Operationen)
-   - **Port**: Wird automatisch von Cloudways zugewiesen
+# Git ist bereits verfügbar
+git --version
+```
 
-### 2. Projekt über Cloudways Backend deployen
+#### 2. Projekt deployen
 ```bash
 # Repository klonen
 git clone https://github.com/iLord-DEV/Nutzerkosten-Abrechnung-Ferienhaus.git
