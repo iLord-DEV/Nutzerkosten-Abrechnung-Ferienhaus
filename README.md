@@ -51,8 +51,13 @@ Eine moderne Web-Anwendung zur Verwaltung und Abrechnung von Nutzerkosten in Woh
 
 1. **Repository klonen**
    ```bash
-   git clone <repository-url>
-   cd astro-app
+   # Mit HTTPS (empfohlen für alle Benutzer)
+   git clone https://github.com/iLord-DEV/Nutzerkosten-Abrechnung-Ferienhaus.git
+   cd Nutzerkosten-Abrechnung-Ferienhaus
+   
+   # Oder mit SSH (für Entwickler mit SSH-Keys)
+   git clone git@github.com:iLord-DEV/Nutzerkosten-Abrechnung-Ferienhaus.git
+   cd Nutzerkosten-Abrechnung-Ferienhaus
    ```
 
 2. **Abhängigkeiten installieren**
