@@ -10,7 +10,7 @@ export const GET: APIRoute = async (context) => {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
-  try {
+    
     const url = new URL(request.url);
     const datum = url.searchParams.get('datum');
 
@@ -70,7 +70,7 @@ export const POST: APIRoute = async (context) => {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
-  try {
+    
     const body = await request.json();
     const { gueltigAb, uebernachtungMitglied, uebernachtungGast } = body;
 
@@ -108,7 +108,7 @@ export const PUT: APIRoute = async (context) => {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
-  try {
+    
     const body = await request.json();
     const { id, gueltigAb, uebernachtungMitglied, uebernachtungGast } = body;
 
@@ -147,7 +147,7 @@ export const DELETE: APIRoute = async (context) => {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
-  try {
+    
     const url = new URL(request.url);
     const id = url.pathname.split('/').pop();
 

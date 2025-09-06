@@ -221,8 +221,8 @@ cd ~/html
 git clone https://github.com/iLord-DEV/Nutzerkosten-Abrechnung-Ferienhaus.git
 cd Nutzerkosten-Abrechnung-Ferienhaus
 
-# Dependencies installieren
-npm ci --production
+# Dependencies installieren (mit --legacy-peer-deps wegen Tailwind CSS 4.x)
+npm install --legacy-peer-deps
 
 # Build erstellen
 npm run build
@@ -233,6 +233,11 @@ npx prisma generate
 # Datenbank migrieren
 npx prisma migrate deploy
 ```
+
+**Wichtige Hinweise:**
+- ✅ **Node.js-Adapter** ist bereits in der Konfiguration enthalten
+- ✅ **`--legacy-peer-deps`** nötig wegen Tailwind CSS 4.x Konflikt
+- ✅ **Server-Mode** aktiviert für API-Routes
 
 ### 3. MySQL-Datenbank einrichten
 ```bash
