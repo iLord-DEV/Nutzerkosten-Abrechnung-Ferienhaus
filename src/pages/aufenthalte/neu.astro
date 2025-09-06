@@ -540,7 +540,7 @@ const session = JSON.parse(sessionCookie.value);
     const fieldName = input.name;
     const value = input.value;
 
-    // Zählerstand-Validierung mit Auto-Korrektur
+    // Zählerstand-Validierung (nur grundlegende Validierung bei input)
     if (fieldName === 'zaehlerStart' || fieldName === 'zaehlerEnde') {
       const numValue = parseFloat(value);
       if (!isNaN(numValue)) {
@@ -552,17 +552,8 @@ const session = JSON.parse(sessionCookie.value);
         } else if (numValue > 100000) {
           showFieldError(input, 'Zählerstand ist unrealistisch hoch (max 100.000)');
         } else {
-          // Auto-Korrektur für zu niedrige Zählerstände (nur bei anschließenden Aufenthalten)
-          const ankunftInput = document.getElementById('ankunft') as HTMLInputElement;
-          const ankunftDate = ankunftInput?.value;
-          const correctedValue = autoCorrectZaehlerstand(numValue, fieldName, ankunftDate);
-          if (correctedValue !== numValue) {
-            input.value = correctedValue.toString();
-            showFieldSuggestion(input, `Korrigiert zu ${correctedValue} (letzter bekannter Stand: ${lastZaehlerstand || 'unbekannt'})`);
-          } else {
-            clearFieldError(input);
-            clearFieldSuggestion(input);
-          }
+          clearFieldError(input);
+          clearFieldSuggestion(input);
         }
       }
     }
@@ -593,15 +584,12 @@ const session = JSON.parse(sessionCookie.value);
       if (response.ok) {
         const aufenthalte = await response.json();
         
-        // Nur Aufenthalte des ausgewählten Users betrachten
-        const userAufenthalte = aufenthalte.filter((a: any) => a.userId === userId);
+        // Alle Aufenthalte nach Abreise-Datum sortieren (neueste zuerst)
+        const alleAufenthalte = aufenthalte.sort((a: any, b: any) => new Date(b.abreise).getTime() - new Date(a.abreise).getTime());
         
-        if (userAufenthalte.length > 0) {
-          // Sortiere nach Abreise-Datum (neueste zuerst)
-          userAufenthalte.sort((a: any, b: any) => new Date(b.abreise).getTime() - new Date(a.abreise).getTime());
-          
-          // Nimm den letzten Abreise-Zählerstand als Referenz
-          const letzterAufenthalt = userAufenthalte[0];
+        if (alleAufenthalte.length > 0) {
+          // Letzten Zählerstand aller User holen (nicht nur des ausgewählten Users)
+          const letzterAufenthalt = alleAufenthalte[0];
           lastZaehlerstand = letzterAufenthalt.zaehlerAbreise;
         } else {
           lastZaehlerstand = null; // Keine vorherigen Aufenthalte
@@ -616,6 +604,14 @@ const session = JSON.parse(sessionCookie.value);
   // Auto-Korrektur für Zählerstände (nur bei anschließenden Aufenthalten)
   function autoCorrectZaehlerstand(value: number, fieldName: string, ankunftDate?: string): number {
     if (fieldName === 'zaehlerStart' && lastZaehlerstand !== null && ankunftDate) {
+      // Debug: Logge die Werte
+      console.log('🔍 Auto-Korrektur Debug:', {
+        value,
+        lastZaehlerstand,
+        ankunftDate,
+        shouldCorrect: value < 100
+      });
+      
       // Prüfe ob es ein anschließender Aufenthalt ist (nach dem letzten Abreise-Datum)
       const ankunft = new Date(ankunftDate);
       const heute = new Date();
@@ -625,7 +621,10 @@ const session = JSON.parse(sessionCookie.value);
       // 2. Ankunft ist nach dem letzten Aufenthalt (anschließend)
       // 3. Ankunft ist nicht in der Zukunft (realistisch)
       if (value < 100 && ankunft <= heute) {
+        console.log('✅ Korrigiere von', value, 'zu', lastZaehlerstand);
         return lastZaehlerstand; // Gleicher Stand wie beim letzten Abreise (Heizung war aus)
+      } else {
+        console.log('❌ Keine Korrektur nötig');
       }
     }
     
@@ -839,6 +838,22 @@ const session = JSON.parse(sessionCookie.value);
             calculateCosts();
             validateInput(input);
           }, 300);
+        });
+        
+        // Blur-Validierung für Zählerstände (Auto-Korrektur nur beim Verlassen des Feldes)
+        input.addEventListener('blur', () => {
+          if (input.name === 'zaehlerStart' || input.name === 'zaehlerEnde') {
+            const numValue = parseFloat(input.value);
+            if (!isNaN(numValue)) {
+              const ankunftInput = document.getElementById('ankunft') as HTMLInputElement;
+              const ankunftDate = ankunftInput?.value;
+              const correctedValue = autoCorrectZaehlerstand(numValue, input.name, ankunftDate);
+              if (correctedValue !== numValue) {
+                input.value = correctedValue.toString();
+                showFieldSuggestion(input, `Korrigiert zu ${correctedValue} (letzter bekannter Stand: ${lastZaehlerstand || 'unbekannt'})`);
+              }
+            }
+          }
         });
       });
       

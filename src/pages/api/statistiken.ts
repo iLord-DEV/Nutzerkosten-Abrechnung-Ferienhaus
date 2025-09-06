@@ -29,25 +29,46 @@ async function calculateAllAbsenceConsumption(jahr: number, tankfuellungen: any[
   let gesamtAbwesenheitsKosten = 0;
   let gesamtAbwesenheitsLiter = 0;
   
-  // Alle Aufenthalte nach Datum sortieren
+  // Alle Aufenthalte nach Ankunft-Datum sortieren (für korrekte Abwesenheitsberechnung)
   const sortedAufenthalte = allAufenthalte.sort((a, b) => new Date(a.ankunft).getTime() - new Date(b.ankunft).getTime());
   
   // Abwesenheitsperioden zwischen allen Aufenthalten finden
-  for (let i = 0; i < sortedAufenthalte.length - 1; i++) {
+  for (let i = 0; i < sortedAufenthalte.length; i++) {
     const currentAufenthalt = sortedAufenthalte[i];
-    const nextAufenthalt = sortedAufenthalte[i + 1];
     
+    // Suche den nächsten Aufenthalt nach der aktuellen Abreise
     const currentEnd = new Date(currentAufenthalt.abreise);
+    const nextAufenthalt = sortedAufenthalte.find(aufenthalt => 
+      new Date(aufenthalt.ankunft) > currentEnd
+    );
+    
+    if (!nextAufenthalt) continue; // Kein nächster Aufenthalt gefunden
+    
     const nextStart = new Date(nextAufenthalt.ankunft);
     
+    // Debug: Log für die Berechnung
+    console.log(`🔍 Abwesenheit: ${currentAufenthalt.abreise} → ${nextAufenthalt.ankunft}`);
+    
     // Prüfen ob es eine Lücke zwischen den Aufenthalten gibt
-    const tageZwischen = Math.ceil((nextStart.getTime() - currentEnd.getTime()) / (1000 * 60 * 60 * 24));
+    // Datum auf Mitternacht setzen für korrekte Tagesberechnung
+    const currentEndMidnight = new Date(currentEnd);
+    currentEndMidnight.setHours(0, 0, 0, 0);
+    const nextStartMidnight = new Date(nextStart);
+    nextStartMidnight.setHours(0, 0, 0, 0);
+    
+    // Anzahl der Abwesenheitstage berechnen (Tage zwischen Abreise und Ankunft)
+    const tageZwischen = Math.floor((nextStartMidnight.getTime() - currentEndMidnight.getTime()) / (1000 * 60 * 60 * 24));
     
     if (tageZwischen > 0) {
       // Abwesenheitsverbrauch basierend auf Zählerständen berechnen
-      const abwesenheitsLiter = nextAufenthalt.zaehlerAnkunft - currentAufenthalt.zaehlerAbreise;
-      const preisProLiter = preise?.oelpreisProLiter || 1.01;
-      const totalCost = abwesenheitsLiter * preisProLiter;
+      const abwesenheitsStunden = nextAufenthalt.zaehlerAnkunft - currentAufenthalt.zaehlerAbreise;
+      const verbrauchProStunde = preise?.verbrauchProStunde || 5.5;
+      const abwesenheitsLiter = abwesenheitsStunden * verbrauchProStunde;
+      
+      // Nur Abwesenheitsperioden mit Verbrauch > 0 anzeigen
+      if (abwesenheitsLiter > 0) {
+        const preisProLiter = preise?.oelpreisProLiter || 1.01;
+        const totalCost = abwesenheitsLiter * preisProLiter;
       
       // Monat der Abwesenheit für Gruppierung
       const monat = currentEnd.getMonth();
@@ -64,8 +85,9 @@ async function calculateAllAbsenceConsumption(jahr: number, tankfuellungen: any[
         literProTag: tageZwischen > 0 ? abwesenheitsLiter / tageZwischen : 0
       });
       
-      gesamtAbwesenheitsKosten += totalCost;
-      gesamtAbwesenheitsLiter += abwesenheitsLiter;
+        gesamtAbwesenheitsKosten += totalCost;
+        gesamtAbwesenheitsLiter += abwesenheitsLiter;
+      }
     }
   }
   
@@ -240,7 +262,9 @@ export const GET: APIRoute = async (context) => {
     const referenceValues = await calculateReferenceValues(user.id, parseInt(jahr));
 
     // Abwesenheitsverbrauch berechnen (alle Nutzer)
+    console.log('🚀 Starte Abwesenheitsberechnung für Jahr:', jahr);
     const absenceData = await calculateAllAbsenceConsumption(parseInt(jahr), tankfuellungen, preise, prisma);
+    console.log('✅ Abwesenheitsberechnung abgeschlossen:', absenceData);
 
     // Detaillierte Aufenthaltsstatistiken berechnen
     const aufenthaltsDetails = aufenthalte.map(aufenthalt => {

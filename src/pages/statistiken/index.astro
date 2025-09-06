@@ -343,9 +343,12 @@ if (!user) {
     const jahr = (document.getElementById('jahr') as HTMLSelectElement)?.value || '2024';
     
     try {
+      console.log('🚀 Lade Statistiken für Jahr:', jahr);
       const response = await fetch(`/api/statistiken?jahr=${jahr}`);
       if (response.ok) {
         currentData = await response.json();
+        console.log('📊 Statistiken geladen:', currentData);
+        console.log('🔍 Abwesenheitsdaten:', currentData.absenceConsumption);
         updateUebersichtskarten(currentData);
         updateCharts(currentData);
         updateVergleich(currentData);

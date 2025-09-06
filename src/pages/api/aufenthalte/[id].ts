@@ -142,7 +142,7 @@ export const PUT: APIRoute = async (context) => {
     // Zählerstand-Kontinuitätsprüfung: Prüfe rückwärtslaufende Zähler
     const eigeneAufenthalte = await prisma.aufenthalt.findMany({
       where: {
-        userId: body.userId,
+        userId: parseInt(body.userId),
         id: { not: parseInt(id) } // Aktuellen Aufenthalt ausschließen
       },
       orderBy: {
@@ -179,7 +179,7 @@ export const PUT: APIRoute = async (context) => {
     const zeitlichVorherigeAufenthalte = alleAufenthalte.filter(a => {
       const aAbreise = new Date(a.abreise);
       return aAbreise < ankunftDate && a.zaehlerAbreise !== null &&
-             zaehlerStart >= a.zaehlerAnkunft && zaehlerStart <= a.zaehlerAbreise;
+             zaehlerStart >= a.zaehlerAnkunft && zaehlerStart < a.zaehlerAbreise;
     });
 
     if (zeitlichVorherigeAufenthalte.length > 0) {
@@ -212,7 +212,9 @@ export const PUT: APIRoute = async (context) => {
     const updatedAufenthalt = await prisma.aufenthalt.update({
       where: { id: parseInt(id) },
       data: {
-        userId: parseInt(body.userId),
+        user: {
+          connect: { id: parseInt(body.userId) }
+        },
         ankunft: ankunftDate,
         abreise: abreiseDate,
         zaehlerAnkunft: zaehlerStart,
@@ -220,7 +222,12 @@ export const PUT: APIRoute = async (context) => {
         uebernachtungenMitglieder: parseInt(body.uebernachtungenMitglieder),
         uebernachtungenGaeste: parseInt(body.uebernachtungenGaeste),
         jahr: ankunftDate.getFullYear(),
-        zaehlerAbreiseId: aktiverZaehler.id, // Zähler bei Abreise (kann sich von Ankunft unterscheiden)
+        zaehler: {
+          connect: { id: aktiverZaehler.id }
+        },
+        zaehlerAbreiseRef: {
+          connect: { id: aktiverZaehler.id }
+        }
       },
       include: {
         user: {

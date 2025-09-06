@@ -164,6 +164,9 @@ if (!aufenthalt) {
 
 <script>
   let users: Array<{ id: number; name: string; email: string }> = [];
+  const currentAufenthalt = {
+    userId: {aufenthalt.user.id}
+  };
 
   // Benachrichtigung anzeigen
   function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info') {
@@ -261,7 +264,7 @@ if (!aufenthalt) {
         const option = document.createElement('option');
         option.value = user.id.toString();
         option.textContent = user.name;
-        if (user.id === parseInt(document.getElementById('aufenthalt-id')?.value || '0')) {
+        if (user.id === currentAufenthalt.userId) {
           option.selected = true;
         }
         select.appendChild(option);
