@@ -277,9 +277,9 @@ uberspace-add-domain -d deine-domain.com
 
 **Wichtige Uberspace-Details:**
 - ✅ **HOST=0.0.0.0** nötig für externe Verbindungen
-- ✅ **PORT=3000** fest definiert
+- ✅ **PORT=3000** selbst definiert. s.o.
 - ✅ **Backend-Konfiguration** statt Webroot
-- ✅ **Kein PM2 nötig** - Uberspace verwaltet den Prozess
+- ✅ **Automatische Prozessverwaltung** - Uberspace verwaltet den Prozess
 
 ### 7. SSL-Zertifikat
 ```bash
