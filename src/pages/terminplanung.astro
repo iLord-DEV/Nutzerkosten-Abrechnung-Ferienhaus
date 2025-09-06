@@ -1,8 +1,12 @@
 ---
-import Layout from '../layouts/ProtectedLayout.astro';
+import Layout from '../layouts/Layout.astro';
 import { getUser } from '../utils/auth';
 
+// Authentifizierung prüfen
 const user = await getUser(Astro);
+if (!user) {
+  return Astro.redirect('/login');
+}
 ---
 
 <Layout title="Terminplanung">

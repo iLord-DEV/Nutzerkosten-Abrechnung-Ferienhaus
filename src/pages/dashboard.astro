@@ -1,8 +1,15 @@
 ---
-import ProtectedLayout from '../layouts/ProtectedLayout.astro';
+import Layout from '../layouts/Layout.astro';
+import { getUser } from '../utils/auth';
+
+// Authentifizierung prüfen
+const user = await getUser(Astro);
+if (!user) {
+  return Astro.redirect('/login');
+}
 ---
 
-<ProtectedLayout title="Dashboard - Nutzerkosten">
+<Layout title="Dashboard - Nutzerkosten">
   <div class="px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
       <div class="flex items-center justify-between">
