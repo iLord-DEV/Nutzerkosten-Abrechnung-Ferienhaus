@@ -214,6 +214,9 @@ git --version
 
 #### 2. Projekt deployen
 ```bash
+# In html-Verzeichnis wechseln
+cd ~/html
+
 # Repository klonen
 git clone https://github.com/iLord-DEV/Nutzerkosten-Abrechnung-Ferienhaus.git
 cd Nutzerkosten-Abrechnung-Ferienhaus
@@ -231,19 +234,35 @@ npx prisma generate
 npx prisma migrate deploy
 ```
 
-### 3. Umgebungsvariablen konfigurieren
+### 3. MySQL-Datenbank einrichten
+```bash
+# Zusätzliche Datenbank erstellen (mit Username-Präfix)
+mysql -e "CREATE DATABASE username_nutzerkosten"
+
+# Passwort anzeigen (aus ~/.my.cnf)
+my_print_defaults client
+```
+
+### 4. Umgebungsvariablen konfigurieren
 ```bash
 # .env Datei erstellen
 nano .env
 ```
 
 ```env
-# .env für Production
-DATABASE_URL="mysql://username:password@your-cloudways-mysql-host:3306/database_name"
+# .env für Uberspace (Username = dein Uberspace-Username)
+DATABASE_URL="mysql://username:password@localhost:3306/username_nutzerkosten"
 NODE_ENV="production"
 ```
 
-### 4. PM2 Konfiguration
+**Wichtige Uberspace-Details:**
+- ✅ **Datenbank-Name**: `username_*` (mit deinem Username als Präfix)
+- ✅ **Username**: Dein Uberspace-Username
+- ✅ **Passwort**: Aus `~/.my.cnf` (automatisch generiert)
+- ✅ **Host**: `localhost` (lokale Verbindung)
+- ✅ **Port**: `3306` (Standard MySQL)
+
+### 5. PM2 Konfiguration
 ```bash
 # ecosystem.config.js erstellen
 nano ecosystem.config.js
@@ -252,23 +271,22 @@ nano ecosystem.config.js
 ```javascript
 module.exports = {
   apps: [{
-    name: 'astro-app',
+    name: 'nutzerkosten-app',
     script: 'npm',
     args: 'run preview',
-    cwd: '/path/to/your/astro-app',
+    cwd: '/home/username/html/Nutzerkosten-Abrechnung-Ferienhaus',
     instances: 1,
     autorestart: true,
     watch: false,
     max_memory_restart: '1G',
     env: {
-      NODE_ENV: 'production',
-      PORT: 4321
+      NODE_ENV: 'production'
     }
   }]
 }
 ```
 
-### 5. App starten
+### 6. App starten
 ```bash
 # Mit PM2 starten
 pm2 start ecosystem.config.js
@@ -279,103 +297,22 @@ pm2 save
 
 # Status prüfen
 pm2 status
-pm2 logs astro-app
+pm2 logs nutzerkosten-app
 ```
 
-### 6. Nginx Konfiguration (Cloudways)
-```nginx
-# In Cloudways Panel: Nginx Settings
-server {
-    listen 80;
-    server_name your-domain.com;
-    
-    location / {
-        proxy_pass http://localhost:4321;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-### 7. SSL-Zertifikat (Cloudways)
-- Im Cloudways Panel: SSL Certificate hinzufügen
-- Let's Encrypt oder eigenes Zertifikat verwenden
-
-### 8. Datenbank-Backup einrichten
+### 7. Domain konfigurieren
 ```bash
-# Backup-Script erstellen
-nano backup.sh
+# Domain hinzufügen
+uberspace-add-domain -d deine-domain.com
+
+# Webroot auf dist-Verzeichnis setzen
+uberspace-web -d deine-domain.com -w /home/username/html/Nutzerkosten-Abrechnung-Ferienhaus/dist
 ```
 
+### 8. SSL-Zertifikat
 ```bash
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-mysqldump -h your-mysql-host -u username -p database_name > backup_$DATE.sql
-gzip backup_$DATE.sql
-```
-
-```bash
-# Cron-Job für tägliche Backups
-crontab -e
-# Füge hinzu: 0 2 * * * /path/to/backup.sh
-```
-
-### 9. Monitoring & Wartung
-```bash
-# App-Logs anzeigen
-pm2 logs astro-app --lines 100
-
-# App neustarten
-pm2 restart astro-app
-
-# App stoppen
-pm2 stop astro-app
-
-# App-Status
-pm2 status
-pm2 monit
-```
-
-### 10. Updates deployen
-```bash
-# Code aktualisieren
-git pull origin main
-
-# Dependencies aktualisieren
-npm ci --production
-
-# Neuen Build erstellen
-npm run build
-
-# Prisma Client aktualisieren
-npx prisma generate
-
-# Datenbank-Migrationen ausführen
-npx prisma migrate deploy
-
-# App neustarten
-pm2 restart astro-app
-```
-
-### Troubleshooting
-```bash
-# Port prüfen
-netstat -tlnp | grep :4321
-
-# Prozesse anzeigen
-ps aux | grep node
-
-# Nginx-Status
-sudo systemctl status nginx
-
-# MySQL-Verbindung testen
-mysql -h your-mysql-host -u username -p
+# Let's Encrypt SSL
+uberspace-add-certificate -d deine-domain.com
 ```
 
 ## 📝 Lizenz
