@@ -154,10 +154,6 @@ scripts/
 - `npm run db:seed` - Testdaten laden
 - `npm run db:backup` - Datenbank-Backup (lokal)
 - `npm run db:backup:prod` - Produktions-Backup
-- `npm run pm2:start` - App mit PM2 starten
-- `npm run pm2:stop` - App mit PM2 stoppen
-- `npm run pm2:restart` - App mit PM2 neustarten
-- `npm run pm2:logs` - PM2-Logs anzeigen
 
 ### Datenbank-Migrationen
 ```bash
@@ -189,7 +185,6 @@ npm run preview
 **Uberspace ist die beste Option für deine Astro-App:**
 - ✅ **Node.js 18+** bereits installiert
 - ✅ **MySQL-Datenbank** inklusive
-- ✅ **PM2** bereits verfügbar
 - ✅ **Günstiger** (ab 5€/Monat)
 - ✅ **Deutsche Firma** (Datenschutz)
 - ✅ **SSH-Zugang** für volle Kontrolle
@@ -204,9 +199,6 @@ npm run preview
 ```bash
 # Node.js ist bereits installiert (verschiedene Versionen verfügbar)
 node --version
-
-# PM2 ist bereits installiert und verfügbar
-pm2 --version
 
 # Git ist bereits verfügbar
 git --version
@@ -267,54 +259,29 @@ NODE_ENV="production"
 - ✅ **Host**: `localhost` (lokale Verbindung)
 - ✅ **Port**: `3306` (Standard MySQL)
 
-### 5. PM2 Konfiguration
+### 5. App starten
 ```bash
-# ecosystem.config.js erstellen
-nano ecosystem.config.js
+# App starten (Uberspace verwaltet den Prozess automatisch)
+npm start
 ```
 
-```javascript
-module.exports = {
-  apps: [{
-    name: 'nutzerkosten-app',
-    script: 'npm',
-    args: 'run preview',
-    cwd: '/home/username/html/Nutzerkosten-Abrechnung-Ferienhaus',
-    instances: 1,
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '1G',
-    env: {
-      NODE_ENV: 'production'
-    }
-  }]
-}
-```
 
-### 6. App starten
+### 6. Web-Backend konfigurieren
 ```bash
-# Mit PM2 starten
-pm2 start ecosystem.config.js
+# Node.js-Backend auf Port 3000 setzen
+uberspace web backend set / --http --port 3000
 
-# PM2 beim Boot starten
-pm2 startup
-pm2 save
-
-# Status prüfen
-pm2 status
-pm2 logs nutzerkosten-app
-```
-
-### 7. Domain konfigurieren
-```bash
-# Domain hinzufügen
+# Domain hinzufügen (optional)
 uberspace-add-domain -d deine-domain.com
-
-# Webroot auf dist-Verzeichnis setzen
-uberspace-web -d deine-domain.com -w /home/username/html/Nutzerkosten-Abrechnung-Ferienhaus/dist
 ```
 
-### 8. SSL-Zertifikat
+**Wichtige Uberspace-Details:**
+- ✅ **HOST=0.0.0.0** nötig für externe Verbindungen
+- ✅ **PORT=3000** fest definiert
+- ✅ **Backend-Konfiguration** statt Webroot
+- ✅ **Kein PM2 nötig** - Uberspace verwaltet den Prozess
+
+### 7. SSL-Zertifikat
 ```bash
 # Let's Encrypt SSL
 uberspace-add-certificate -d deine-domain.com
