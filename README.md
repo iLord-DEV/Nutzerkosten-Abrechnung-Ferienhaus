@@ -50,12 +50,15 @@ Eine moderne Web-Anwendung zur Verwaltung und Abrechnung von Nutzerkosten in Woh
 ## 🚀 Installation
 
 1. **Repository klonen**
+
+   **Mit HTTPS (empfohlen für alle Benutzer):**
    ```bash
-   # Mit HTTPS (empfohlen für alle Benutzer)
    git clone https://github.com/iLord-DEV/Nutzerkosten-Abrechnung-Ferienhaus.git
    cd Nutzerkosten-Abrechnung-Ferienhaus
-   
-   # Oder mit SSH (für Entwickler mit SSH-Keys)
+   ```
+
+   **Oder mit SSH (für Entwickler mit SSH-Keys):**
+   ```bash
    git clone git@github.com:iLord-DEV/Nutzerkosten-Abrechnung-Ferienhaus.git
    cd Nutzerkosten-Abrechnung-Ferienhaus
    ```
@@ -186,26 +189,31 @@ npm run preview
 ### Voraussetzungen
 - Cloudways Account mit MySQL-Server
 - Domain oder Subdomain
-- SSH-Zugang zum Server
+- Application über Cloudways Backend erstellt
 
-### 1. Server vorbereiten
-```bash
-# Node.js 18+ installieren
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
+### 1. Application in Cloudways erstellen
+1. **Neue Application hinzufügen**
+   - Application Type: **"Custom App"** (angezeigt PHP, wird aber von uns nicht genutzt)
+   - Node.js Version: **18+** (empfohlen: Node.js 20)
+   - Application Name: `Nutzerkosten-Abrechnung`
 
-# PM2 für Process Management
-sudo npm install -g pm2
+2. **Services aktivieren**
+   - ✅ **MySQL** (für Datenbank)
+   - ✅ **NGINX** (als Reverse Proxy)
+   - ✅ **Varnish** (für Caching)
 
-# Git installieren (falls nicht vorhanden)
-sudo apt-get install git
-```
+3. **Wichtige Settings konfigurieren**
+   - **Node.js Version**: 18+ (empfohlen: 20)
+   - **Environment**: Production
+   - **Memory Limit**: 1GB+ (für Prisma + Astro)
+   - **Timeout**: 300s (für Datenbank-Operationen)
+   - **Port**: Wird automatisch von Cloudways zugewiesen
 
-### 2. Projekt deployen
+### 2. Projekt über Cloudways Backend deployen
 ```bash
 # Repository klonen
-git clone <repository-url>
-cd astro-app
+git clone https://github.com/iLord-DEV/Nutzerkosten-Abrechnung-Ferienhaus.git
+cd Nutzerkosten-Abrechnung-Ferienhaus
 
 # Dependencies installieren
 npm ci --production
