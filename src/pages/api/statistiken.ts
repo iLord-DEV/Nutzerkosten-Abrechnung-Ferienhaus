@@ -5,13 +5,14 @@ import { requireAuth } from '../../utils/auth';
 const prisma = new PrismaClient();
 
 // Hilfsfunktion: Verbrauch zwischen zwei Zählerständen berechnen
-function calculateConsumptionBetweenReadings(startReading: number, endReading: number, zaehlerId: number, zaehlerAbreiseId: number | null): number {
+function calculateConsumptionBetweenReadings(startReading: number, endReading: number, zaehlerId: number, zaehlerAbreiseId: number | null, verbrauchProStunde: number = 5.5): number {
+  const brennerstunden = endReading - startReading;
   if (zaehlerId !== zaehlerAbreiseId) {
     // Zählerwechsel - vereinfachte Berechnung
     // In der Praxis sollte hier der letzte Stand des alten Zählers ermittelt werden
-    return endReading - startReading;
+    return brennerstunden * verbrauchProStunde;
   }
-  return endReading - startReading;
+  return brennerstunden * verbrauchProStunde;
 }
 
 // Hilfsfunktion: Alle Abwesenheitsverbräuche berechnen (alle Nutzer)
@@ -76,6 +77,7 @@ async function calculateAllAbsenceConsumption(jahr: number, tankfuellungen: any[
       
       absenceConsumption.push({
         periode: `${currentEnd.toISOString().split('T')[0]} - ${nextStart.toISOString().split('T')[0]}`,
+        brennerstunden: abwesenheitsStunden,
         liter: abwesenheitsLiter,
         kosten: totalCost,
         tage: tageZwischen,
@@ -152,15 +154,16 @@ async function calculateReferenceValues(userId: number, jahr: number) {
       aufenthalt.zaehlerAnkunft,
       aufenthalt.zaehlerAbreise,
       aufenthalt.zaehlerId || 0,
-      aufenthalt.zaehlerAbreiseId
+      aufenthalt.zaehlerAbreiseId,
+      preise?.verbrauchProStunde || 5.5
     );
     
     const tage = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
     
     const oelKosten = verbrauchteLiter * (preise?.oelpreisProLiter || 1.01);
     const uebernachtungKosten = (
-      aufenthalt.uebernachtungenMitglieder * (preise?.uebernachtungMitglied || 15) +
-      aufenthalt.uebernachtungenGaeste * (preise?.uebernachtungGast || 25)
+      aufenthalt.uebernachtungenMitglieder * (preise?.uebernachtungMitglied || 5) +
+      aufenthalt.uebernachtungenGaeste * (preise?.uebernachtungGast || 10)
     );
     
     totalVerbrauch += verbrauchteLiter;
@@ -188,19 +191,18 @@ export const GET: APIRoute = async (context) => {
     let personId = searchParams.get('personId');
     const personName = searchParams.get('person'); // Neuer Parameter für Person-Filter
 
-    // Normale Benutzer können nur ihre eigenen Daten sehen (außer bei Gesamtübersicht)
+    // Standardmäßig sehen alle Benutzer (auch Admins) nur ihre eigenen Daten
     const showGesamtuebersicht = searchParams.get('gesamt') === 'true';
-    if (user.role !== 'ADMIN' && !showGesamtuebersicht) {
-      personId = user.id.toString();
-    }
-
+    const showAlleUser = searchParams.get('alle') === 'true';
+    
     // Basis-Query für Aufenthalte
     const whereClause: any = { jahr: parseInt(jahr) };
     
-    // Person-Filter nur für Admins oder bei Gesamtübersicht
-    if (personName && personName !== '') {
-      if (user.role === 'ADMIN' || showGesamtuebersicht) {
-        // Admins können nach Namen filtern, normale Benutzer nur bei Gesamtübersicht
+    // Person-Filter
+    if (showAlleUser && user.role === 'ADMIN') {
+      // Admin möchte alle User sehen - keine userId Einschränkung
+      if (personName && personName !== '') {
+        // Spezifischer User-Filter
         const users = await prisma.user.findMany({
           where: { name: personName },
           select: { id: true }
@@ -209,17 +211,25 @@ export const GET: APIRoute = async (context) => {
         if (users.length > 0) {
           whereClause.userId = users[0].id;
         }
-      } else {
-        // Normale Benutzer können nicht nach anderen Nutzern filtern
-        // Sie sehen immer nur ihre eigenen Daten
-        whereClause.userId = user.id;
+      } else if (personId) {
+        // Spezifische personId
+        whereClause.userId = parseInt(personId);
       }
-    } else if (personId && !showGesamtuebersicht) {
-      // Fallback auf personId wenn kein personName gesetzt ist
-      whereClause.userId = parseInt(personId);
+      // Wenn weder personName noch personId gesetzt, werden alle User geladen (keine userId Einschränkung)
+    } else {
+      // Standard: Alle Benutzer sehen nur ihre eigenen Daten
+      whereClause.userId = user.id;
     }
 
-    console.log('🔍 Filter-Debug:', { jahr, personName, whereClause, userRole: user.role, userId: user.id });
+    console.log('🔍 Filter-Debug:', { 
+      jahr, 
+      personName, 
+      showAlleUser, 
+      showGesamtuebersicht, 
+      whereClause, 
+      userRole: user.role, 
+      userId: user.id 
+    });
 
     // Aufenthalte laden
     const aufenthalte = await prisma.aufenthalt.findMany({
@@ -258,8 +268,13 @@ export const GET: APIRoute = async (context) => {
       where: { jahr: parseInt(jahr) },
     });
 
-    // Referenzwerte berechnen (Durchschnitt aller anderen User)
-    const referenceValues = await calculateReferenceValues(user.id, parseInt(jahr));
+    // Referenzwerte berechnen (nur wenn User seine eigenen Daten sieht)
+    const referenceValues = showAlleUser ? {
+      durchschnittVerbrauchProTag: 0,
+      durchschnittVerbrauchProAufenthalt: 0,
+      durchschnittKostenProAufenthalt: 0,
+      anzahlAndereUser: 0
+    } : await calculateReferenceValues(user.id, parseInt(jahr));
 
     // Abwesenheitsverbrauch berechnen (alle Nutzer)
     console.log('🚀 Starte Abwesenheitsberechnung für Jahr:', jahr);
@@ -272,16 +287,20 @@ export const GET: APIRoute = async (context) => {
         aufenthalt.zaehlerAnkunft,
         aufenthalt.zaehlerAbreise,
         aufenthalt.zaehlerId || 0,
-        aufenthalt.zaehlerAbreiseId
+        aufenthalt.zaehlerAbreiseId,
+        preise?.verbrauchProStunde || 5.5
       );
       
       const tage = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
       const verbrauchProTag = tage > 0 ? verbrauchteLiter / tage : 0;
       
+      // Brennerstunden berechnen (Zählerstand Ende - Zählerstand Anfang)
+      const brennerstunden = aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft;
+      
       const oelKosten = verbrauchteLiter * (preise?.oelpreisProLiter || 1.01);
       const uebernachtungKosten = (
-        aufenthalt.uebernachtungenMitglieder * (preise?.uebernachtungMitglied || 15) +
-        aufenthalt.uebernachtungenGaeste * (preise?.uebernachtungGast || 25)
+        aufenthalt.uebernachtungenMitglieder * (preise?.uebernachtungMitglied || 5) +
+        aufenthalt.uebernachtungenGaeste * (preise?.uebernachtungGast || 10)
       );
       
       return {
@@ -292,6 +311,7 @@ export const GET: APIRoute = async (context) => {
         tage: tage,
         verbrauchteLiter: verbrauchteLiter,
         verbrauchProTag: verbrauchProTag,
+        brennerstunden: brennerstunden,
         oelKosten: oelKosten,
         uebernachtungKosten: uebernachtungKosten,
         gesamtKosten: oelKosten + uebernachtungKosten

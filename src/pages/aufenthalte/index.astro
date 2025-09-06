@@ -567,6 +567,13 @@ const session = JSON.parse(sessionCookie.value);
 
     tbody.innerHTML = '';
     
+    // Summen berechnen
+    let gesamtUebernachtungenMitglieder = 0;
+    let gesamtUebernachtungenGaeste = 0;
+    let gesamtUebernachtungKosten = 0;
+    let gesamtHeizkosten = 0;
+    let gesamtKosten = 0;
+    
     aufenthalte.forEach((aufenthalt: typeof currentAufenthalte[0]) => {
       const row = document.createElement('tr');
       const ankunft = new Date(aufenthalt.ankunft).toLocaleDateString('de-DE');
@@ -584,7 +591,14 @@ const session = JSON.parse(sessionCookie.value);
         ((aufenthalt as any).uebernachtungenMitglieder || 0) * (currentPreise.uebernachtungMitglied || 5) +
         ((aufenthalt as any).uebernachtungenGaeste || 0) * (currentPreise.uebernachtungGast || 10)
       );
-      const gesamtKosten = oelKosten + uebernachtungKosten;
+      const aufenthaltKosten = oelKosten + uebernachtungKosten;
+      
+      // Summen akkumulieren
+      gesamtUebernachtungenMitglieder += (aufenthalt as any).uebernachtungenMitglieder || 0;
+      gesamtUebernachtungenGaeste += (aufenthalt as any).uebernachtungenGaeste || 0;
+      gesamtUebernachtungKosten += uebernachtungKosten;
+      gesamtHeizkosten += oelKosten;
+      gesamtKosten += aufenthaltKosten;
 
       row.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap">
@@ -725,6 +739,46 @@ const session = JSON.parse(sessionCookie.value);
       
       tbody.appendChild(row);
     });
+    
+    // Summenzeile hinzufügen
+    const summenRow = document.createElement('tr');
+    summenRow.className = 'bg-gray-50 dark:bg-gray-700 font-semibold';
+    summenRow.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+        📊 GESAMT
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+        -
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+        -
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+        -
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+        ${gesamtUebernachtungenMitglieder} Mitgl. + ${gesamtUebernachtungenGaeste} Gäste
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+        € ${gesamtUebernachtungKosten.toFixed(2)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+        € ${gesamtHeizkosten.toFixed(2)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+        -
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+        -
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600 dark:text-blue-400">
+        € ${gesamtKosten.toFixed(2)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+        -
+      </td>
+    `;
+    tbody.appendChild(summenRow);
     
     // Überlappungsinfo für jeden Aufenthalt laden
     aufenthalte.forEach((aufenthalt: typeof currentAufenthalte[0]) => {

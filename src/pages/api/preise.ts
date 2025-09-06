@@ -1,14 +1,14 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
-import { requireAdmin } from '../../utils/auth';
+import { requireAdmin, requireAuth } from '../../utils/auth';
 
 const prisma = new PrismaClient();
 
 // GET: Alle Preise abrufen
 export const GET: APIRoute = async (context) => {
   try {
-    // Admin-Berechtigung prüfen
-    await requireAdmin(context);
+    // Authentifizierung prüfen (aber nicht Admin-Berechtigung)
+    const user = await requireAuth(context);
     const { request } = context;
     
     const url = new URL(request.url);
@@ -30,8 +30,10 @@ export const GET: APIRoute = async (context) => {
       if (!preis) {
         // Fallback-Preise wenn keine konfiguriert sind
         return new Response(JSON.stringify({
+          oelpreisProLiter: 1.01,
           uebernachtungMitglied: 5,
-          uebernachtungGast: 10
+          uebernachtungGast: 10,
+          verbrauchProStunde: 5.5
         }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' }
@@ -44,12 +46,24 @@ export const GET: APIRoute = async (context) => {
       });
     }
 
-    // Hole alle Preise
-    const preise = await prisma.preise.findMany({
-      orderBy: {
-        jahr: 'desc'
-      }
+    // Hole Preise für das aktuelle Jahr oder Fallback
+    const jahr = url.searchParams.get('jahr') || new Date().getFullYear().toString();
+    const preise = await prisma.preise.findUnique({
+      where: { jahr: parseInt(jahr) }
     });
+
+    if (!preise) {
+      // Fallback-Preise wenn keine konfiguriert sind
+      return new Response(JSON.stringify({
+        oelpreisProLiter: 1.01,
+        uebernachtungMitglied: 5,
+        uebernachtungGast: 10,
+        verbrauchProStunde: 5.5
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     return new Response(JSON.stringify(preise), {
       status: 200,
