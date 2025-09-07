@@ -177,7 +177,7 @@ npm run dev
 ### Produktions-Build
 ```bash
 npm run build
-npm run preview
+npm start
 ```
 
 ## ☁️ Uberspace Deployment (Empfohlen)
@@ -230,6 +230,7 @@ npx prisma migrate deploy
 - ✅ **Node.js-Adapter** ist bereits in der Konfiguration enthalten
 - ✅ **`--legacy-peer-deps`** nötig wegen Tailwind CSS 4.x Konflikt
 - ✅ **Server-Mode** aktiviert für API-Routes
+- ✅ **Port 4321** als Standard für Uberspace
 
 ### 3. MySQL-Datenbank einrichten
 ```bash
@@ -259,27 +260,44 @@ NODE_ENV="production"
 - ✅ **Host**: `localhost` (lokale Verbindung)
 - ✅ **Port**: `3306` (Standard MySQL)
 
-### 5. App starten
+### 5. Web-Backend konfigurieren
 ```bash
-# App starten (Uberspace verwaltet den Prozess automatisch)
-npm start
-```
-
-
-### 6. Web-Backend konfigurieren
-```bash
-# Node.js-Backend auf Port 3000 setzen
-uberspace web backend set / --http --port 3000
+# Node.js-Backend auf Port 4321 setzen (Astro Standard-Port)
+uberspace web backend set / --http --port 4321
 
 # Domain hinzufügen (optional)
 uberspace-add-domain -d deine-domain.com
 ```
 
+### 6. App starten (mit Screen für dauerhaften Betrieb)
+```bash
+# Screen starten
+screen -S nutzerkosten
+
+# App starten
+npm start
+
+# Screen verlassen (Strg+A, dann D)
+# App läuft weiter, auch wenn Terminal geschlossen wird
+```
+
+**Screen-Befehle:**
+```bash
+# Zurück zu Screen
+screen -r nutzerkosten
+
+# Screen-Status prüfen
+screen -ls
+
+# Screen beenden (wenn App gestoppt werden soll)
+screen -S nutzerkosten -X quit
+```
+
 **Wichtige Uberspace-Details:**
 - ✅ **HOST=0.0.0.0** nötig für externe Verbindungen
-- ✅ **PORT=3000** selbst definiert. s.o.
+- ✅ **PORT=4321** Astro Standard-Port
 - ✅ **Backend-Konfiguration** statt Webroot
-- ✅ **Automatische Prozessverwaltung** - Uberspace verwaltet den Prozess
+- ✅ **Screen für Prozessverwaltung**
 
 ### 7. SSL-Zertifikat
 ```bash
