@@ -21,7 +21,7 @@ try {
   const prisma = new PrismaClient();
   
   tankfuellung = await prisma.tankfuellung.findUnique({
-    where: { id: parseInt(id) },
+    where: { id: parseInt(id!) },
     include: {
       zaehler: {
         select: {
@@ -86,7 +86,7 @@ if (!tankfuellung) {
                      value={tankfuellung.zaehlerstand}
                      class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Aktueller Zähler: #{tankfuellung.zaehler.id} (eingebaut: {new Date(tankfuellung.zaehler.einbauDatum).toLocaleDateString('de-DE')})
+                Aktueller Zähler: #{tankfuellung.zaehler?.id} (eingebaut: {tankfuellung.zaehler ? new Date(tankfuellung.zaehler.einbauDatum).toLocaleDateString('de-DE') : 'Unbekannt'})
               </p>
             </div>
 

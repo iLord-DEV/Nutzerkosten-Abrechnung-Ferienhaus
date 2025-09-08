@@ -54,10 +54,13 @@ const session = JSON.parse(sessionCookie.value);
           </div>
           {session.role === 'ADMIN' && (
             <div>
-              <label for="suche" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Suche
+              <label for="benutzer" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                👥 Benutzer
               </label>
-              <input type="text" id="suche" placeholder="Name oder E-Mail..." class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              <select id="benutzer" class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Alle Benutzer</option>
+                <!-- Wird dynamisch geladen -->
+              </select>
             </div>
           )}
           <div class="flex items-end">
@@ -465,10 +468,18 @@ const session = JSON.parse(sessionCookie.value);
     try {
       showLoading(true);
       const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
+      const benutzerSelect = document.getElementById('benutzer') as HTMLSelectElement;
       const jahr = jahrSelect ? jahrSelect.value : '2024';
+      const benutzerId = benutzerSelect ? benutzerSelect.value : '';
       
-      console.log('🔍 Lade Aufenthalte für Jahr:', jahr);
-      const response = await fetch(`/api/aufenthalte?jahr=${jahr}`);
+      console.log('🔍 Lade Aufenthalte für Jahr:', jahr, 'Benutzer:', benutzerId);
+      
+      let url = `/api/aufenthalte?jahr=${jahr}`;
+      if (benutzerId) {
+        url += `&userId=${benutzerId}`;
+      }
+      
+      const response = await fetch(url);
       console.log('📡 API Response Status:', response.status);
       
       if (response.ok) {
@@ -520,6 +531,29 @@ const session = JSON.parse(sessionCookie.value);
       if (jahrSelect) {
         jahrSelect.innerHTML = '<option value="2024">2024</option>';
       }
+    }
+  }
+
+  // Benutzer laden (nur für Admins)
+  async function loadBenutzer() {
+    try {
+      const benutzerSelect = document.getElementById('benutzer') as HTMLSelectElement;
+      if (!benutzerSelect) return;
+      
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const benutzer = await response.json();
+        benutzerSelect.innerHTML = '<option value="">Alle Benutzer</option>';
+        
+        benutzer.forEach((user: { id: number; name: string; email: string }) => {
+          const option = document.createElement('option');
+          option.value = user.id.toString();
+          option.textContent = `${user.name} (${user.email})`;
+          benutzerSelect.appendChild(option);
+        });
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Benutzer:', error);
     }
   }
 
@@ -1007,6 +1041,10 @@ const session = JSON.parse(sessionCookie.value);
       await loadPreise('2024');
       console.log('✅ Preise geladen');
       
+      // Benutzer laden (nur für Admins)
+      await loadBenutzer();
+      console.log('✅ Benutzer geladen');
+      
       await loadAufenthalte();
       console.log('✅ Aufenthalte geladen');
       
@@ -1015,6 +1053,7 @@ const session = JSON.parse(sessionCookie.value);
       // Filter-Event-Listener
       const jahrSelect = document.getElementById('jahr');
       const statusSelect = document.getElementById('status');
+      const benutzerSelect = document.getElementById('benutzer');
       const filterBtn = document.getElementById('filter-btn');
       
       if (jahrSelect) {
@@ -1024,6 +1063,10 @@ const session = JSON.parse(sessionCookie.value);
       if (statusSelect) {
         statusSelect.addEventListener('change', loadAufenthalte);
         console.log('✅ Status-Select Event-Listener gesetzt');
+      }
+      if (benutzerSelect) {
+        benutzerSelect.addEventListener('change', loadAufenthalte);
+        console.log('✅ Benutzer-Select Event-Listener gesetzt');
       }
       if (filterBtn) {
         filterBtn.addEventListener('click', loadAufenthalte);

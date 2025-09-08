@@ -485,7 +485,7 @@ if (session.role !== 'ADMIN') {
               },
               ticks: {
                 callback: function(value) {
-                  return value.toFixed(1) + ' L/h';
+                  return Number(value).toFixed(1) + ' L/h';
                 }
               }
             },

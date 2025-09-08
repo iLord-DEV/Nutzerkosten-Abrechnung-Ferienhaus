@@ -14,6 +14,7 @@ export const GET: APIRoute = async (context) => {
     const { url } = context;
     const searchParams = url.searchParams;
     const jahr = searchParams.get('jahr');
+    const userId = searchParams.get('userId');
     
     // Basis-Query
     let whereClause: any = {};
@@ -23,8 +24,11 @@ export const GET: APIRoute = async (context) => {
       whereClause.jahr = parseInt(jahr);
     }
     
-    // Normale Benutzer sehen nur ihre eigenen Aufenthalte
-    if (user.role !== 'ADMIN') {
+    // Benutzer-Filter (nur für Admins)
+    if (user.role === 'ADMIN' && userId) {
+      whereClause.userId = parseInt(userId);
+    } else if (user.role !== 'ADMIN') {
+      // Normale Benutzer sehen nur ihre eigenen Aufenthalte
       whereClause.userId = user.id;
     }
 

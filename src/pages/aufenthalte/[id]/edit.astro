@@ -18,7 +18,7 @@ try {
   const prisma = new PrismaClient();
   
   aufenthalt = await prisma.aufenthalt.findUnique({
-    where: { id: parseInt(id) },
+    where: { id: parseInt(id!) },
     include: {
       user: {
         select: {
@@ -34,7 +34,7 @@ try {
   await prisma.$disconnect();
   
   // Normale Benutzer können nur ihre eigenen Aufenthalte bearbeiten
-  if (session.role !== 'ADMIN' && aufenthalt.userId !== session.userId) {
+  if (session.role !== 'ADMIN' && aufenthalt?.userId !== session.userId) {
     return Astro.redirect('/aufenthalte');
   }
 } catch (error) {
@@ -62,6 +62,7 @@ if (!aufenthalt) {
       <div class="px-4 py-5 sm:p-6">
         <form id="edit-form" class="space-y-6">
           <input type="hidden" id="aufenthalt-id" value={aufenthalt.id}>
+          <input type="hidden" id="aufenthalt-user-id" value={aufenthalt.user.id}>
           
           <!-- Benutzer-Auswahl (nur für Admins) -->
           {session.role === 'ADMIN' && (
@@ -165,7 +166,7 @@ if (!aufenthalt) {
 <script>
   let users: Array<{ id: number; name: string; email: string }> = [];
   const currentAufenthalt = {
-    userId: aufenthalt.user.id
+    userId: parseInt((document.getElementById('aufenthalt-user-id') as HTMLInputElement)?.value || '0')
   };
 
   // Benachrichtigung anzeigen
