@@ -41,6 +41,7 @@ export const GET: APIRoute = async (context) => {
             name: true,
             email: true,
             role: true,
+            beguenstigt: true,
           },
         },
 
@@ -163,6 +164,17 @@ export const POST: APIRoute = async (context) => {
     const zaehlerStart = aufenthaltData.zaehlerStart;
     const zaehlerEnde = aufenthaltData.zaehlerEnde;
 
+    // Nächte berechnen - Logik:
+    // null = User-Status entscheidet (begünstigt=false, normal=true)
+    // true = explizit berechnen (auch für begünstigte)
+    // false = nicht verwendet (könnte für Zukunft reserviert sein)
+    const targetUser = await prisma.user.findUnique({
+      where: { id: body.userId },
+      select: { beguenstigt: true }
+    });
+    // Nur speichern wenn begünstigt UND explizit true gesetzt
+    const naechteBerechnen = (targetUser?.beguenstigt && body.naechteBerechnen === true) ? true : null;
+
     // Alle Validierungen wurden bereits in validateAufenthaltData durchgeführt
 
     const aufenthalt = await prisma.aufenthalt.create({
@@ -174,6 +186,7 @@ export const POST: APIRoute = async (context) => {
         zaehlerAbreise: zaehlerEnde,
         uebernachtungenMitglieder: parseInt(body.uebernachtungenMitglieder) || 0,
         uebernachtungenGaeste: parseInt(body.uebernachtungenGaeste) || 0,
+        naechteBerechnen: naechteBerechnen,
         jahr: ankunftDate.getFullYear(),
         zaehlerId: aktiverZaehler.id, // Zähler bei Ankunft
         zaehlerAbreiseId: aktiverZaehler.id, // Zähler bei Abreise (kann später geändert werden)

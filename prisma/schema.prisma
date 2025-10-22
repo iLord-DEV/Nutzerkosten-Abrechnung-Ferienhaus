@@ -34,6 +34,7 @@ model Aufenthalt {
   zaehlerAbreise            Float
   uebernachtungenMitglieder Int      @default(0)
   uebernachtungenGaeste     Int      @default(0)
+  naechteBerechnen          Boolean?
   jahr                      Int
   zaehlerId                 Int?
   zaehlerAbreiseId          Int?

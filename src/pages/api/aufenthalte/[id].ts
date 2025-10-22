@@ -28,6 +28,7 @@ export const GET: APIRoute = async (context) => {
             name: true,
             email: true,
             role: true,
+            beguenstigt: true,
           },
         },
       },
@@ -192,14 +193,24 @@ export const PUT: APIRoute = async (context) => {
       });
     }
 
+    // Nächte berechnen - Logik:
+    // null = User-Status entscheidet (begünstigt=false, normal=true)
+    // true = explizit berechnen (auch für begünstigte)
+    const targetUser = await prisma.user.findUnique({
+      where: { id: parseInt(body.userId) },
+      select: { beguenstigt: true }
+    });
+    // Nur speichern wenn begünstigt UND explizit true gesetzt
+    const naechteBerechnen = (targetUser?.beguenstigt && body.naechteBerechnen === true) ? true : null;
+
     // Aktiven Zähler für Abreise finden
     const aktiverZaehler = await prisma.zaehler.findFirst({
       where: { istAktiv: true },
     });
 
     if (!aktiverZaehler) {
-      return new Response(JSON.stringify({ 
-        error: 'Kein aktiver Zähler gefunden. Bitte erst einen Zähler einbauen.' 
+      return new Response(JSON.stringify({
+        error: 'Kein aktiver Zähler gefunden. Bitte erst einen Zähler einbauen.'
       }), {
         status: 400,
         headers: {
@@ -221,6 +232,7 @@ export const PUT: APIRoute = async (context) => {
         zaehlerAbreise: zaehlerEnde,
         uebernachtungenMitglieder: parseInt(body.uebernachtungenMitglieder),
         uebernachtungenGaeste: parseInt(body.uebernachtungenGaeste),
+        naechteBerechnen: naechteBerechnen,
         jahr: ankunftDate.getFullYear(),
         zaehler: {
           connect: { id: aktiverZaehler.id }
@@ -245,7 +257,15 @@ export const PUT: APIRoute = async (context) => {
     });
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Aufenthalts:', error);
-    return new Response(JSON.stringify({ error: 'Interner Server-Fehler' }), {
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    return new Response(JSON.stringify({
+      error: 'Interner Server-Fehler',
+      details: error.message
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

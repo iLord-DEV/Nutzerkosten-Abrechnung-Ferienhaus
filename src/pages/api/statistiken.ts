@@ -249,6 +249,12 @@ export const GET: APIRoute = async (context) => {
     });
 
     console.log('📊 Gefundene Aufenthalte:', aufenthalte.length);
+    console.log('🔍 Aufenthalte Details:', aufenthalte.map(a => ({
+      user: a.user.name,
+      datum: `${new Date(a.ankunft).toLocaleDateString()} - ${new Date(a.abreise).toLocaleDateString()}`,
+      naechteBerechnen: a.naechteBerechnen,
+      uebernachtungen: `${a.uebernachtungenMitglieder}M + ${a.uebernachtungenGaeste}G`
+    })));
 
     // Tankfüllungen laden
     const tankfuellungen = await prisma.tankfuellung.findMany({
@@ -384,6 +390,7 @@ export const GET: APIRoute = async (context) => {
       gesamtKosten: statistiken.gesamtKosten,
       durchschnittVerbrauchProTag: statistiken.durchschnittVerbrauchProTag,
       anzahlAufenthalte: statistiken.anzahlAufenthalte,
+      aufenthalteOhneNaechteBerechnung: aufenthalte.filter(a => !a.naechteBerechnen).length,
       referenceValues: statistiken.referenceValues
     });
 

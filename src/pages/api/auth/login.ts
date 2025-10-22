@@ -17,6 +17,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         name: true,
         email: true,
         role: true,
+        beguenstigt: true,
         password: true,
       },
     });
@@ -47,6 +48,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      beguenstigt: user.beguenstigt,
       loggedIn: true,
     };
 
@@ -65,6 +67,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        beguenstigt: user.beguenstigt,
       },
       redirectTo: user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard',
     }), {

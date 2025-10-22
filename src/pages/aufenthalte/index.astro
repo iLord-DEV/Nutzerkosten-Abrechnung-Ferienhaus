@@ -621,13 +621,17 @@ const session = JSON.parse(sessionCookie.value);
       // Für die Anzeige verwenden wir den aktuellen Preis, die korrekte Berechnung erfolgt später
       const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
       const anzahlNaechte = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
-      const uebernachtungKosten = (
+
+      // Übernachtungskosten nur berechnen wenn naechteBerechnen true ist
+      // null = User-Status entscheidet (begünstigt=false, normal=true)
+      const naechteBerechnen = (aufenthalt as any).naechteBerechnen ?? !aufenthalt.user.beguenstigt;
+      const uebernachtungKosten = naechteBerechnen ? (
         ((aufenthalt as any).uebernachtungenMitglieder || 0) * (currentPreise.uebernachtungMitglied || 5) +
         ((aufenthalt as any).uebernachtungenGaeste || 0) * (currentPreise.uebernachtungGast || 10)
-      );
+      ) : 0;
       const aufenthaltKosten = oelKosten + uebernachtungKosten;
-      
-      // Summen akkumulieren
+
+      // Summen akkumulieren (alle Nächte zählen, aber nur berechnete in Kosten)
       gesamtUebernachtungenMitglieder += (aufenthalt as any).uebernachtungenMitglieder || 0;
       gesamtUebernachtungenGaeste += (aufenthalt as any).uebernachtungenGaeste || 0;
       gesamtUebernachtungKosten += uebernachtungKosten;
@@ -662,7 +666,10 @@ const session = JSON.parse(sessionCookie.value);
           ${zaehlerStart} h → ${zaehlerEnde} h
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${(aufenthalt as any).uebernachtungenMitglieder || 0} Mitgl. + ${(aufenthalt as any).uebernachtungenGaeste || 0} Gäste
+          <div class="flex items-center gap-2">
+            <span>${(aufenthalt as any).uebernachtungenMitglieder || 0} Mitgl. + ${(aufenthalt as any).uebernachtungenGaeste || 0} Gäste</span>
+            ${!naechteBerechnen ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">nicht berechnet</span>' : ''}
+          </div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
           € ${uebernachtungKosten.toFixed(2)}
@@ -839,13 +846,15 @@ const session = JSON.parse(sessionCookie.value);
     const aufenthaltsDatum = new Date(aufenthalt.ankunft);
     const oelpreis = await getOelpreisFuerDatum(aufenthaltsDatum);
     const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * oelpreis;
-    
-    // Übernachtungskosten
-    const uebernachtungKosten = (
+
+    // Übernachtungskosten nur berechnen wenn naechteBerechnen true ist
+    // null = User-Status entscheidet (begünstigt=false, normal=true)
+    const naechteBerechnen = (aufenthalt as any).naechteBerechnen ?? !aufenthalt.user.beguenstigt;
+    const uebernachtungKosten = naechteBerechnen ? (
       ((aufenthalt as any).uebernachtungenMitglieder || 0) * (currentPreise.uebernachtungMitglied || 5) +
       ((aufenthalt as any).uebernachtungenGaeste || 0) * (currentPreise.uebernachtungGast || 10)
-    );
-    
+    ) : 0;
+
     return oelKosten + uebernachtungKosten;
   }
 

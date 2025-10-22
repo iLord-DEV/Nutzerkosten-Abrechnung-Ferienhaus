@@ -149,6 +149,24 @@ const session = JSON.parse(sessionCookie.value);
                     placeholder="z.B. 6 (2 Gäste, 3 Nächte)">
                 </div>
               </div>
+
+              <!-- Checkbox für begünstigte User -->
+              <div id="naechte-berechnen-container" class="hidden mt-4">
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="naechteBerechnen"
+                    name="naechteBerechnen"
+                    class="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <label for="naechteBerechnen" class="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Nächte berechnen (Übernachtungskosten in Gesamtsumme einbeziehen)
+                  </label>
+                </div>
+                <p class="ml-6 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Nicht aktiviert = Übernachtungen werden nicht berechnet (nur für begünstigte User)
+                </p>
+              </div>
             </div>
 
             <!-- Validierungswarnung -->
@@ -233,7 +251,8 @@ const session = JSON.parse(sessionCookie.value);
 </ProtectedLayout>
 
 <script>
-  let users: Array<{id: number, name: string, email: string, role: string}> = [];
+  let users: Array<{id: number, name: string, email: string, role: string, beguenstigt: boolean}> = [];
+  let currentUser: {id: number, name: string, email: string, role: string, beguenstigt: boolean} | null = null;
   let currentPreise: {
     oelpreisProLiter?: number;
     uebernachtungMitglied?: number;
@@ -291,6 +310,19 @@ const session = JSON.parse(sessionCookie.value);
     }
   }
 
+  // Aktuellen User laden
+  async function loadCurrentUser() {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        currentUser = await response.json();
+        // Checkbox wird nach Laden der User-Liste aktualisiert
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des aktuellen Users:', error);
+    }
+  }
+
   // Benutzer laden
   async function loadUsers() {
     try {
@@ -341,6 +373,35 @@ const session = JSON.parse(sessionCookie.value);
     console.log('🧹 Alle Caches wurden geleert');
   }
 
+  // Prüfen ob der ausgewählte/aktuelle User begünstigt ist
+  function isSelectedUserBeguenstigt(): boolean {
+    // Falls ein User im Dropdown ausgewählt ist (Admin-Fall)
+    if (selectedUserId) {
+      const selectedUser = users.find(u => u.id === selectedUserId);
+      return selectedUser?.beguenstigt || false;
+    }
+    // Sonst: aktueller User (normaler User-Fall)
+    return currentUser?.beguenstigt || false;
+  }
+
+  // Checkbox für "Nächte berechnen" anzeigen/verstecken
+  function updateNaechteBerechnenCheckbox() {
+    const container = document.getElementById('naechte-berechnen-container');
+    const checkbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
+
+    if (isSelectedUserBeguenstigt()) {
+      container?.classList.remove('hidden');
+      if (checkbox) {
+        checkbox.checked = false; // Default: nicht aktiviert
+      }
+    } else {
+      container?.classList.add('hidden');
+      if (checkbox) {
+        checkbox.checked = true; // Für nicht-begünstigte immer true
+      }
+    }
+  }
+
   // Benutzer-Select rendern
   function renderUserSelect() {
     const select = document.getElementById('userId');
@@ -352,16 +413,19 @@ const session = JSON.parse(sessionCookie.value);
         option.textContent = `${user.name} (${user.role})`;
         select.appendChild(option);
       });
-      
+
       // Event-Listener für User-Auswahl
       select.addEventListener('change', async (e) => {
         const userId = parseInt((e.target as HTMLSelectElement).value);
         if (userId) {
           selectedUserId = userId;
           await loadLastZaehlerstand(userId);
+          updateNaechteBerechnenCheckbox(); // Checkbox aktualisieren
+          calculateCosts(); // Kosten neu berechnen
         } else {
           selectedUserId = null;
           lastZaehlerstand = null;
+          updateNaechteBerechnenCheckbox(); // Checkbox aktualisieren
         }
       });
     }
@@ -423,12 +487,18 @@ const session = JSON.parse(sessionCookie.value);
     // Kosten berechnen (nur wenn alle Zählerstände vorhanden)
     if (!isNaN(zaehlerStart) && !isNaN(zaehlerEnde) && ankunft && abreise) {
       const verbrauchteStunden = zaehlerEnde - zaehlerStart;
-      
+
       const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
-      const uebernachtungKosten = (
+
+      // Übernachtungskosten nur berechnen, wenn Checkbox aktiviert ist (für begünstigte User)
+      const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
+      const naechteBerechnen = !isSelectedUserBeguenstigt() || (naechteBerechnenCheckbox && naechteBerechnenCheckbox.checked);
+
+      const uebernachtungKosten = naechteBerechnen ? (
         uebernachtungenMitglieder * (currentPreise.uebernachtungMitglied || 15) +
         uebernachtungenGaeste * (currentPreise.uebernachtungGast || 25)
-      );
+      ) : 0;
+
       const gesamtKosten = oelKosten + uebernachtungKosten;
 
       // Kostenvorschau anzeigen
@@ -759,6 +829,11 @@ const session = JSON.parse(sessionCookie.value);
     const selectedUser = users.find(u => u.id === userId);
     const personName = selectedUser ? selectedUser.name : null;
 
+    // Nächte berechnen-Checkbox prüfen
+    const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
+    // Einfach den Checkbox-Wert senden - Backend entscheidet die Logik
+    const naechteBerechnen = naechteBerechnenCheckbox ? naechteBerechnenCheckbox.checked : false;
+
     // Daten für die API vorbereiten
     const aufenthaltData = {
       userId: userId,
@@ -769,6 +844,7 @@ const session = JSON.parse(sessionCookie.value);
       zaehlerEnde: zaehlerEnde,
       uebernachtungenMitglieder: uebernachtungenMitglieder,
       uebernachtungenGaeste: uebernachtungenGaeste,
+      naechteBerechnen: naechteBerechnen,
       jahr: new Date(ankunft).getFullYear()
     };
     
@@ -798,9 +874,10 @@ const session = JSON.parse(sessionCookie.value);
 
   // Event-Listener
   document.addEventListener('DOMContentLoaded', async () => {
+    await loadCurrentUser(); // User-Status laden (für begünstigte User)
     await loadUsers();
     await loadPreise();
-    
+
     // Für normale Benutzer: letzten Zählerstand laden
     const sessionCookie = document.cookie.split(';').find(c => c.trim().startsWith('session='));
     if (sessionCookie) {
@@ -856,9 +933,20 @@ const session = JSON.parse(sessionCookie.value);
           }
         });
       });
-      
+
+      // Event-Listener für Nächte-berechnen-Checkbox
+      const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
+      if (naechteBerechnenCheckbox) {
+        naechteBerechnenCheckbox.addEventListener('change', () => {
+          calculateCosts();
+        });
+      }
+
       // Formular-Submit-Handler
       form.addEventListener('submit', handleSubmit);
     }
+
+    // Checkbox initial aktualisieren (für normale User)
+    updateNaechteBerechnenCheckbox();
   });
 </script>

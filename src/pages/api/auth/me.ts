@@ -29,6 +29,7 @@ export const GET: APIRoute = async ({ cookies }) => {
       name: sessionData.name,
       email: sessionData.email,
       role: sessionData.role,
+      beguenstigt: sessionData.beguenstigt || false,
     }), {
       status: 200,
       headers: {

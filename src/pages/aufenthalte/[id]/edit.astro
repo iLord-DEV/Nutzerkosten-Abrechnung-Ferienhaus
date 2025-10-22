@@ -26,6 +26,7 @@ try {
           name: true,
           email: true,
           role: true,
+          beguenstigt: true,
         },
       },
     },
@@ -63,7 +64,8 @@ if (!aufenthalt) {
         <form id="edit-form" class="space-y-6">
           <input type="hidden" id="aufenthalt-id" value={aufenthalt.id}>
           <input type="hidden" id="aufenthalt-user-id" value={aufenthalt.user.id}>
-          
+          <input type="hidden" id="aufenthalt-user-beguenstigt" value={aufenthalt.user.beguenstigt ? 'true' : 'false'}>
+
           <!-- Benutzer-Auswahl (nur für Admins) -->
           {session.role === 'ADMIN' && (
             <div>
@@ -131,9 +133,28 @@ if (!aufenthalt) {
             <label for="uebernachtungenGaeste" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Übernachtungen Gäste
             </label>
-            <input type="number" id="uebernachtungenGaeste" min="0" required 
+            <input type="number" id="uebernachtungenGaeste" min="0" required
                    value={aufenthalt.uebernachtungenGaeste}
                    class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+
+          <!-- Checkbox für begünstigte User -->
+          <div id="naechte-berechnen-container" class="hidden">
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                id="naechteBerechnen"
+                name="naechteBerechnen"
+                checked={aufenthalt.naechteBerechnen}
+                class="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+              />
+              <label for="naechteBerechnen" class="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Nächte berechnen (Übernachtungskosten in Gesamtsumme einbeziehen)
+              </label>
+            </div>
+            <p class="ml-6 mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Nicht aktiviert = Übernachtungen werden nicht berechnet (nur für begünstigte User)
+            </p>
           </div>
 
           <!-- Buttons -->
@@ -164,10 +185,12 @@ if (!aufenthalt) {
 </ProtectedLayout>
 
 <script>
-  let users: Array<{ id: number; name: string; email: string }> = [];
+  let users: Array<{ id: number; name: string; email: string; beguenstigt: boolean }> = [];
   const currentAufenthalt = {
-    userId: parseInt((document.getElementById('aufenthalt-user-id') as HTMLInputElement)?.value || '0')
+    userId: parseInt((document.getElementById('aufenthalt-user-id') as HTMLInputElement)?.value || '0'),
+    userBeguenstigt: (document.getElementById('aufenthalt-user-beguenstigt') as HTMLInputElement)?.value === 'true'
   };
+  let selectedUserId: number | null = currentAufenthalt.userId;
 
   // Benachrichtigung anzeigen
   function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info') {
@@ -227,6 +250,8 @@ if (!aufenthalt) {
         if (response.ok) {
           users = await response.json();
           renderUserSelect();
+          // Checkbox nach Laden der User aktualisieren
+          updateNaechteBerechnenCheckbox();
         }
       } catch (error) {
         console.error('Fehler beim Laden der Benutzer:', error);
@@ -234,14 +259,45 @@ if (!aufenthalt) {
     }
   }
 
+  // Prüfen ob der ausgewählte User begünstigt ist
+  function isSelectedUserBeguenstigt(): boolean {
+    // Falls ein User im Dropdown ausgewählt wurde UND users geladen sind
+    if (selectedUserId && users.length > 0) {
+      const selectedUser = users.find(u => u.id === selectedUserId);
+      return selectedUser?.beguenstigt || false;
+    }
+    // Sonst: Verwende den initialen Wert vom aktuellen Aufenthalt
+    return currentAufenthalt.userBeguenstigt;
+  }
+
+  // Checkbox für "Nächte berechnen" anzeigen/verstecken
+  function updateNaechteBerechnenCheckbox() {
+    const container = document.getElementById('naechte-berechnen-container');
+    const istBeguenstigt = isSelectedUserBeguenstigt();
+
+    console.log('🔍 updateNaechteBerechnenCheckbox:', {
+      istBeguenstigt,
+      currentAufenthaltUserBeguenstigt: currentAufenthalt.userBeguenstigt,
+      selectedUserId,
+      usersLength: users.length,
+      containerExists: !!container
+    });
+
+    if (istBeguenstigt) {
+      container?.classList.remove('hidden');
+    } else {
+      container?.classList.add('hidden');
+    }
+  }
+
   // Alle Caches leeren
   function clearAllCaches() {
     // localStorage leeren (falls vorhanden)
     localStorage.clear();
-    
+
     // SessionStorage leeren (falls vorhanden)
     sessionStorage.clear();
-    
+
     // Browser-Cache für diese Domain leeren
     if ('caches' in window) {
       caches.keys().then(names => {
@@ -250,7 +306,7 @@ if (!aufenthalt) {
         });
       });
     }
-    
+
     // Force reload der Seite um alle JavaScript-Variablen zu leeren
     // Da wir sowieso weiterleiten, ist das hier nicht nötig
     // Aber wir stellen sicher, dass alle Caches geleert werden
@@ -270,13 +326,23 @@ if (!aufenthalt) {
         }
         select.appendChild(option);
       });
+
+      // Event-Listener für User-Auswahl
+      select.addEventListener('change', (e) => {
+        selectedUserId = parseInt((e.target as HTMLSelectElement).value);
+        updateNaechteBerechnenCheckbox();
+      });
     }
   }
 
   // Formular absenden
   document.getElementById('edit-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
+    const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
+    // Einfach den Checkbox-Wert senden - Backend entscheidet die Logik
+    const naechteBerechnen = naechteBerechnenCheckbox ? naechteBerechnenCheckbox.checked : false;
+
     const formData = {
       id: (document.getElementById('aufenthalt-id') as HTMLInputElement).value,
       userId: (document.getElementById('userId') as HTMLSelectElement)?.value || '',
@@ -286,6 +352,7 @@ if (!aufenthalt) {
       zaehlerEnde: (document.getElementById('zaehlerEnde') as HTMLInputElement).value,
       uebernachtungenMitglieder: (document.getElementById('uebernachtungenMitglieder') as HTMLInputElement).value,
       uebernachtungenGaeste: (document.getElementById('uebernachtungenGaeste') as HTMLInputElement).value,
+      naechteBerechnen: naechteBerechnen,
     };
 
     // Validierung: Mitglieder-Übernachtungen müssen mindestens der Anzahl der Nächte entsprechen
@@ -322,5 +389,8 @@ if (!aufenthalt) {
   });
 
   // Benutzer beim Laden der Seite laden
-  document.addEventListener('DOMContentLoaded', loadUsers);
+  document.addEventListener('DOMContentLoaded', () => {
+    loadUsers();
+    updateNaechteBerechnenCheckbox(); // Checkbox initial anzeigen
+  });
 </script>
