@@ -12,9 +12,13 @@ model User {
   email              String             @unique
   name               String
   role               Role               @default(USER)
+  beguenstigt        Boolean            @default(false)
   createdAt          DateTime           @default(now())
   password           String
   aufenthalte        Aufenthalt[]
+  BlogComment        BlogComment[]
+  BlogPost           BlogPost[]
+  PollVote           PollVote[]
   terminAbstimmungen TerminAbstimmung[]
   terminAenderungen  TerminAenderung[]
   terminKommentare   TerminKommentar[]
@@ -162,6 +166,117 @@ model TerminAenderung {
   @@index([userId], map: "TerminAenderung_userId_fkey")
 }
 
+model BlogComment {
+  id                Int           @id @default(autoincrement())
+  postId            Int
+  authorId          Int
+  content           String        @db.Text
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime
+  parentId          Int?
+  User              User          @relation(fields: [authorId], references: [id])
+  BlogComment       BlogComment?  @relation("BlogCommentToBlogComment", fields: [parentId], references: [id])
+  other_BlogComment BlogComment[] @relation("BlogCommentToBlogComment")
+  BlogPost          BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([authorId], map: "BlogComment_authorId_fkey")
+  @@index([parentId], map: "BlogComment_parentId_fkey")
+  @@index([postId], map: "BlogComment_postId_fkey")
+}
+
+model BlogImage {
+  id           Int      @id @default(autoincrement())
+  postId       Int
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  alt          String?
+  caption      String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  BlogPost     BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId], map: "BlogImage_postId_fkey")
+}
+
+model BlogModule {
+  id        Int             @id @default(autoincrement())
+  postId    Int
+  type      BlogModule_type
+  content   String          @db.LongText
+  position  Int
+  createdAt DateTime        @default(now())
+  BlogPost  BlogPost        @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId], map: "BlogModule_postId_fkey")
+}
+
+model BlogPost {
+  id          Int             @id @default(autoincrement())
+  title       String
+  slug        String          @unique
+  content     String          @db.LongText
+  excerpt     String?
+  authorId    Int
+  status      BlogPost_status @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime
+  BlogComment BlogComment[]
+  BlogImage   BlogImage[]
+  BlogModule  BlogModule[]
+  User        User            @relation(fields: [authorId], references: [id])
+
+  @@index([authorId], map: "BlogPost_authorId_fkey")
+  @@index([publishedAt])
+  @@index([status])
+}
+
+model Poll {
+  id             Int          @id @default(autoincrement())
+  title          String
+  description    String?      @db.Text
+  moduleId       Int          @unique
+  multipleChoice Boolean      @default(false)
+  allowAnonymous Boolean      @default(false)
+  endDate        DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime
+  PollOption     PollOption[]
+  PollVote       PollVote[]
+
+  @@index([endDate])
+}
+
+model PollOption {
+  id       Int        @id @default(autoincrement())
+  pollId   Int
+  text     String
+  order    Int        @default(0)
+  Poll     Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  PollVote PollVote[]
+
+  @@index([pollId], map: "PollOption_pollId_fkey")
+}
+
+model PollVote {
+  id         Int        @id @default(autoincrement())
+  pollId     Int
+  optionId   Int
+  userId     Int?
+  ipAddress  String?
+  createdAt  DateTime   @default(now())
+  PollOption PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  Poll       Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  User       User?      @relation(fields: [userId], references: [id])
+
+  @@unique([pollId, userId])
+  @@index([optionId], map: "PollVote_optionId_fkey")
+  @@index([pollId], map: "PollVote_pollId_fkey")
+  @@index([userId], map: "PollVote_userId_fkey")
+}
+
 enum TerminStatus {
   PENDING
   APPROVED
@@ -177,4 +292,16 @@ enum AbstimmungsTyp {
 enum Role {
   ADMIN
   USER
+}
+
+enum BlogModule_type {
+  SLIDER
+  IMAGE_GALLERY
+  POLL
+}
+
+enum BlogPost_status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }

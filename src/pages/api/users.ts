@@ -15,6 +15,7 @@ export const GET: APIRoute = async (context) => {
         name: true,
         email: true,
         role: true,
+        beguenstigt: true,
         createdAt: true,
       },
       orderBy: {
@@ -96,9 +97,9 @@ export const PUT: APIRoute = async (context) => {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
-    
+
     const body = await request.json();
-    const { id, name, email, role } = body;
+    const { id, name, email, role, beguenstigt } = body;
 
     if (!id || !name || !email || !role) {
       return new Response(JSON.stringify({ error: 'Alle Felder sind erforderlich' }), {
@@ -110,7 +111,7 @@ export const PUT: APIRoute = async (context) => {
     // Benutzer aktualisieren
     const user = await prisma.user.update({
       where: { id: parseInt(id) },
-      data: { name, email, role },
+      data: { name, email, role, beguenstigt: beguenstigt === true },
     });
 
     return new Response(JSON.stringify(user), {

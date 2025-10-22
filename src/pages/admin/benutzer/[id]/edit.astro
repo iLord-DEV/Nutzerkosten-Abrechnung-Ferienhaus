@@ -22,6 +22,7 @@ try {
       name: true,
       email: true,
       role: true,
+      beguenstigt: true,
       createdAt: true,
     },
   });
@@ -39,6 +40,7 @@ try {
 const userName = user.name;
 const userEmail = user.email;
 const userRole = user.role;
+const userBeguenstigt = user.beguenstigt;
 const userIdValue = user.id;
 const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
   year: 'numeric',
@@ -108,15 +110,32 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
               <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Rolle
               </label>
-              <select 
-                id="role" 
-                name="role" 
-                required 
+              <select
+                id="role"
+                name="role"
+                required
                 class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="USER" selected={userRole === 'USER' ? true : undefined}>Benutzer</option>
                 <option value="ADMIN" selected={userRole === 'ADMIN' ? true : undefined}>Administrator</option>
               </select>
+            </div>
+
+            <div>
+              <div class="flex items-center h-full">
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="beguenstigt"
+                    name="beguenstigt"
+                    checked={userBeguenstigt ? true : undefined}
+                    class="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <label for="beguenstigt" class="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Begünstigt
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div>
@@ -136,6 +155,18 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
               Speichern
             </button>
+          </div>
+
+          <!-- Benachrichtigungs-Bereich -->
+          <div id="notification" class="hidden mt-4 p-4 rounded-md">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <span id="notification-icon" class="text-lg"></span>
+              </div>
+              <div class="ml-3">
+                <p id="notification-message" class="text-sm font-medium"></p>
+              </div>
+            </div>
           </div>
         </form>
 
@@ -223,17 +254,73 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
 </ProtectedLayout>
 
 <script>
+  // Benachrichtigung anzeigen
+  function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info', redirect: boolean = false) {
+    const notification = document.getElementById('notification');
+    const notificationMessage = document.getElementById('notification-message');
+    const notificationIcon = document.getElementById('notification-icon');
+
+    if (!notification || !notificationMessage || !notificationIcon) return;
+
+    // Nachricht setzen
+    notificationMessage.textContent = message;
+
+    // Icon und Farbe je nach Typ setzen
+    let icon = '';
+    let bgColor = '';
+    let textColor = '';
+
+    switch (type) {
+      case 'success':
+        icon = '✅';
+        bgColor = 'bg-green-50 dark:bg-green-900/20';
+        textColor = 'text-green-800 dark:text-green-200';
+        break;
+      case 'error':
+        icon = '❌';
+        bgColor = 'bg-red-50 dark:bg-red-900/20';
+        textColor = 'text-red-800 dark:text-red-200';
+        break;
+      case 'info':
+      default:
+        icon = 'ℹ️';
+        bgColor = 'bg-blue-50 dark:bg-blue-900/20';
+        textColor = 'text-blue-800 dark:text-blue-200';
+        break;
+    }
+
+    notificationIcon.textContent = icon;
+    notification.className = `mt-4 p-4 rounded-md ${bgColor}`;
+    notificationMessage.className = `text-sm font-medium ${textColor}`;
+
+    // Benachrichtigung anzeigen
+    notification.classList.remove('hidden');
+
+    // Bei Erfolg und Redirect nach 2 Sekunden weiterleiten
+    if (redirect && type === 'success') {
+      setTimeout(() => {
+        window.location.href = '/admin/benutzer';
+      }, 2000);
+    } else if (type === 'success') {
+      // Nach 3 Sekunden ausblenden wenn kein Redirect
+      setTimeout(() => {
+        notification.classList.add('hidden');
+      }, 3000);
+    }
+  }
+
   // Benutzer bearbeiten
   async function updateUser(event: Event) {
     event.preventDefault();
-    
+
     const formData = new FormData(event.target as HTMLFormElement);
     const userId = (document.getElementById('user-id') as HTMLInputElement)?.value;
     const userData = {
       id: userId,
       name: formData.get('name'),
       email: formData.get('email'),
-      role: formData.get('role')
+      role: formData.get('role'),
+      beguenstigt: formData.get('beguenstigt') === 'on'
     };
 
     try {
@@ -246,15 +333,14 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
       });
 
       if (response.ok) {
-        alert('Benutzer erfolgreich aktualisiert!');
-        window.location.href = '/admin/benutzer';
+        showNotification('Benutzer erfolgreich aktualisiert! Sie werden weitergeleitet...', 'success', true);
       } else {
         const error = await response.json();
-        alert(`Fehler: ${error.error}`);
+        showNotification(`Fehler: ${error.error}`, 'error', false);
       }
     } catch (error) {
       console.error('Fehler beim Aktualisieren des Benutzers:', error);
-      alert('Fehler beim Aktualisieren des Benutzers');
+      showNotification('Fehler beim Aktualisieren des Benutzers', 'error');
     }
   }
 
@@ -354,13 +440,13 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
 
     // Passwort-Validierung
     if (newPassword !== confirmPassword) {
-      alert('Die Passwörter stimmen nicht überein!');
+      showNotification('Die Passwörter stimmen nicht überein!', 'error');
       return;
     }
 
     const passwordValidation = validatePassword(newPassword);
     if (!passwordValidation.isValid) {
-      alert('Passwort-Anforderungen nicht erfüllt:\n• ' + passwordValidation.errors.join('\n• '));
+      showNotification('Passwort-Anforderungen nicht erfüllt: ' + passwordValidation.errors.join(', '), 'error');
       return;
     }
 
@@ -374,16 +460,18 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
       });
 
       if (response.ok) {
-        alert('Passwort erfolgreich geändert!');
-        // Formular zurücksetzen
-        (event.target as HTMLFormElement)?.reset();
+        showNotification('Passwort erfolgreich geändert!', 'success');
+        // Formular zurücksetzen nach kurzer Verzögerung
+        setTimeout(() => {
+          (event.target as HTMLFormElement)?.reset();
+        }, 500);
       } else {
         const error = await response.json();
-        alert(`Fehler: ${error.error}`);
+        showNotification(`Fehler: ${error.error}`, 'error');
       }
     } catch (error) {
       console.error('Fehler beim Ändern des Passworts:', error);
-      alert('Fehler beim Ändern des Passworts');
+      showNotification('Fehler beim Ändern des Passworts', 'error');
     }
   }
 
