@@ -4,33 +4,48 @@ import { requireAdmin } from '../../../utils/auth';
 
 const prisma = new PrismaClient();
 
-// Einzelnen Zähler abrufen
+// Einzelnen Zähler mit allen Details abrufen
 export const GET: APIRoute = async (context) => {
   try {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
-    
-    const zaehlerId = parseInt(context.params.id!);
-    
+    const { params } = context;
+    const id = params.id;
+
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'ID ist erforderlich' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const zaehler = await prisma.zaehler.findUnique({
-      where: { id: zaehlerId },
+      where: { id: parseInt(id) },
       include: {
         tankfuellungen: {
           orderBy: {
-            datum: 'desc',
+            zaehlerstand: 'desc',
           },
         },
-        aufenthalte: {
+        aufenthalteAnkunft: {
           orderBy: {
-            ankunft: 'desc',
+            ankunft: 'asc',
           },
           include: {
             user: {
               select: {
                 name: true,
-                email: true,
               },
             },
+          },
+        },
+        aufenthalteAbreise: {
+          orderBy: {
+            zaehlerAbreise: 'desc',
+          },
+          take: 1,
+          select: {
+            zaehlerAbreise: true,
           },
         },
       },
@@ -39,13 +54,23 @@ export const GET: APIRoute = async (context) => {
     if (!zaehler) {
       return new Response(JSON.stringify({ error: 'Zähler nicht gefunden' }), {
         status: 404,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify(zaehler), {
+    // Letzten Aufenthalt-Stand berechnen
+    const letzterAufenthaltStand = zaehler.aufenthalteAbreise[0]?.zaehlerAbreise || 0;
+
+    // Aufenthalte umbenennen (wir wollen beide Listen zusammenführen)
+    const aufenthalte = zaehler.aufenthalteAnkunft;
+
+    const zaehlerMitStand = {
+      ...zaehler,
+      letzterAufenthaltStand,
+      aufenthalte, // Einheitlicher Name
+    };
+
+    return new Response(JSON.stringify(zaehlerMitStand), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
@@ -53,63 +78,10 @@ export const GET: APIRoute = async (context) => {
     });
   } catch (error) {
     console.error('Fehler beim Laden des Zählers:', error);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: 'Fehler beim Laden der Daten',
       details: error instanceof Error ? error.message : String(error)
     }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  }
-};
-
-// Zähler bearbeiten
-export const PUT: APIRoute = async (context) => {
-  try {
-    // Admin-Berechtigung prüfen
-    await requireAdmin(context);
-    const { request } = context;
-
-    const zaehlerId = parseInt(context.params.id!);
-    const body = await request.json();
-
-    // Prüfen ob Zähler existiert
-    const existierenderZaehler = await prisma.zaehler.findUnique({
-      where: { id: zaehlerId },
-    });
-
-    if (!existierenderZaehler) {
-      return new Response(JSON.stringify({ error: 'Zähler nicht gefunden' }), {
-        status: 404,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    }
-
-    // Zähler aktualisieren
-    const aktualisierterZaehler = await prisma.zaehler.update({
-      where: { id: zaehlerId },
-      data: {
-        einbauDatum: body.einbauDatum ? new Date(body.einbauDatum + 'T12:00:00Z') : undefined,
-        ausbauDatum: body.ausbauDatum ? new Date(body.ausbauDatum + 'T12:00:00Z') : undefined,
-        letzterStand: body.letzterStand !== undefined ? parseFloat(body.letzterStand) : undefined,
-        istAktiv: body.istAktiv !== undefined ? body.istAktiv : undefined,
-        notizen: body.notizen || null,
-      },
-    });
-
-    return new Response(JSON.stringify(aktualisierterZaehler), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  } catch (error) {
-    console.error('Fehler beim Aktualisieren des Zählers:', error);
-    return new Response(JSON.stringify({ error: 'Fehler beim Aktualisieren des Zählers' }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json',
@@ -123,57 +95,53 @@ export const DELETE: APIRoute = async (context) => {
   try {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
+    const { params } = context;
+    const id = params.id;
 
-    const zaehlerId = parseInt(context.params.id!);
-
-    // Prüfen ob Zähler existiert
-    const existierenderZaehler = await prisma.zaehler.findUnique({
-      where: { id: zaehlerId },
-      include: {
-        _count: {
-          select: {
-            tankfuellungen: true,
-            aufenthalte: true,
-          },
-        },
-      },
-    });
-
-    if (!existierenderZaehler) {
-      return new Response(JSON.stringify({ error: 'Zähler nicht gefunden' }), {
-        status: 404,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'ID ist erforderlich' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // Prüfen ob Zähler noch verwendet wird
-    if (existierenderZaehler._count.tankfuellungen > 0 || existierenderZaehler._count.aufenthalte > 0) {
-      return new Response(JSON.stringify({ 
-        error: 'Zähler kann nicht gelöscht werden, da er noch Tankfüllungen oder Aufenthalte zugeordnet hat.' 
+    // Prüfen ob Zähler aktiv ist
+    const zaehler = await prisma.zaehler.findUnique({
+      where: { id: parseInt(id) },
+      select: { istAktiv: true },
+    });
+
+    if (!zaehler) {
+      return new Response(JSON.stringify({ error: 'Zähler nicht gefunden' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (zaehler.istAktiv) {
+      return new Response(JSON.stringify({
+        error: 'Aktive Zähler können nicht gelöscht werden. Bitte zuerst einen neuen Zähler einbauen.'
       }), {
         status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
     // Zähler löschen
     await prisma.zaehler.delete({
-      where: { id: zaehlerId },
+      where: { id: parseInt(id) },
     });
 
-    return new Response(JSON.stringify({ message: 'Zähler erfolgreich gelöscht' }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Fehler beim Löschen des Zählers:', error);
-    return new Response(JSON.stringify({ error: 'Fehler beim Löschen des Zählers' }), {
+    return new Response(JSON.stringify({
+      error: 'Fehler beim Löschen',
+      details: error instanceof Error ? error.message : String(error)
+    }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json',

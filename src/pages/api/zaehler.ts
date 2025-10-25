@@ -9,7 +9,7 @@ export const GET: APIRoute = async (context) => {
   try {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
-    
+
     const zaehler = await prisma.zaehler.findMany({
       orderBy: {
         einbauDatum: 'desc',
@@ -21,6 +21,15 @@ export const GET: APIRoute = async (context) => {
           },
           take: 5, // Nur die letzten 5 Tankfüllungen
         },
+        aufenthalteAbreise: {
+          orderBy: {
+            zaehlerAbreise: 'desc',
+          },
+          take: 1, // Nur den letzten Aufenthalt
+          select: {
+            zaehlerAbreise: true,
+          },
+        },
         _count: {
           select: {
             aufenthalteAnkunft: true,
@@ -31,7 +40,13 @@ export const GET: APIRoute = async (context) => {
       },
     });
 
-    return new Response(JSON.stringify(zaehler), {
+    // Für jeden Zähler den letzten Aufenthalt-Stand on-the-fly berechnen
+    const zaehlerMitStand = zaehler.map(z => ({
+      ...z,
+      letzterAufenthaltStand: z.aufenthalteAbreise[0]?.zaehlerAbreise || 0,
+    }));
+
+    return new Response(JSON.stringify(zaehlerMitStand), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

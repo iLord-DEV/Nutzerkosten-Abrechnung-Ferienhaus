@@ -99,46 +99,33 @@ try {
 
           <div class="mb-4" id="letzter-stand-container" style="display: none;">
             <label for="letzterStandAlterZaehler" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Letzter Stand des alten Zählers
+              Ausbaustand des alten Zählers *
             </label>
-            <input 
-              type="number" 
-              id="letzterStandAlterZaehler" 
+            <input
+              type="number"
+              id="letzterStandAlterZaehler"
               name="letzterStandAlterZaehler"
               step="0.1"
+              required
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="0.0"
+              placeholder="z.B. 100.0"
             >
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Das Ausbaudatum des alten Zählers wird automatisch auf das Einbaudatum des neuen Zählers gesetzt.
+              Der alte Zähler wird automatisch deaktiviert. Das Ausbaudatum wird auf das Einbaudatum des neuen Zählers gesetzt.
             </p>
           </div>
-          
+
           <div class="mb-4">
             <label for="notizen" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Notizen (optional)
             </label>
-            <textarea 
-              id="notizen" 
+            <textarea
+              id="notizen"
               name="notizen"
               rows="3"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               placeholder="Grund für den Wechsel, Wartung, etc."
             ></textarea>
-          </div>
-
-          <div class="mb-4">
-            <label class="flex items-center">
-              <input 
-                type="checkbox" 
-                id="ersetzeAktiven" 
-                name="ersetzeAktiven"
-                class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-              >
-              <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                Aktiven Zähler ersetzen
-              </span>
-            </label>
           </div>
 
           <div class="flex justify-end space-x-3">
@@ -205,6 +192,21 @@ try {
         ? new Date(zaehler.ausbauDatum).toLocaleDateString('de-DE')
         : '-';
 
+      // Letzter Stand - unterschiedlich für aktive/inaktive Zähler
+      let letzterStandHtml;
+      if (zaehler.istAktiv) {
+        // Aktiv: Nur letzter Aufenthalt-Stand
+        letzterStandHtml = `${zaehler.letzterAufenthaltStand.toFixed(1)} h`;
+      } else {
+        // Inaktiv: Beide Werte anzeigen
+        letzterStandHtml = `
+          <div class="text-sm">
+            <div>Letzter Aufenthalt: ${zaehler.letzterAufenthaltStand.toFixed(1)} h</div>
+            <div class="text-gray-500 dark:text-gray-400">Ausbau: ${zaehler.letzterStand.toFixed(1)} h</div>
+          </div>
+        `;
+      }
+
       row.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap">
           ${statusBadge}
@@ -218,21 +220,21 @@ try {
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
           ${ausbauDatum}
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${zaehler.letzterStand.toFixed(1)} h
+        <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+          ${letzterStandHtml}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
           ${zaehler._count.tankfuellungen}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-          <button 
+          <button
             onclick="viewZaehlerDetails(${zaehler.id})"
             class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
           >
             Details
           </button>
           ${!zaehler.istAktiv ? `
-            <button 
+            <button
               onclick="deleteZaehler(${zaehler.id})"
               class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
             >
@@ -251,24 +253,26 @@ try {
     const modal = document.getElementById('zaehler-modal');
     const form = document.getElementById('zaehler-form');
     const letzterStandContainer = document.getElementById('letzter-stand-container');
-    const ersetzeAktivenCheckbox = document.getElementById('ersetzeAktiven');
-    
+
     // Formular zurücksetzen
     form.reset();
-    
+
     // Heute als Standard-Datum setzen
     const heute = new Date().toISOString().split('T')[0];
     document.getElementById('einbauDatum').value = heute;
-    
-    // Checkbox-Event-Listener
-    ersetzeAktivenCheckbox.addEventListener('change', function() {
-      if (this.checked && aktiverZaehler) {
-        letzterStandContainer.style.display = 'block';
-      } else {
-        letzterStandContainer.style.display = 'none';
+
+    // Wenn ein aktiver Zähler existiert, Ausbaustand-Feld anzeigen
+    if (aktiverZaehler) {
+      letzterStandContainer.style.display = 'block';
+      // Letzten Aufenthalt-Stand als Vorschlag eintragen
+      const letzterStandInput = document.getElementById('letzterStandAlterZaehler');
+      if (letzterStandInput && aktiverZaehler.letzterAufenthaltStand) {
+        letzterStandInput.value = aktiverZaehler.letzterAufenthaltStand.toFixed(1);
       }
-    });
-    
+    } else {
+      letzterStandContainer.style.display = 'none';
+    }
+
     modal.classList.remove('hidden');
   }
 
@@ -325,22 +329,37 @@ try {
     const modal = document.getElementById('zaehler-details-modal');
     if (!modal) return;
 
+    console.log('📊 Zähler Details:', zaehler);
+
     // Statistiken berechnen
     const tankfuellungen = zaehler.tankfuellungen || [];
     const aufenthalte = zaehler.aufenthalte || [];
-    
+
+    console.log('⛽ Tankfüllungen:', tankfuellungen.length, tankfuellungen);
+    console.log('🏠 Aufenthalte:', aufenthalte.length, aufenthalte);
+
     const gesamtLiter = tankfuellungen.reduce((sum, tf) => sum + tf.liter, 0);
     const gesamtKosten = tankfuellungen.reduce((sum, tf) => sum + (tf.liter * tf.preisProLiter), 0);
-    
+
     // Verbrauch berechnen (nur wenn mindestens 2 Tankfüllungen)
     let durchschnittlicherVerbrauch = '-';
     if (tankfuellungen.length >= 2) {
-      const ersteTf = tankfuellungen[tankfuellungen.length - 1]; // Älteste
-      const letzteTf = tankfuellungen[0]; // Neueste
+      const ersteTf = tankfuellungen[tankfuellungen.length - 1]; // Älteste (niedrigster Zählerstand)
+      const letzteTf = tankfuellungen[0]; // Neueste (höchster Zählerstand)
       const stundenDifferenz = letzteTf.zaehlerstand - ersteTf.zaehlerstand;
+
+      console.log(`🔢 Verbrauchsberechnung:`, {
+        ersteTf: ersteTf.zaehlerstand,
+        letzteTf: letzteTf.zaehlerstand,
+        stundenDifferenz,
+        gesamtLiter
+      });
+
       if (stundenDifferenz > 0) {
         durchschnittlicherVerbrauch = `${(gesamtLiter / stundenDifferenz).toFixed(2)} L/h`;
       }
+    } else {
+      console.log('⚠️ Nicht genug Tankfüllungen für Verbrauchsberechnung:', tankfuellungen.length);
     }
 
     // Zeitachse erstellen
@@ -379,7 +398,7 @@ try {
       aktivitaeten.push({
         datum: new Date(zaehler.ausbauDatum),
         typ: 'ausbau',
-        text: `Zähler ausgebaut (Stand: ${zaehler.letzterStand}h)`,
+        text: `Zähler ausgebaut (Ausbaustand: ${zaehler.letzterStand.toFixed(1)}h, Letzter Aufenthalt: ${zaehler.letzterAufenthaltStand.toFixed(1)}h)`,
         icon: '📦'
       });
     }
@@ -421,9 +440,15 @@ try {
                     <span class="font-medium">${zaehler.ausbauDatum ? new Date(zaehler.ausbauDatum).toLocaleDateString('de-DE') : 'Noch aktiv'}</span>
                   </div>
                   <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Letzter Stand:</span>
-                    <span class="font-medium">${zaehler.letzterStand.toFixed(1)} h</span>
+                    <span class="text-gray-600 dark:text-gray-400">Letzter Aufenthalt-Stand:</span>
+                    <span class="font-medium">${zaehler.letzterAufenthaltStand.toFixed(1)} h</span>
                   </div>
+                  ${!zaehler.istAktiv ? `
+                    <div class="flex justify-between">
+                      <span class="text-gray-600 dark:text-gray-400">Ausbaustand:</span>
+                      <span class="font-medium">${zaehler.letzterStand.toFixed(1)} h</span>
+                    </div>
+                  ` : ''}
                   ${zaehler.notizen ? `
                     <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                       <span class="text-gray-600 dark:text-gray-400">Notizen:</span>
@@ -536,13 +561,13 @@ try {
     // Form-Submit
     document.getElementById('zaehler-form').addEventListener('submit', (e) => {
       e.preventDefault();
-      
+
       const formData = new FormData(e.target);
       const data = Object.fromEntries(formData.entries());
-      
-      // Checkbox-Wert korrekt setzen
-      data.ersetzeAktiven = document.getElementById('ersetzeAktiven').checked;
-      
+
+      // Wenn ein aktiver Zähler existiert, wird er automatisch ersetzt
+      data.ersetzeAktiven = aktiverZaehler ? true : false;
+
       createZaehler(data);
     });
 
