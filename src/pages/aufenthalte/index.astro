@@ -33,7 +33,7 @@ const session = JSON.parse(sessionCookie.value);
     <!-- Filter und Suche -->
     <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-6">
       <div class="px-4 py-5 sm:p-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label for="jahr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Jahr
@@ -63,11 +63,6 @@ const session = JSON.parse(sessionCookie.value);
               </select>
             </div>
           )}
-          <div class="flex items-end">
-            <button id="filter-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-              🔍 Filtern
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -138,7 +133,7 @@ const session = JSON.parse(sessionCookie.value);
           <div class="text-gray-500 dark:text-gray-400">
             <span class="text-4xl">📭</span>
             <p class="mt-2 text-lg font-medium">Keine Aufenthalte gefunden</p>
-            <p class="mt-1">Erstellen Sie Ihren ersten Aufenthalt.</p>
+            <p id="no-data-hint" class="mt-1">Erstellen Sie Ihren ersten Aufenthalt.</p>
           </div>
         </div>
         
@@ -446,15 +441,22 @@ const session = JSON.parse(sessionCookie.value);
       const a1Ende = aufenthalt.zaehlerAbreise;
       const a2Start = overlap.zaehlerAnkunft;
       const a2Ende = overlap.zaehlerAbreise;
-      
+
       // Echte Überlappung liegt vor wenn: a1Ende > a2Start UND a1Start < a2Ende
-      // UND der Überlappungsbereich ist größer als 0.1 Stunden
+      const hatUeberlappung = a1Ende > a2Start && a1Start < a2Ende;
+
+      if (!hatUeberlappung) {
+        console.log(`  vs ${overlap.user.name} (${a2Start}-${a2Ende}): Keine Überlappung`);
+        return false;
+      }
+
+      // Überlappungsbereich berechnen
       const overlapStart = Math.max(a1Start, a2Start);
       const overlapEnd = Math.min(a1Ende, a2Ende);
       const overlapHours = overlapEnd - overlapStart;
-      
-      console.log(`  vs ${overlap.user.name} (${a2Start}-${a2Ende}): Overlap ${overlapStart}-${overlapEnd} = ${overlapHours}h`);
-      
+
+      console.log(`  vs ${overlap.user.name} (${a2Start}-${a2Ende}): Overlap ${overlapStart}-${overlapEnd} = ${overlapHours.toFixed(1)}h`);
+
       // Nur echte Überlappungen mit mindestens 1 Stunde
       return overlapHours >= 1;
     });
@@ -569,7 +571,141 @@ const session = JSON.parse(sessionCookie.value);
     }
   }
 
-  // Ölpreis für ein spezifisches Datum laden
+  // Tankfüllungen laden
+  let alleTankfuellungen: Array<{
+    id: number;
+    datum: string;
+    zaehlerstand: number;
+    liter: number;
+    preisProLiter: number;
+  }> = [];
+
+  async function loadTankfuellungen() {
+    try {
+      const response = await fetch('/api/tankfuellungen');
+      if (response.ok) {
+        const data = await response.json();
+        // Nach Zählerstand sortieren (aufsteigend)
+        alleTankfuellungen = data.sort((a: any, b: any) => a.zaehlerstand - b.zaehlerstand);
+        console.log('⛽ Tankfüllungen geladen:', alleTankfuellungen.length);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Tankfüllungen:', error);
+    }
+  }
+
+  // Ölkosten nach Zählerstand berechnen (mit Segmentierung)
+  function berechneOelkostenNachZaehlerstand(
+    zaehlerStart: number,
+    zaehlerEnde: number,
+    tankfuellungen: typeof alleTankfuellungen
+  ): number {
+    if (zaehlerEnde <= zaehlerStart) {
+      console.warn(`⚠️ Ungültige Zählerstände: Start=${zaehlerStart}, Ende=${zaehlerEnde}`);
+      return 0;
+    }
+
+    const verbrauchteStunden = zaehlerEnde - zaehlerStart;
+
+    // Tankfüllungen in der Spanne finden (Zählerstand > start UND <= ende)
+    const tfInSpanne = tankfuellungen.filter(
+      tf => tf.zaehlerstand > zaehlerStart && tf.zaehlerstand <= zaehlerEnde
+    );
+
+    // Segmente erstellen
+    const segmente: Array<{
+      start: number;
+      ende: number;
+      stunden: number;
+      preis: number;
+      verbrauch: number;
+    }> = [];
+
+    if (tfInSpanne.length === 0) {
+      // Keine Tankfüllung in der Spanne - ein Segment
+      const tfVorStart = tankfuellungen.filter(tf => tf.zaehlerstand <= zaehlerStart);
+      const letzteVorStart = tfVorStart.length > 0 ? tfVorStart[tfVorStart.length - 1] : null;
+      const vorletzteVorStart = tfVorStart.length > 1 ? tfVorStart[tfVorStart.length - 2] : null;
+
+      const preis = letzteVorStart?.preisProLiter || 1.01;
+      const verbrauch = (letzteVorStart && vorletzteVorStart)
+        ? letzteVorStart.liter / (letzteVorStart.zaehlerstand - vorletzteVorStart.zaehlerstand)
+        : 5.5;
+
+      segmente.push({
+        start: zaehlerStart,
+        ende: zaehlerEnde,
+        stunden: verbrauchteStunden,
+        preis,
+        verbrauch
+      });
+    } else {
+      // Tankfüllungen in der Spanne - mehrere Segmente
+      let aktuellerStart = zaehlerStart;
+
+      for (let i = 0; i < tfInSpanne.length; i++) {
+        const tf = tfInSpanne[i];
+
+        // Segment bis zu dieser Tankfüllung
+        const segmentEnde = tf.zaehlerstand;
+        const stunden = segmentEnde - aktuellerStart;
+
+        // Preis und Verbrauch für dieses Segment ermitteln
+        const alleTfBisHier = tankfuellungen.filter(t => t.zaehlerstand <= aktuellerStart);
+        const letzteVor = alleTfBisHier.length > 0 ? alleTfBisHier[alleTfBisHier.length - 1] : null;
+        const vorletzteVor = alleTfBisHier.length > 1 ? alleTfBisHier[alleTfBisHier.length - 2] : null;
+
+        const preis = letzteVor?.preisProLiter || 1.01;
+        const verbrauch = (letzteVor && vorletzteVor)
+          ? letzteVor.liter / (letzteVor.zaehlerstand - vorletzteVor.zaehlerstand)
+          : 5.5;
+
+        segmente.push({
+          start: aktuellerStart,
+          ende: segmentEnde,
+          stunden,
+          preis,
+          verbrauch
+        });
+
+        aktuellerStart = segmentEnde;
+      }
+
+      // Letztes Segment: Von letzter TF bis zaehlerEnde
+      if (aktuellerStart < zaehlerEnde) {
+        const stunden = zaehlerEnde - aktuellerStart;
+        const letzteTF = tfInSpanne[tfInSpanne.length - 1];
+
+        // Verbrauch der letzten TF berechnen
+        const alleTfBisLetzte = tankfuellungen.filter(t => t.zaehlerstand <= letzteTF.zaehlerstand);
+        const vorletzte = alleTfBisLetzte.length > 1 ? alleTfBisLetzte[alleTfBisLetzte.length - 2] : null;
+
+        const preis = letzteTF.preisProLiter;
+        const verbrauch = vorletzte
+          ? letzteTF.liter / (letzteTF.zaehlerstand - vorletzte.zaehlerstand)
+          : 5.5;
+
+        segmente.push({
+          start: aktuellerStart,
+          ende: zaehlerEnde,
+          stunden,
+          preis,
+          verbrauch
+        });
+      }
+    }
+
+    // Kosten aller Segmente summieren
+    const gesamtKosten = segmente.reduce((sum, seg) => {
+      const kosten = seg.stunden * seg.verbrauch * seg.preis;
+      console.log(`💰 Segment ${seg.start}-${seg.ende}h: ${seg.stunden}h × ${seg.verbrauch.toFixed(2)}L/h × €${seg.preis.toFixed(2)} = €${kosten.toFixed(2)}`);
+      return sum + kosten;
+    }, 0);
+
+    return gesamtKosten;
+  }
+
+  // Ölpreis für ein spezifisches Datum laden (VERALTET - wird ersetzt)
   async function getOelpreisFuerDatum(datum: Date): Promise<number> {
     try {
       const datumString = datum.toISOString().split('T')[0]; // YYYY-MM-DD Format
@@ -588,6 +724,8 @@ const session = JSON.parse(sessionCookie.value);
   function renderAufenthalte(aufenthalte: typeof currentAufenthalte) {
     console.log('🎨 renderAufenthalte aufgerufen mit', aufenthalte.length, 'Aufenthalten');
     const tbody = document.getElementById('aufenthalte-tbody');
+    const noData = document.getElementById('no-data');
+
     if (!tbody) {
       console.error('❌ tbody Element nicht gefunden');
       return;
@@ -595,8 +733,14 @@ const session = JSON.parse(sessionCookie.value);
 
     if (aufenthalte.length === 0) {
       console.log('📭 Keine Aufenthalte vorhanden');
+      tbody.innerHTML = '';
       showNoData();
       return;
+    }
+
+    // Keine-Daten-Anzeige verstecken wenn Daten vorhanden sind
+    if (noData) {
+      noData.classList.add('hidden');
     }
 
     tbody.innerHTML = '';
@@ -616,10 +760,8 @@ const session = JSON.parse(sessionCookie.value);
       const zaehlerEnde = aufenthalt.zaehlerAbreise;
       const verbrauchteStunden = zaehlerEnde - zaehlerStart;
       
-      // Kosten berechnen - Ölpreis für das Aufenthaltsdatum ermitteln
-      const aufenthaltsDatum = new Date(aufenthalt.ankunft);
-      // Für die Anzeige verwenden wir den aktuellen Preis, die korrekte Berechnung erfolgt später
-      const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
+      // Kosten berechnen - Zählerstand-basierte Berechnung mit Tankfüllungen
+      const oelKosten = berechneOelkostenNachZaehlerstand(zaehlerStart, zaehlerEnde, alleTankfuellungen);
       const anzahlNaechte = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
 
       // Übernachtungskosten nur berechnen wenn naechteBerechnen true ist
@@ -830,22 +972,18 @@ const session = JSON.parse(sessionCookie.value);
   }
 
   // Ursprüngliche Kosten berechnen (vor Einsparungen)
-  async function calculateOriginalCosts(aufenthalt: any): Promise<number> {
+  function calculateOriginalCosts(aufenthalt: any): number {
     const zaehlerStart = aufenthalt.zaehlerAnkunft;
     const zaehlerEnde = aufenthalt.zaehlerAbreise;
-    
+
     // Validierung: Zählerende muss größer als Zählerstart sein
     if (zaehlerEnde <= zaehlerStart) {
       console.warn(`⚠️ Ungültige Zählerstände für Aufenthalt ${aufenthalt.id}: Start=${zaehlerStart}, Ende=${zaehlerEnde}`);
       return 0; // Keine Kosten bei ungültigen Zählerständen
     }
-    
-    const verbrauchteStunden = zaehlerEnde - zaehlerStart;
-    
-    // Ölkosten - korrekten Ölpreis für das Aufenthaltsdatum ermitteln
-    const aufenthaltsDatum = new Date(aufenthalt.ankunft);
-    const oelpreis = await getOelpreisFuerDatum(aufenthaltsDatum);
-    const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * oelpreis;
+
+    // Ölkosten - Zählerstand-basierte Berechnung mit Tankfüllungen
+    const oelKosten = berechneOelkostenNachZaehlerstand(zaehlerStart, zaehlerEnde, alleTankfuellungen);
 
     // Übernachtungskosten nur berechnen wenn naechteBerechnen true ist
     // null = User-Status entscheidet (begünstigt=false, normal=true)
@@ -885,18 +1023,18 @@ const session = JSON.parse(sessionCookie.value);
       // Nur Einsparungen bei echten Überlappungen (mindestens 1 Stunde)
       if (overlapHours >= 1) {
         // Ölkosten-Einsparung: Überlappungsstunden werden aufgeteilt
-        // Für die Einsparungsberechnung verwenden wir den aktuellen Preis, da es sich um die gleiche Zeit handelt
-        const oelKostenProStunde = (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
+        // Zählerstand-basierte Berechnung für das Überlappungs-Segment
+        const oelKostenSegment = berechneOelkostenNachZaehlerstand(overlapStart, overlapEnd, alleTankfuellungen);
         // Bei 2 Personen teilen sich beide die Kosten der Überlappungsstunden
         // Jede Person spart 50% der Kosten der Überlappungsstunden
-        const oelSavings = overlapHours * oelKostenProStunde * 0.5;
-        
+        const oelSavings = oelKostenSegment * 0.5;
+
         // Übernachtungskosten-Einsparung: Gemeinsame Nutzung der Infrastruktur
         // Kleine Einsparung pro Überlappungsstunde
         const uebernachtungSavings = overlapHours / 24 * 5;
-        
+
         totalSavings += oelSavings + uebernachtungSavings;
-        
+
         console.log(`💰 Einsparung für ${aufenthalt.user.name} mit ${overlap.user.name}: ${overlapHours.toFixed(1)}h = €${(oelSavings + uebernachtungSavings).toFixed(2)}`);
       }
     });
@@ -905,26 +1043,32 @@ const session = JSON.parse(sessionCookie.value);
   }
 
   // Überlappungsinfo für einzelnen Aufenthalt laden
-  async function loadOverlapInfo(aufenthalt: typeof currentAufenthalte[0]) {
+  function loadOverlapInfo(aufenthalt: typeof currentAufenthalte[0]) {
     try {
+      console.log(`🔧 loadOverlapInfo für Aufenthalt ${aufenthalt.id}`);
       const overlaps = getUeberlappungsInfo(aufenthalt, alleAufenthalte);
       const overlapDiv = document.getElementById(`overlap-info-${aufenthalt.id}`);
       const savingsDiv = document.getElementById(`savings-info-${aufenthalt.id}`);
       const totalCostsDiv = document.getElementById(`total-costs-${aufenthalt.id}`);
-      
+
+      console.log(`📍 DOM-Elemente gefunden: overlapDiv=${!!overlapDiv}, savingsDiv=${!!savingsDiv}, totalCostsDiv=${!!totalCostsDiv}`);
+      console.log(`📊 Anzahl Überlappungen: ${overlaps.length}`);
+
       if (overlapDiv) {
         if (overlaps.length === 0) {
+          console.log(`✅ Keine Überlappung - setze "Keine"`);
           overlapDiv.innerHTML = `
             <span class="text-green-600 dark:text-green-400 text-xs">
               ✅ Keine
             </span>
           `;
         } else {
+          console.log(`⚠️ ${overlaps.length} Überlappungen gefunden - erstelle HTML`);
           const overlapText = overlaps.map((overlap: any) => {
             const startZaehler = Math.max(aufenthalt.zaehlerAnkunft, overlap.zaehlerAnkunft);
             const endZaehler = Math.min(aufenthalt.zaehlerAbreise, overlap.zaehlerAbreise);
             const overlapHours = endZaehler - startZaehler;
-            
+
             // Nur echte Überlappungen anzeigen (mindestens 1 Stunde)
             if (overlapHours >= 1) {
               return `${overlap.user.name} (${startZaehler}h - ${endZaehler}h, ${overlapHours}h)`;
@@ -932,14 +1076,22 @@ const session = JSON.parse(sessionCookie.value);
               return `${overlap.user.name} (nur geteilter Zeitpunkt: ${overlapHours}h)`;
             }
           }).filter((text: string) => text).join('<br>');
-          
-          overlapDiv.innerHTML = `
+
+          console.log(`📝 OverlapText:`, overlapText);
+
+          const html = `
             <span class="text-orange-600 dark:text-orange-400 text-xs">
               ⚠️ ${overlaps.length} Überlappung${overlaps.length > 1 ? 'en' : ''}:<br>
               ${overlapText}
             </span>
           `;
+
+          console.log(`🎨 Setze innerHTML:`, html);
+          overlapDiv.innerHTML = html;
+          console.log(`✅ innerHTML gesetzt, aktueller Inhalt:`, overlapDiv.innerHTML);
         }
+      } else {
+        console.error(`❌ overlapDiv nicht gefunden für ID: overlap-info-${aufenthalt.id}`);
       }
       
       // Einsparungen berechnen und anzeigen
@@ -963,15 +1115,14 @@ const session = JSON.parse(sessionCookie.value);
       // Gesamtkosten berechnen und anzeigen (Kosten - Einsparungen)
       if (totalCostsDiv) {
         const savings = calculateSavings(aufenthalt, overlaps);
-        calculateOriginalCosts(aufenthalt).then(originalCosts => {
-          const totalCosts = originalCosts - savings;
-          
-          totalCostsDiv.innerHTML = `
-            <span class="text-blue-600 dark:text-blue-400 text-sm font-medium">
-              € ${totalCosts.toFixed(2)}
-            </span>
-          `;
-        });
+        const originalCosts = calculateOriginalCosts(aufenthalt);
+        const totalCosts = originalCosts - savings;
+
+        totalCostsDiv.innerHTML = `
+          <span class="text-blue-600 dark:text-blue-400 text-sm font-medium">
+            € ${totalCosts.toFixed(2)}
+          </span>
+        `;
       }
     } catch (error) {
       console.error('❌ Fehler beim Laden der Überlappungsinfo:', error);
@@ -1026,14 +1177,50 @@ const session = JSON.parse(sessionCookie.value);
   // Lade-Animation anzeigen/verstecken
   function showLoading(show: boolean) {
     const loading = document.getElementById('loading');
+    const noData = document.getElementById('no-data');
+
     if (loading) {
       loading.classList.toggle('hidden', !show);
+    }
+
+    // Keine-Daten-Anzeige verstecken während geladen wird
+    if (show && noData) {
+      noData.classList.add('hidden');
     }
   }
 
   // Keine Daten anzeigen
   function showNoData() {
     const noData = document.getElementById('no-data');
+    const loading = document.getElementById('loading');
+    const noDataHint = document.getElementById('no-data-hint');
+
+    // Lade-Animation verstecken
+    if (loading) {
+      loading.classList.add('hidden');
+    }
+
+    // Dynamischen Hinweistext basierend auf den Filtern erstellen
+    if (noDataHint) {
+      const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
+      const benutzerSelect = document.getElementById('benutzer') as HTMLSelectElement;
+      const jahr = jahrSelect ? jahrSelect.value : '';
+      const benutzerName = benutzerSelect ? benutzerSelect.options[benutzerSelect.selectedIndex]?.text : '';
+
+      let hintText = 'Erstellen Sie Ihren ersten Aufenthalt.';
+
+      if (benutzerSelect && benutzerSelect.value) {
+        // Ein bestimmter Benutzer ist ausgewählt
+        hintText = `${benutzerName} hat im Jahr ${jahr} keine Aufenthalte.`;
+      } else if (jahr) {
+        // Nur Jahr-Filter aktiv
+        hintText = `Für das Jahr ${jahr} wurden keine Aufenthalte gefunden.`;
+      }
+
+      noDataHint.textContent = hintText;
+    }
+
+    // Keine-Daten-Meldung anzeigen
     if (noData) {
       noData.classList.remove('hidden');
     }
@@ -1046,25 +1233,27 @@ const session = JSON.parse(sessionCookie.value);
     try {
       await loadAvailableYears();
       console.log('✅ Verfügbare Jahre geladen');
-      
+
       await loadPreise('2024');
       console.log('✅ Preise geladen');
-      
+
+      await loadTankfuellungen();
+      console.log('✅ Tankfüllungen geladen');
+
       // Benutzer laden (nur für Admins)
       await loadBenutzer();
       console.log('✅ Benutzer geladen');
-      
+
       await loadAufenthalte();
       console.log('✅ Aufenthalte geladen');
       
 
       
-      // Filter-Event-Listener
+      // Filter-Event-Listener (automatische Filterung bei Select-Änderung)
       const jahrSelect = document.getElementById('jahr');
       const statusSelect = document.getElementById('status');
       const benutzerSelect = document.getElementById('benutzer');
-      const filterBtn = document.getElementById('filter-btn');
-      
+
       if (jahrSelect) {
         jahrSelect.addEventListener('change', loadAufenthalte);
         console.log('✅ Jahr-Select Event-Listener gesetzt');
@@ -1076,10 +1265,6 @@ const session = JSON.parse(sessionCookie.value);
       if (benutzerSelect) {
         benutzerSelect.addEventListener('change', loadAufenthalte);
         console.log('✅ Benutzer-Select Event-Listener gesetzt');
-      }
-      if (filterBtn) {
-        filterBtn.addEventListener('click', loadAufenthalte);
-        console.log('✅ Filter-Button Event-Listener gesetzt');
       }
       
       console.log('🎯 Alle Event-Listener gesetzt!');

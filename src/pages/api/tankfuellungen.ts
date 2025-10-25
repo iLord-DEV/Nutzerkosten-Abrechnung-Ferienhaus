@@ -127,8 +127,8 @@ export const POST: APIRoute = async (context) => {
             create: {
               jahr: year,
               oelpreisProLiter: body.preisProLiter,
-              uebernachtungMitglied: 15.0,
-              uebernachtungGast: 25.0,
+              uebernachtungMitglied: 5.0,
+              uebernachtungGast: 10.0,
               verbrauchProStunde: neuerVerbrauchProStunde,
               istBerechnet: true,
             },

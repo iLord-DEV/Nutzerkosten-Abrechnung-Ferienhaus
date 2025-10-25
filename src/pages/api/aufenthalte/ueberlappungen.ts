@@ -20,7 +20,8 @@ export const POST: APIRoute = async (context) => {
     }
 
     // Alle Aufenthalte laden - die Überlappungslogik erfolgt im Frontend
-    const alleAufenthalte = await prisma.aufenthalt.findMany({
+    // Nur gültige Aufenthalte: mit existierenden Usern und korrekten Zählerständen
+    const alleAufenthalteRaw = await prisma.aufenthalt.findMany({
       where: {
         // Alle Aufenthalte für das Jahr (falls jahr angegeben)
         ...(jahr && { jahr: parseInt(jahr) })
@@ -39,6 +40,27 @@ export const POST: APIRoute = async (context) => {
         ankunft: 'desc'
       }
     });
+
+    // Filtere fehlerhafte Aufenthalte heraus:
+    // 1. Aufenthalte ohne User (sollte durch FK verhindert sein, aber sicher ist sicher)
+    // 2. Aufenthalte mit vertauschten/fehlerhaften Zählerständen
+    const alleAufenthalte = alleAufenthalteRaw.filter(aufenthalt => {
+      // User muss existieren
+      if (!aufenthalt.user) {
+        console.warn(`⚠️ Aufenthalt ${aufenthalt.id} hat keinen User - wird ausgeschlossen`);
+        return false;
+      }
+
+      // Zählerstände müssen valide sein (Abreise > Ankunft)
+      if (aufenthalt.zaehlerAbreise <= aufenthalt.zaehlerAnkunft) {
+        console.warn(`⚠️ Aufenthalt ${aufenthalt.id} (${aufenthalt.user.name}) hat fehlerhafte Zählerstände: ${aufenthalt.zaehlerAnkunft} → ${aufenthalt.zaehlerAbreise} - wird ausgeschlossen`);
+        return false;
+      }
+
+      return true;
+    });
+
+    console.log(`📊 Aufenthalte geladen: ${alleAufenthalteRaw.length} total, ${alleAufenthalte.length} gültig, ${alleAufenthalteRaw.length - alleAufenthalte.length} fehlerhaft`);
 
     return new Response(JSON.stringify(alleAufenthalte), {
       status: 200,

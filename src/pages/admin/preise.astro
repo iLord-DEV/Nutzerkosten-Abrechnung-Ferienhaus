@@ -5,13 +5,14 @@ import { PrismaClient } from '@prisma/client';
 
 let uebernachtungspreise = [];
 let preise = [];
+let tankfuellungen = [];
 
 // Admin-Berechtigung prüfen
 try {
   await requireAdmin(Astro);
-  
+
   const prisma = new PrismaClient();
-  
+
   // Hole alle Preise mit Übernachtungspreisen (gueltigAb gesetzt), sortiert nach Gültigkeitsdatum
   uebernachtungspreise = await prisma.preise.findMany({
     where: {
@@ -31,6 +32,20 @@ try {
     },
     orderBy: {
       jahr: 'desc'
+    }
+  });
+
+  // Hole alle Tankfüllungen für Ölpreis-Historie (sortiert nach Zählerstand)
+  tankfuellungen = await prisma.tankfuellung.findMany({
+    orderBy: {
+      zaehlerstand: 'desc'
+    },
+    select: {
+      id: true,
+      datum: true,
+      preisProLiter: true,
+      liter: true,
+      zaehlerstand: true
     }
   });
 
@@ -112,33 +127,57 @@ try {
           </p>
         </div>
       </div>
-      
+
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Jahr
+                Gültig ab (Zählerstand/Jahr)
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Ölpreis (€/L)
+                Preis pro Liter (€/L)
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Verbrauch (L/h)
+                Getankte Menge / Verbrauch
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Status
+                Quelle
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Übernachtungspreise
+                Zusatzinfo
               </th>
             </tr>
           </thead>
           <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <!-- Tankfüllungen -->
+            {tankfuellungen.map(tf => (
+              <tr class="bg-blue-50 dark:bg-blue-900/10">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                  Ab Zählerstand {tf.zaehlerstand.toFixed(0)}h
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-semibold">
+                  € {tf.preisProLiter.toFixed(2)}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  {tf.liter.toFixed(0)} Liter getankt
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    Tankfüllung
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  Datum: {new Date(tf.datum).toLocaleDateString('de-DE')}
+                </td>
+              </tr>
+            ))}
+
+            <!-- Berechnete Jahrespreise -->
             {preise.map(preis => (
               <tr>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {preis.jahr}
+                  Jahr {preis.jahr}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   € {preis.oelpreisProLiter.toFixed(2)}
@@ -148,19 +187,20 @@ try {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    preis.istBerechnet 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                    preis.istBerechnet
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                       : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                   }`}>
                     {preis.istBerechnet ? 'Berechnet' : 'Fallback'}
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  Fallback: 5€/10€
+                  Übernachtung: 5€/10€
                 </td>
               </tr>
             ))}
-            {preise.length === 0 && (
+
+            {tankfuellungen.length === 0 && preise.length === 0 && (
               <tr>
                 <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                   Keine Preise vorhanden. Fallback-Werte gelten: 1.01€/L, 5.5 L/h, 5€/10€
@@ -348,14 +388,12 @@ try {
   // Preise laden
   async function loadPreise() {
     try {
-      const response = await fetch('/api/preise');
+      const response = await fetch('/api/preise?alle=true');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const allePreise = await response.json();
-      // Nur die aktuell gültigen Preise anzeigen (mit gueltigAb)
-      allPreise = allePreise.filter(preis => preis.gueltigAb);
-      console.log('📊 Geladene gültige Preise:', allPreise);
+      allPreise = await response.json();
+      console.log('📊 Geladene Preise:', allPreise);
       renderPreise();
     } catch (error) {
       console.error('❌ Fehler beim Laden der Preise:', error);

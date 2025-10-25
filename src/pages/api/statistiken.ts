@@ -240,6 +240,7 @@ export const GET: APIRoute = async (context) => {
             id: true,
             name: true,
             email: true,
+            beguenstigt: true,
           },
         },
       },
@@ -304,11 +305,26 @@ export const GET: APIRoute = async (context) => {
       const brennerstunden = aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft;
       
       const oelKosten = verbrauchteLiter * (preise?.oelpreisProLiter || 1.01);
-      const uebernachtungKosten = (
+
+      // Übernachtungskosten nur berechnen wenn naechteBerechnen true ist
+      // null = User-Status entscheidet (begünstigt=false, normal=true)
+      const naechteBerechnen = aufenthalt.naechteBerechnen ?? !aufenthalt.user.beguenstigt;
+      const istBeguenstigt = aufenthalt.user.beguenstigt;
+
+      const uebernachtungKosten = naechteBerechnen ? (
         aufenthalt.uebernachtungenMitglieder * (preise?.uebernachtungMitglied || 5) +
         aufenthalt.uebernachtungenGaeste * (preise?.uebernachtungGast || 10)
-      );
-      
+      ) : 0;
+
+      // Berechnet: Alle die tatsächlich zahlen (normale + begünstigte die berechnen lassen)
+      const uebernachtungKostenBerechnet = naechteBerechnen ? uebernachtungKosten : 0;
+
+      // Begünstigte NICHT berechnet: Was hätten sie zahlen müssen (nur zur Info, nicht in Gesamtkosten)
+      const uebernachtungKostenBeguenstigtNichtBerechnet = (istBeguenstigt && !naechteBerechnen) ? (
+        aufenthalt.uebernachtungenMitglieder * (preise?.uebernachtungMitglied || 5) +
+        aufenthalt.uebernachtungenGaeste * (preise?.uebernachtungGast || 10)
+      ) : 0;
+
       return {
         id: aufenthalt.id,
         user: aufenthalt.user.name,
@@ -320,6 +336,8 @@ export const GET: APIRoute = async (context) => {
         brennerstunden: brennerstunden,
         oelKosten: oelKosten,
         uebernachtungKosten: uebernachtungKosten,
+        uebernachtungKostenBerechnet: uebernachtungKostenBerechnet,
+        uebernachtungKostenBeguenstigtNichtBerechnet: uebernachtungKostenBeguenstigtNichtBerechnet,
         gesamtKosten: oelKosten + uebernachtungKosten
       };
     });
@@ -381,7 +399,9 @@ export const GET: APIRoute = async (context) => {
       },
       monatlicheAbwesenheit: absenceData.monatlicheAbwesenheit,
       oelKosten: aufenthaltsDetails.reduce((sum, a) => sum + a.oelKosten, 0),
-      uebernachtungKosten: aufenthaltsDetails.reduce((sum, a) => sum + a.uebernachtungKosten, 0)
+      uebernachtungKosten: aufenthaltsDetails.reduce((sum, a) => sum + a.uebernachtungKosten, 0),
+      uebernachtungKostenBerechnet: aufenthaltsDetails.reduce((sum, a) => sum + a.uebernachtungKostenBerechnet, 0),
+      uebernachtungKostenBeguenstigtNichtBerechnet: aufenthaltsDetails.reduce((sum, a) => sum + a.uebernachtungKostenBeguenstigtNichtBerechnet, 0)
     };
 
     console.log('📈 Finale Statistiken:', {
@@ -391,6 +411,10 @@ export const GET: APIRoute = async (context) => {
       durchschnittVerbrauchProTag: statistiken.durchschnittVerbrauchProTag,
       anzahlAufenthalte: statistiken.anzahlAufenthalte,
       aufenthalteOhneNaechteBerechnung: aufenthalte.filter(a => !a.naechteBerechnen).length,
+      oelKosten: statistiken.oelKosten,
+      uebernachtungKosten: statistiken.uebernachtungKosten,
+      uebernachtungKostenBerechnet: statistiken.uebernachtungKostenBerechnet,
+      uebernachtungKostenBeguenstigtNichtBerechnet: statistiken.uebernachtungKostenBeguenstigtNichtBerechnet,
       referenceValues: statistiken.referenceValues
     });
 

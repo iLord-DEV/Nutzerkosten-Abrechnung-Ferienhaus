@@ -115,9 +115,9 @@ if (!tankfuellung) {
               <label for="notizen" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Notizen (optional)
               </label>
-              <textarea id="notizen" rows="3" 
+              <textarea id="notizen" rows="3"
                         class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Zusätzliche Informationen..."></textarea>
+                        placeholder="Zusätzliche Informationen...">{tankfuellung.notizen || ''}</textarea>
             </div>
 
             <div class="flex justify-end space-x-3">
@@ -128,6 +128,18 @@ if (!tankfuellung) {
                 Speichern
               </button>
             </div>
+
+            <!-- Benachrichtigungs-Bereich -->
+            <div id="notification" class="hidden mt-4 p-4 rounded-md">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <span id="notification-icon" class="text-lg"></span>
+                </div>
+                <div class="ml-3">
+                  <p id="notification-message" class="text-sm font-medium"></p>
+                </div>
+              </div>
+            </div>
           </form>
         </div>
       </div>
@@ -136,15 +148,64 @@ if (!tankfuellung) {
 </ProtectedLayout>
 
 <script>
+  // Benachrichtigung anzeigen
+  function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info') {
+    const notification = document.getElementById('notification');
+    const notificationMessage = document.getElementById('notification-message');
+    const notificationIcon = document.getElementById('notification-icon');
+
+    if (!notification || !notificationMessage || !notificationIcon) return;
+
+    // Nachricht setzen
+    notificationMessage.textContent = message;
+
+    // Icon und Farbe je nach Typ setzen
+    let icon = '';
+    let bgColor = '';
+    let textColor = '';
+
+    switch (type) {
+      case 'success':
+        icon = '✅';
+        bgColor = 'bg-green-50 dark:bg-green-900/20';
+        textColor = 'text-green-800 dark:text-green-200';
+        break;
+      case 'error':
+        icon = '❌';
+        bgColor = 'bg-red-50 dark:bg-red-900/20';
+        textColor = 'text-red-800 dark:text-red-200';
+        break;
+      case 'info':
+      default:
+        icon = 'ℹ️';
+        bgColor = 'bg-blue-50 dark:bg-blue-900/20';
+        textColor = 'text-blue-800 dark:text-blue-200';
+        break;
+    }
+
+    notificationIcon.textContent = icon;
+    notification.className = `mt-4 p-4 rounded-md ${bgColor}`;
+    notificationMessage.className = `text-sm font-medium ${textColor}`;
+
+    // Benachrichtigung anzeigen
+    notification.classList.remove('hidden');
+
+    // Bei Erfolg nach 2 Sekunden weiterleiten
+    if (type === 'success') {
+      setTimeout(() => {
+        window.location.href = '/tankfuellungen';
+      }, 2000);
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('edit-form') as HTMLFormElement;
-    
+
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
-      
-      const formData = new FormData(form);
+
       const tankfuellungId = document.getElementById('tankfuellung-id')?.getAttribute('value');
-      
+
       const data = {
         datum: (document.getElementById('datum') as HTMLInputElement).value,
         zaehlerstand: parseFloat((document.getElementById('zaehlerstand') as HTMLInputElement).value),
@@ -152,7 +213,9 @@ if (!tankfuellung) {
         preisProLiter: parseFloat((document.getElementById('preisProLiter') as HTMLInputElement).value),
         notizen: (document.getElementById('notizen') as HTMLTextAreaElement).value || null,
       };
-      
+
+      console.log('🚀 Sende Daten an API:', data);
+
       try {
         const response = await fetch(`/api/tankfuellungen/${tankfuellungId}`, {
           method: 'PUT',
@@ -161,17 +224,21 @@ if (!tankfuellung) {
           },
           body: JSON.stringify(data),
         });
-        
+
+        console.log('📡 API Response Status:', response.status);
+
         if (response.ok) {
-          alert('Tankfüllung erfolgreich aktualisiert!');
-          window.location.href = '/tankfuellungen';
+          const result = await response.json();
+          console.log('✅ API Response:', result);
+          showNotification('Tankfüllung erfolgreich aktualisiert! Sie werden weitergeleitet...', 'success');
         } else {
           const error = await response.json();
-          alert(`Fehler beim Aktualisieren: ${error.error || 'Unbekannter Fehler'}`);
+          console.error('❌ API Fehler:', error);
+          showNotification(`Fehler beim Aktualisieren: ${error.error || 'Unbekannter Fehler'}`, 'error');
         }
       } catch (error) {
-        console.error('Fehler beim Aktualisieren der Tankfüllung:', error);
-        alert('Fehler beim Aktualisieren der Tankfüllung');
+        console.error('❌ Fehler beim Aktualisieren der Tankfüllung:', error);
+        showNotification('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.', 'error');
       }
     });
   });

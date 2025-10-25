@@ -26,7 +26,7 @@ if (!user) {
     </div>
 
     <!-- Persönliche Übersichtskarten -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
         <div class="p-5">
           <div class="flex items-center">
@@ -60,10 +60,32 @@ if (!user) {
             <div class="ml-5 w-0 flex-1">
               <dl>
                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Gesamtübersicht verfügbar
+                  Aufenthalte insgesamt
                 </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white">
-                  ✓
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="total-aufenthalte">
+                  -
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-sm font-medium">⏱️</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Letzter Zählerstand
+                </dt>
+                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="last-zaehlerstand">
+                  -
                 </dd>
               </dl>
             </div>
@@ -213,14 +235,35 @@ if (!user) {
       const statsResponse = await fetch(`/api/statistiken?jahr=2024`);
       if (statsResponse.ok) {
         const stats = await statsResponse.json();
-        
+
         const myAufenthalteEl = document.getElementById('my-aufenthalte');
         const myTankfuellungenEl = document.getElementById('my-tankfuellungen');
         const myKostenEl = document.getElementById('my-kosten');
-        
+
         if (myAufenthalteEl) myAufenthalteEl.textContent = stats.anzahlAufenthalte || '0';
         if (myTankfuellungenEl) myTankfuellungenEl.textContent = '0'; // Normale Benutzer haben keine Tankfüllungen
         if (myKostenEl) myKostenEl.textContent = `€ ${(stats.gesamtKosten || 0).toFixed(2)}`;
+      }
+
+      // Gesamtanzahl Aufenthalte laden und letzten Zählerstand ermitteln
+      const aufenthalteResponse = await fetch('/api/aufenthalte?jahr=2024');
+      if (aufenthalteResponse.ok) {
+        const aufenthalte = await aufenthalteResponse.json();
+        const totalAufenthalteEl = document.getElementById('total-aufenthalte');
+        if (totalAufenthalteEl) totalAufenthalteEl.textContent = aufenthalte.length.toString();
+
+        // Letzten Zählerstand aus dem neuesten Aufenthalt holen
+        if (aufenthalte.length > 0) {
+          // Aufenthalte nach Abreisedatum sortieren (neueste zuerst)
+          const sortedAufenthalte = aufenthalte.sort((a: any, b: any) =>
+            new Date(b.abreise).getTime() - new Date(a.abreise).getTime()
+          );
+          const neuesterAufenthalt = sortedAufenthalte[0];
+          const lastZaehlerstandEl = document.getElementById('last-zaehlerstand');
+          if (lastZaehlerstandEl && neuesterAufenthalt.zaehlerAbreise) {
+            lastZaehlerstandEl.textContent = `${neuesterAufenthalt.zaehlerAbreise} h`;
+          }
+        }
       }
     } catch (error) {
       console.error('Fehler beim Laden der Dashboard-Daten:', error);

@@ -56,6 +56,7 @@ model Tankfuellung {
   preisProLiter Float
   zaehlerstand  Float
   zaehlerId     Int?
+  notizen       String?
   createdAt     DateTime @default(now())
   zaehler       Zaehler? @relation(fields: [zaehlerId], references: [id])
 

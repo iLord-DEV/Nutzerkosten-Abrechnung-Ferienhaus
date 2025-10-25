@@ -260,6 +260,140 @@ const session = JSON.parse(sessionCookie.value);
     verbrauchProStunde?: number;
   } = {};
 
+  // Tankfüllungen laden
+  let alleTankfuellungen: Array<{
+    id: number;
+    datum: string;
+    zaehlerstand: number;
+    liter: number;
+    preisProLiter: number;
+  }> = [];
+
+  async function loadTankfuellungen() {
+    try {
+      const response = await fetch('/api/tankfuellungen');
+      if (response.ok) {
+        const data = await response.json();
+        // Nach Zählerstand sortieren (aufsteigend)
+        alleTankfuellungen = data.sort((a: any, b: any) => a.zaehlerstand - b.zaehlerstand);
+        console.log('⛽ Tankfüllungen geladen:', alleTankfuellungen.length);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Tankfüllungen:', error);
+    }
+  }
+
+  // Ölkosten nach Zählerstand berechnen (mit Segmentierung)
+  function berechneOelkostenNachZaehlerstand(
+    zaehlerStart: number,
+    zaehlerEnde: number,
+    tankfuellungen: typeof alleTankfuellungen
+  ): number {
+    if (zaehlerEnde <= zaehlerStart) {
+      console.warn(`⚠️ Ungültige Zählerstände: Start=${zaehlerStart}, Ende=${zaehlerEnde}`);
+      return 0;
+    }
+
+    const verbrauchteStunden = zaehlerEnde - zaehlerStart;
+
+    // Tankfüllungen in der Spanne finden (Zählerstand > start UND <= ende)
+    const tfInSpanne = tankfuellungen.filter(
+      tf => tf.zaehlerstand > zaehlerStart && tf.zaehlerstand <= zaehlerEnde
+    );
+
+    // Segmente erstellen
+    const segmente: Array<{
+      start: number;
+      ende: number;
+      stunden: number;
+      preis: number;
+      verbrauch: number;
+    }> = [];
+
+    if (tfInSpanne.length === 0) {
+      // Keine Tankfüllung in der Spanne - ein Segment
+      const tfVorStart = tankfuellungen.filter(tf => tf.zaehlerstand <= zaehlerStart);
+      const letzteVorStart = tfVorStart.length > 0 ? tfVorStart[tfVorStart.length - 1] : null;
+      const vorletzteVorStart = tfVorStart.length > 1 ? tfVorStart[tfVorStart.length - 2] : null;
+
+      const preis = letzteVorStart?.preisProLiter || 1.01;
+      const verbrauch = (letzteVorStart && vorletzteVorStart)
+        ? letzteVorStart.liter / (letzteVorStart.zaehlerstand - vorletzteVorStart.zaehlerstand)
+        : 5.5;
+
+      segmente.push({
+        start: zaehlerStart,
+        ende: zaehlerEnde,
+        stunden: verbrauchteStunden,
+        preis,
+        verbrauch
+      });
+    } else {
+      // Tankfüllungen in der Spanne - mehrere Segmente
+      let aktuellerStart = zaehlerStart;
+
+      for (let i = 0; i < tfInSpanne.length; i++) {
+        const tf = tfInSpanne[i];
+
+        // Segment bis zu dieser Tankfüllung
+        const segmentEnde = tf.zaehlerstand;
+        const stunden = segmentEnde - aktuellerStart;
+
+        // Preis und Verbrauch für dieses Segment ermitteln
+        const alleTfBisHier = tankfuellungen.filter(t => t.zaehlerstand <= aktuellerStart);
+        const letzteVor = alleTfBisHier.length > 0 ? alleTfBisHier[alleTfBisHier.length - 1] : null;
+        const vorletzteVor = alleTfBisHier.length > 1 ? alleTfBisHier[alleTfBisHier.length - 2] : null;
+
+        const preis = letzteVor?.preisProLiter || 1.01;
+        const verbrauch = (letzteVor && vorletzteVor)
+          ? letzteVor.liter / (letzteVor.zaehlerstand - vorletzteVor.zaehlerstand)
+          : 5.5;
+
+        segmente.push({
+          start: aktuellerStart,
+          ende: segmentEnde,
+          stunden,
+          preis,
+          verbrauch
+        });
+
+        aktuellerStart = segmentEnde;
+      }
+
+      // Letztes Segment: Von letzter TF bis zaehlerEnde
+      if (aktuellerStart < zaehlerEnde) {
+        const stunden = zaehlerEnde - aktuellerStart;
+        const letzteTF = tfInSpanne[tfInSpanne.length - 1];
+
+        // Verbrauch der letzten TF berechnen
+        const alleTfBisLetzte = tankfuellungen.filter(t => t.zaehlerstand <= letzteTF.zaehlerstand);
+        const vorletzte = alleTfBisLetzte.length > 1 ? alleTfBisLetzte[alleTfBisLetzte.length - 2] : null;
+
+        const preis = letzteTF.preisProLiter;
+        const verbrauch = vorletzte
+          ? letzteTF.liter / (letzteTF.zaehlerstand - vorletzte.zaehlerstand)
+          : 5.5;
+
+        segmente.push({
+          start: aktuellerStart,
+          ende: zaehlerEnde,
+          stunden,
+          preis,
+          verbrauch
+        });
+      }
+    }
+
+    // Kosten aller Segmente summieren
+    const gesamtKosten = segmente.reduce((sum, seg) => {
+      const kosten = seg.stunden * seg.verbrauch * seg.preis;
+      console.log(`💰 Segment ${seg.start}-${seg.ende}h: ${seg.stunden}h × ${seg.verbrauch.toFixed(2)}L/h × €${seg.preis.toFixed(2)} = €${kosten.toFixed(2)}`);
+      return sum + kosten;
+    }, 0);
+
+    return gesamtKosten;
+  }
+
   // Benachrichtigung anzeigen
   function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info') {
     const notification = document.getElementById('notification');
@@ -488,15 +622,16 @@ const session = JSON.parse(sessionCookie.value);
     if (!isNaN(zaehlerStart) && !isNaN(zaehlerEnde) && ankunft && abreise) {
       const verbrauchteStunden = zaehlerEnde - zaehlerStart;
 
-      const oelKosten = verbrauchteStunden * (currentPreise.verbrauchProStunde || 5.5) * (currentPreise.oelpreisProLiter || 1.01);
+      // Zählerstand-basierte Berechnung mit Tankfüllungen
+      const oelKosten = berechneOelkostenNachZaehlerstand(zaehlerStart, zaehlerEnde, alleTankfuellungen);
 
       // Übernachtungskosten nur berechnen, wenn Checkbox aktiviert ist (für begünstigte User)
       const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
       const naechteBerechnen = !isSelectedUserBeguenstigt() || (naechteBerechnenCheckbox && naechteBerechnenCheckbox.checked);
 
       const uebernachtungKosten = naechteBerechnen ? (
-        uebernachtungenMitglieder * (currentPreise.uebernachtungMitglied || 15) +
-        uebernachtungenGaeste * (currentPreise.uebernachtungGast || 25)
+        uebernachtungenMitglieder * (currentPreise.uebernachtungMitglied || 5) +
+        uebernachtungenGaeste * (currentPreise.uebernachtungGast || 10)
       ) : 0;
 
       const gesamtKosten = oelKosten + uebernachtungKosten;
@@ -877,6 +1012,7 @@ const session = JSON.parse(sessionCookie.value);
     await loadCurrentUser(); // User-Status laden (für begünstigte User)
     await loadUsers();
     await loadPreise();
+    await loadTankfuellungen();
 
     // Für normale Benutzer: letzten Zählerstand laden
     const sessionCookie = document.cookie.split(';').find(c => c.trim().startsWith('session='));

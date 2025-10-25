@@ -6,11 +6,15 @@ const prisma = new PrismaClient();
 
 export const PUT: APIRoute = async (context) => {
   try {
+    console.log('🔍 PUT /api/tankfuellungen/[id] - Start');
+
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { params, request } = context;
-    
+
     const id = params.id;
+    console.log('📋 Tankfüllung ID:', id);
+
     if (!id) {
       return new Response(JSON.stringify({ error: 'ID ist erforderlich' }), {
         status: 400,
@@ -21,8 +25,10 @@ export const PUT: APIRoute = async (context) => {
     }
 
     const body = await request.json();
-    
+    console.log('📦 Request Body:', body);
+
     // Tankfüllung aktualisieren
+    console.log('💾 Aktualisiere Tankfüllung...');
     const updatedTankfuellung = await prisma.tankfuellung.update({
       where: { id: parseInt(id) },
       data: {
@@ -41,28 +47,39 @@ export const PUT: APIRoute = async (context) => {
         },
       },
     });
+    console.log('✅ Tankfüllung aktualisiert:', updatedTankfuellung);
 
     // Verbrauchsberechnung neu durchführen für den betroffenen Zähler
+    console.log('🔢 Starte Verbrauchsberechnung für Zähler:', updatedTankfuellung.zaehlerId);
     const tankfuellungenGleicherZaehler = await prisma.tankfuellung.findMany({
       where: { zaehlerId: updatedTankfuellung.zaehlerId },
       orderBy: { datum: 'asc' },
     });
+    console.log('📊 Anzahl Tankfüllungen für diesen Zähler:', tankfuellungenGleicherZaehler.length);
 
     if (tankfuellungenGleicherZaehler.length >= 2) {
       const neueste = tankfuellungenGleicherZaehler[tankfuellungenGleicherZaehler.length - 1];
       const vorherige = tankfuellungenGleicherZaehler[tankfuellungenGleicherZaehler.length - 2];
-      
+
+      console.log('📈 Neueste Tankfüllung:', { liter: neueste.liter, zaehlerstand: neueste.zaehlerstand });
+      console.log('📉 Vorherige Tankfüllung:', { liter: vorherige.liter, zaehlerstand: vorherige.zaehlerstand });
+
       const stundenDifferenz = neueste.zaehlerstand - vorherige.zaehlerstand;
+      console.log('⏱️ Stundendifferenz:', stundenDifferenz);
+
       if (stundenDifferenz > 0) {
         const neuerVerbrauchProStunde = neueste.liter / stundenDifferenz;
-        
+
         console.log(`🔥 VERBRAUCH NEU BERECHNET (Zähler ${updatedTankfuellung.zaehlerId}): ${neueste.liter}L ÷ ${stundenDifferenz}h = ${neuerVerbrauchProStunde.toFixed(3)} L/h`);
-        
+
         // Aktualisiere alle Jahre ab dem Jahr der 2. Tankfüllung
         const startJahr = new Date(neueste.datum).getFullYear();
         const currentYear = new Date().getFullYear();
-        
+
+        console.log(`📅 Aktualisiere Preise von ${startJahr} bis ${currentYear}`);
+
         for (let year = startJahr; year <= currentYear; year++) {
+          console.log(`💰 Upsert Preise für Jahr ${year}...`);
           await prisma.preise.upsert({
             where: { jahr: year },
             update: {
@@ -72,13 +89,14 @@ export const PUT: APIRoute = async (context) => {
             create: {
               jahr: year,
               oelpreisProLiter: body.preisProLiter,
-              uebernachtungMitglied: 15.0,
-              uebernachtungGast: 25.0,
+              uebernachtungMitglied: 5.0,
+              uebernachtungGast: 10.0,
               verbrauchProStunde: neuerVerbrauchProStunde,
               istBerechnet: true,
             },
           });
         }
+        console.log('✅ Preise aktualisiert');
       }
     }
 

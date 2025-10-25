@@ -10,9 +10,11 @@ export const GET: APIRoute = async (context) => {
     // Authentifizierung prüfen (aber nicht Admin-Berechtigung)
     const user = await requireAuth(context);
     const { request } = context;
-    
+
     const url = new URL(request.url);
     const datum = url.searchParams.get('datum');
+    const jahr = url.searchParams.get('jahr');
+    const alle = url.searchParams.get('alle'); // Neuer Parameter für Admin-Seite
 
     if (datum) {
       // Hole den gültigen Preis für ein bestimmtes Datum
@@ -46,10 +48,54 @@ export const GET: APIRoute = async (context) => {
       });
     }
 
-    // Hole Preise für das aktuelle Jahr oder Fallback
-    const jahr = url.searchParams.get('jahr') || new Date().getFullYear().toString();
+    // Admin-Seite: Alle Preise mit gueltigAb abrufen
+    if (alle === 'true') {
+      const allePreise = await prisma.preise.findMany({
+        where: {
+          gueltigAb: {
+            not: null
+          }
+        },
+        orderBy: {
+          gueltigAb: 'desc'
+        }
+      });
+
+      return new Response(JSON.stringify(allePreise), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Hole Preise für ein bestimmtes Jahr oder Fallback
+    if (jahr) {
+      const preise = await prisma.preise.findUnique({
+        where: { jahr: parseInt(jahr) }
+      });
+
+      if (!preise) {
+        // Fallback-Preise wenn keine konfiguriert sind
+        return new Response(JSON.stringify({
+          oelpreisProLiter: 1.01,
+          uebernachtungMitglied: 5,
+          uebernachtungGast: 10,
+          verbrauchProStunde: 5.5
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify(preise), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Fallback: Aktuelles Jahr
+    const aktuellesJahr = new Date().getFullYear();
     const preise = await prisma.preise.findUnique({
-      where: { jahr: parseInt(jahr) }
+      where: { jahr: aktuellesJahr }
     });
 
     if (!preise) {

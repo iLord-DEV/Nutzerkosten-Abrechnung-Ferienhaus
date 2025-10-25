@@ -96,17 +96,22 @@ export function validateBasicData(data: AufenthaltData): ValidationError[] {
 export async function validateZaehlerKontinuitaet(data: AufenthaltData, excludeId?: number): Promise<ValidationError[]> {
   const errors: ValidationError[] = [];
 
+  const ankunftDate = new Date(data.ankunft + 'T00:00:00');
+
   const eigeneAufenthalte = await prisma.aufenthalt.findMany({
     where: {
       userId: data.userId,
-      ...(excludeId && { id: { not: excludeId } })
+      ...(excludeId && { id: { not: excludeId } }),
+      abreise: {
+        lt: ankunftDate  // Nur Aufenthalte, die zeitlich VOR der Ankunft enden
+      }
     },
     orderBy: {
-      zaehlerAbreise: 'desc'
+      abreise: 'desc'  // Nach Abreisedatum sortieren, nicht nach Zählerstand
     }
   });
 
-  // Prüfe rückwärtslaufende Zähler
+  // Prüfe rückwärtslaufende Zähler nur für zeitlich vorherige Aufenthalte
   const problematischeAufenthalte = eigeneAufenthalte.filter(a =>
     a.zaehlerAbreise !== null && a.zaehlerAbreise > data.zaehlerStart
   );
@@ -126,31 +131,10 @@ export async function validateZaehlerKontinuitaet(data: AufenthaltData, excludeI
 export async function validateZeitlicheKonsistenz(data: AufenthaltData, excludeId?: number): Promise<ValidationError[]> {
   const errors: ValidationError[] = [];
 
-  const alleAufenthalte = await prisma.aufenthalt.findMany({
-    where: {
-      ...(excludeId && { id: { not: excludeId } })
-    },
-    orderBy: {
-      zaehlerAbreise: 'desc'
-    }
-  });
-
-  const ankunftDate = new Date(data.ankunft + 'T00:00:00');
-
-  // Prüfe zeitlich unmögliche Zählerstände
-  const zeitlichVorherigeAufenthalte = alleAufenthalte.filter(a => {
-    const aAbreise = new Date(a.abreise);
-    return aAbreise < ankunftDate && a.zaehlerAbreise !== null &&
-           data.zaehlerStart < a.zaehlerAbreise;
-  });
-
-  if (zeitlichVorherigeAufenthalte.length > 0) {
-    const problematischerAufenthalt = zeitlichVorherigeAufenthalte[0];
-    errors.push({
-      field: 'zaehlerStart',
-      message: `Zählerstand ${data.zaehlerStart} ist kleiner als der letzte Abreise-Stand ${problematischerAufenthalt.zaehlerAbreise} vom ${problematischerAufenthalt.abreise.toISOString().split('T')[0]}. Zähler können nicht rückwärts laufen. Bitte wählen Sie einen Zählerstand größer oder gleich ${problematischerAufenthalt.zaehlerAbreise}.`
-    });
-  }
+  // Diese Validierung ist deaktiviert, weil:
+  // 1. Bei Überlappungen können verschiedene User unterschiedliche Zählerstände haben
+  // 2. validateZaehlerKontinuitaet prüft bereits gegen eigene vorherige Aufenthalte
+  // 3. Ein Vergleich mit fremden Aufenthalten macht keinen Sinn
 
   return errors;
 }

@@ -169,3 +169,182 @@ DATABASE_URL="mysql://user:password@localhost:3306/nutzerkosten_db"
 4. **Password Security**: Passwords must be 8+ characters with uppercase, lowercase, numbers, and special characters
 5. **Meter Tracking**: Each stay (Aufenthalt) references two meters - one for arrival and one for departure readings
 6. **German Language**: Application is in German - all user-facing text, comments, and variable names
+
+## Business Logic & Calculations
+
+### Data Storage Philosophy
+
+**CRITICAL: The database stores ONLY raw facts, ALL calculations are done on-the-fly!**
+
+**What is stored in database (Aufenthalt model):**
+- ✅ Arrival/departure dates (`ankunft`, `abreise`)
+- ✅ Meter readings (`zaehlerAnkunft`, `zaehlerAbreise`)
+- ✅ Number of overnight stays (`uebernachtungenMitglieder`, `uebernachtungenGaeste`)
+- ✅ Privileged status (`naechteBerechnen` - whether user is "begünstigt")
+- ✅ User reference (`userId`)
+- ✅ Year (`jahr`)
+
+**What is NOT stored (calculated on-the-fly in JavaScript):**
+- ❌ Total costs
+- ❌ Oil costs
+- ❌ Heating costs
+- ❌ Overnight costs
+- ❌ Savings from overlaps
+- ❌ Overlap information
+- ❌ Final costs after splitting
+
+**Why this approach?**
+- Prices can change (oil prices from Tankfüllungen, overnight prices from Preise)
+- Overlaps can change when other users add/edit stays
+- Calculations are always current and accurate
+- No risk of stale/outdated cost data
+- Single source of truth: the raw facts + calculation logic
+
+**Exception:** `JahresAbschluss` model stores final calculations, but only as a snapshot at year-end for historical records.
+
+**Implementation:** All cost calculations happen in the frontend (JavaScript in .astro files) by loading the necessary data (Aufenthalte, Tankfüllungen, Preise) and applying the calculation functions.
+
+### Überlappungsberechnung (Overlap Detection)
+
+**CRITICAL: Overlaps are calculated based on METER HOURS (Zählerstunden), NOT on date/time!**
+
+This is a frequently misunderstood concept. Please read carefully:
+
+**How it works:**
+- Two stays overlap if they share meter hours, regardless of their actual dates
+- Each stay has `zaehlerAnkunft` (arrival meter reading) and `zaehlerAbreise` (departure meter reading)
+- Example:
+  - Alexandra: 466h - 471h (arrives at meter 466, leaves at meter 471)
+  - Christoph: 470h - 474h (arrives at meter 470, leaves at meter 474)
+  - **They share hours 470-471 = 1 hour of overlap** ✓
+
+**Detection Logic:**
+```javascript
+// Overlap exists when ranges intersect
+const hatUeberlappung = a1Ende > a2Start && a1Start < a2Ende;
+
+// Calculate overlap range
+const overlapStart = Math.max(a1Start, a2Start);
+const overlapEnd = Math.min(a1Ende, a2Ende);
+const overlapHours = overlapEnd - overlapStart;
+
+// Only count overlaps >= 1 hour
+if (overlapHours >= 1) {
+  // This is a valid overlap
+}
+```
+
+**Important:**
+- Use **strict inequalities** (`>` and `<`) for overlap detection
+- If one person arrives at 470 and another leaves at 470, that's NOT an overlap (just a connection point)
+- Only overlaps of 1 hour or more are counted and displayed
+- Time validation (dates) happens during input, but cost calculations use meter readings only
+
+### Ölkostenberechnung (Oil Cost Calculation)
+
+**CRITICAL: Oil costs are calculated based on METER READINGS (Zählerstände), NOT on dates!**
+
+**Core Principles:**
+1. **Oil price per liter**: Valid FROM a specific meter reading (from Tankfüllung)
+2. **Consumption (L/h)**: Calculated from 2nd refill onward: `Liter / (CurrentMeter - PreviousMeter)`
+3. **NO RETROACTIVE CHANGES**: Values apply from their meter reading forward only - no one pays more or gets refunds when prices change
+
+**Example:**
+- Person arrives at meter 50, someone refuels at meter 60, person leaves at meter 65
+- Hours 50-60: Use previous oil price (or fallback)
+- Hours 60-65: Use new oil price from the refueling at meter 60
+
+**Calculation Function:**
+```javascript
+function berechneOelkostenNachZaehlerstand(zaehlerStart, zaehlerEnde, tankfuellungen)
+```
+
+This function:
+- Segments stays based on tankfüllungen within the meter range
+- Each segment gets its own price and consumption rate
+- Sums all segment costs: `hours × consumption(L/h) × price(€/L)`
+
+**Fallback Values:**
+- Oil price: **1.01 €/L** (before first refill)
+- Consumption: **5.5 L/h** (before 2nd refill)
+- Overnight costs: **5€ for members, 10€ for guests**
+
+**Implementation:**
+- Main overview: `src/pages/aufenthalte/index.astro` (line ~300-400)
+- New stay preview: `src/pages/aufenthalte/neu.astro`
+- Both load tankfüllungen and segment stays by meter readings
+- API endpoints filter invalid data (missing users, invalid meter readings)
+
+### Validierungslogik (Validation Logic)
+
+**CRITICAL: Meter reading validation only checks against user's OWN PREVIOUS stays!**
+
+**Core Validation Rules:**
+1. **End > Start** - Departure meter must be higher than arrival meter (for current stay)
+2. **Start >= Previous End** - Arrival meter must be >= user's last departure meter reading
+
+**Important Implementation Details:**
+
+```javascript
+// Validate only against user's own stays that ended BEFORE current arrival
+const eigeneAufenthalte = await prisma.aufenthalt.findMany({
+  where: {
+    userId: data.userId,
+    abreise: { lt: ankunftDate }  // Only stays ending BEFORE current arrival
+  },
+  orderBy: { abreise: 'desc' }  // Sort by DATE, not by meter reading!
+});
+```
+
+**Why this approach:**
+- ✅ **Overlaps allowed**: Different users can have different meter readings during the same time period
+- ✅ **Meter resets allowed**: New meter installations (e.g., yearly) don't cause validation errors
+- ✅ **Late entries allowed**: Users can add old stays without conflicts with newer entries
+- ✅ **Time-based validation**: Only checks if meter readings make sense in chronological order for THAT user
+
+**Example:**
+- Person A: Jan 1 - Feb 1, Meter 50-100
+- Person B: Jan 15 - Mar 1, Meter 60-150 (enters later)
+- Person B's 60 < Person A's 100, but that's OK - different users can overlap with different readings
+
+**Location:**
+- Utils: `src/utils/aufenthaltValidation.ts` - Centralized validation logic
+- API: Both POST (`/api/aufenthalte.ts`) and PUT (`/api/aufenthalte/[id].ts`) routes use these utils
+- **Important**: Don't duplicate validation logic in API routes - always use `validateAufenthaltData()`
+
+### naechteBerechnen Override System
+
+**CRITICAL: The `naechteBerechnen` field overrides the user's default `beguenstigt` status!**
+
+**Logic Hierarchy (from highest to lowest priority):**
+1. **`naechteBerechnen === true`** → ALWAYS calculate overnight costs (even if user is "begünstigt")
+2. **`naechteBerechnen === false`** → NEVER calculate overnight costs
+3. **`naechteBerechnen === null`** → Use user's default: calculate if `!user.beguenstigt`
+
+**Example:**
+```javascript
+let sollBerechnen;
+if (naechteBerechnen === false) {
+  sollBerechnen = false;  // Explicitly disabled
+} else if (naechteBerechnen === true) {
+  sollBerechnen = true;   // Explicitly enabled (overrides beguenstigt!)
+} else {
+  // null: fallback to user setting
+  sollBerechnen = !user.beguenstigt;
+}
+```
+
+**Use Cases:**
+- User is "begünstigt" (normally no overnight charges) but had many guests → Set `naechteBerechnen = true`
+- User is NOT "begünstigt" (normally charges) but special exception → Set `naechteBerechnen = false`
+- Normal case → Leave `naechteBerechnen = null`, uses user's default status
+
+**Database Storage:**
+- Only store `true` if user is "begünstigt" AND explicitly enabled
+- Otherwise store `null` (to save space and avoid confusion)
+- `false` currently unused but reserved for future use
+
+**Calculation:**
+- Members: 5€ per night
+- Guests: 10€ per night
+- Only charged if `sollBerechnen === true` per logic above

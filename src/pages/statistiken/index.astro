@@ -23,7 +23,7 @@ if (!user) {
     <!-- Filter -->
     <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
       <div class="px-4 py-5 sm:p-6">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label for="jahr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               📅 Jahr
@@ -50,11 +50,6 @@ if (!user) {
               <option value="meine">Nur meine Aufenthalte</option>
               <option value="alle">Alle Aufenthalte</option>
             </select>
-          </div>
-          <div class="flex items-end">
-            <button id="filter-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-              🔍 Daten laden
-            </button>
           </div>
         </div>
       </div>
@@ -762,18 +757,44 @@ if (!user) {
     }
 
     const oelKosten = data.oelKosten || 0;
-    const uebernachtungKosten = data.uebernachtungKosten || 0;
-    
+    const uebernachtungKostenBerechnet = data.uebernachtungKostenBerechnet || 0;
+    const uebernachtungKostenBeguenstigtNichtBerechnet = data.uebernachtungKostenBeguenstigtNichtBerechnet || 0;
+
+    console.log('🎨 Chart-Daten:', {
+      oelKosten,
+      uebernachtungKostenBerechnet,
+      uebernachtungKostenBeguenstigtNichtBerechnet,
+      gesamtUebernachtung: data.uebernachtungKosten
+    });
+
+    // Labels und Daten vorbereiten - nur Kategorien mit Werten > 0 anzeigen
+    const labels = [];
+    const chartData = [];
+    const colors = [];
+
+    labels.push('Ölkosten');
+    chartData.push(oelKosten);
+    colors.push('rgb(59, 130, 246)');
+
+    if (uebernachtungKostenBerechnet > 0) {
+      labels.push('Übernachtungen');
+      chartData.push(uebernachtungKostenBerechnet);
+      colors.push('rgb(34, 197, 94)');
+    }
+
+    if (uebernachtungKostenBeguenstigtNichtBerechnet > 0) {
+      labels.push('Übernachtungen Begünstigte (nicht berechnet)');
+      chartData.push(uebernachtungKostenBeguenstigtNichtBerechnet);
+      colors.push('rgb(168, 85, 247)');
+    }
+
     kostenChart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Ölkosten', 'Übernachtungskosten'],
+        labels: labels,
         datasets: [{
-          data: [oelKosten, uebernachtungKosten],
-          backgroundColor: [
-            'rgb(59, 130, 246)',
-            'rgb(34, 197, 94)'
-          ],
+          data: chartData,
+          backgroundColor: colors,
           borderWidth: 2,
           borderColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff'
         }]
@@ -786,6 +807,15 @@ if (!user) {
             position: 'bottom',
             labels: {
               color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#374151'
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                return `${label}: € ${value.toFixed(2)}`;
+              }
             }
           }
         }
@@ -844,27 +874,21 @@ if (!user) {
     await checkAdminRole();
     await loadAvailableYears();
     await loadStatistiken();
-    
-    // Filter-Button
-    const filterBtn = document.getElementById('filter-btn');
-    if (filterBtn) {
-      filterBtn.addEventListener('click', loadStatistiken);
-    }
-    
-    // Jahr-Änderung
+
+    // Filter-Selects - automatisches Neuladen bei Änderung
     const jahrSelect = document.getElementById('jahr');
+    const zeitraumSelect = document.getElementById('zeitraum');
+    const userFilterSelect = document.getElementById('user-filter');
+
     if (jahrSelect) {
       jahrSelect.addEventListener('change', loadStatistiken);
     }
-    
-    // User-Filter-Änderung
-    const userFilterSelect = document.getElementById('user-filter');
+
     if (userFilterSelect) {
       userFilterSelect.addEventListener('change', loadStatistiken);
     }
-    
-    // Zeitraum-Änderung
-    const zeitraumSelect = document.getElementById('zeitraum');
+
+    // Zeitraum-Änderung - nur Detail-Ansicht aktualisieren ohne API-Call
     if (zeitraumSelect) {
       zeitraumSelect.addEventListener('change', () => {
         if (currentData) {
