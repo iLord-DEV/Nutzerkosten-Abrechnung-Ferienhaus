@@ -471,7 +471,8 @@ const session = JSON.parse(sessionCookie.value);
       showLoading(true);
       const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
       const benutzerSelect = document.getElementById('benutzer') as HTMLSelectElement;
-      const jahr = jahrSelect ? jahrSelect.value : '2024';
+      const currentYear = new Date().getFullYear().toString();
+      const jahr = jahrSelect ? jahrSelect.value : currentYear;
       const benutzerId = benutzerSelect ? benutzerSelect.value : '';
       
       console.log('🔍 Lade Aufenthalte für Jahr:', jahr, 'Benutzer:', benutzerId);
@@ -512,14 +513,15 @@ const session = JSON.parse(sessionCookie.value);
       if (response.ok) {
         const years = await response.json();
         const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
-        
+        const currentYear = new Date().getFullYear();
+
         if (jahrSelect) {
           jahrSelect.innerHTML = '';
           years.forEach((year: number) => {
             const option = document.createElement('option');
             option.value = year.toString();
             option.textContent = year.toString();
-            if (year === 2024) {
+            if (year === currentYear) {
               option.selected = true; // Aktuelles Jahr als Standard
             }
             jahrSelect.appendChild(option);
@@ -528,10 +530,11 @@ const session = JSON.parse(sessionCookie.value);
       }
     } catch (error) {
       console.error('Fehler beim Laden der verfügbaren Jahre:', error);
-      // Fallback: Standard-Jahre
+      // Fallback: Standard-Jahre (aktuelles Jahr)
       const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
+      const currentYear = new Date().getFullYear();
       if (jahrSelect) {
-        jahrSelect.innerHTML = '<option value="2024">2024</option>';
+        jahrSelect.innerHTML = `<option value="${currentYear}">${currentYear}</option>`;
       }
     }
   }
@@ -1234,7 +1237,8 @@ const session = JSON.parse(sessionCookie.value);
       await loadAvailableYears();
       console.log('✅ Verfügbare Jahre geladen');
 
-      await loadPreise('2024');
+      const currentYear = new Date().getFullYear().toString();
+      await loadPreise(currentYear);
       console.log('✅ Preise geladen');
 
       await loadTankfuellungen();

@@ -378,7 +378,8 @@ if (!user) {
 
   // Statistiken laden
   async function loadStatistiken() {
-    const jahr = (document.getElementById('jahr') as HTMLSelectElement)?.value || '2024';
+    const currentYear = new Date().getFullYear().toString();
+    const jahr = (document.getElementById('jahr') as HTMLSelectElement)?.value || currentYear;
     const userFilter = (document.getElementById('user-filter') as HTMLSelectElement)?.value || 'meine';
     
     try {
@@ -830,14 +831,15 @@ if (!user) {
       if (response.ok) {
         const years = await response.json();
         const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
-        
+        const currentYear = new Date().getFullYear();
+
         if (jahrSelect) {
           jahrSelect.innerHTML = '';
           years.forEach((year: number) => {
             const option = document.createElement('option');
             option.value = year.toString();
             option.textContent = year.toString();
-            if (year === 2024) {
+            if (year === currentYear) {
               option.selected = true;
             }
             jahrSelect.appendChild(option);
@@ -847,8 +849,9 @@ if (!user) {
     } catch (error) {
       console.error('Fehler beim Laden der verfügbaren Jahre:', error);
       const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
+      const currentYear = new Date().getFullYear();
       if (jahrSelect) {
-        jahrSelect.innerHTML = '<option value="2024">2024</option>';
+        jahrSelect.innerHTML = `<option value="${currentYear}">${currentYear}</option>`;
       }
     }
   }
