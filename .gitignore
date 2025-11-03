@@ -59,3 +59,4 @@ Desktop.ini
 # Backup files
 *.bak
 *.backup
+backups/*.sql
