@@ -138,7 +138,22 @@ if (!aufenthalt) {
                    class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
           </div>
 
-          <!-- Checkbox für begünstigte User -->
+          <!--
+            TEMPORÄR DEAKTIVIERT: Checkbox für begünstigte User
+
+            Aktuell: Begünstigte User zahlen KEINE Übernachtungskosten.
+            Die Übernachtungen werden trotzdem erfasst (für Statistik/Verbrauchsberechnung),
+            aber nicht in die Kostensumme einberechnet.
+
+            Diese Checkbox ermöglichte es begünstigten Usern, optional Übernachtungen
+            zu berechnen. Diese Funktion kann später wieder aktiviert werden, falls gewünscht.
+
+            Um zu reaktivieren:
+            1. Diesen HTML-Block wieder einkommentieren
+            2. Die JavaScript-Logik unten (bei "TEMPORÄR VEREINFACHT") wieder einkommentieren
+            3. Die Backend-Logik in /api/aufenthalte/[id].ts anpassen
+          -->
+          <!--
           <div id="naechte-berechnen-container" class="hidden">
             <div class="flex items-center">
               <input
@@ -155,6 +170,40 @@ if (!aufenthalt) {
             <p class="ml-6 mt-1 text-sm text-gray-500 dark:text-gray-400">
               Nicht aktiviert = Übernachtungen werden nicht berechnet (nur für begünstigte User)
             </p>
+          </div>
+          -->
+
+          <!-- Kostenvorschau -->
+          <div id="kosten-vorschau" class="hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <h3 class="text-lg font-medium text-blue-800 dark:text-blue-200 mb-3">
+              Kostenvorschau
+            </h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="text-blue-700 dark:text-blue-300">Anzahl Nächte:</span>
+                <div class="font-medium text-blue-900 dark:text-blue-100" id="anzahl-naechte">-</div>
+              </div>
+              <div>
+                <span class="text-blue-700 dark:text-blue-300">Min. Mitgliedernächte:</span>
+                <div class="font-medium text-blue-900 dark:text-blue-100" id="min-mitglieder-naechte">-</div>
+              </div>
+              <div>
+                <span class="text-blue-700 dark:text-blue-300">Verbrauchte Stunden:</span>
+                <div class="font-medium text-blue-900 dark:text-blue-100" id="verbrauchte-stunden">-</div>
+              </div>
+              <div>
+                <span class="text-blue-700 dark:text-blue-300">Ölkosten:</span>
+                <div class="font-medium text-blue-900 dark:text-blue-100" id="oel-kosten">-</div>
+              </div>
+              <div>
+                <span class="text-blue-700 dark:text-blue-300">Übernachtungskosten:</span>
+                <div class="font-medium text-blue-900 dark:text-blue-100" id="uebernachtung-kosten">-</div>
+              </div>
+              <div>
+                <span class="text-blue-700 dark:text-blue-300">Gesamtkosten:</span>
+                <div class="font-medium text-blue-900 dark:text-blue-100" id="gesamt-kosten">-</div>
+              </div>
+            </div>
           </div>
 
           <!-- Buttons -->
@@ -185,12 +234,29 @@ if (!aufenthalt) {
 </ProtectedLayout>
 
 <script>
+  import { berechneOelkostenNachZaehlerstand } from '../../../utils/kostenberechnung';
+
   let users: Array<{ id: number; name: string; email: string; beguenstigt: boolean }> = [];
   const currentAufenthalt = {
     userId: parseInt((document.getElementById('aufenthalt-user-id') as HTMLInputElement)?.value || '0'),
     userBeguenstigt: (document.getElementById('aufenthalt-user-beguenstigt') as HTMLInputElement)?.value === 'true'
   };
   let selectedUserId: number | null = currentAufenthalt.userId;
+
+  let currentPreise: {
+    oelpreisProLiter?: number;
+    uebernachtungMitglied?: number;
+    uebernachtungGast?: number;
+    verbrauchProStunde?: number;
+  } = {};
+
+  let alleTankfuellungen: Array<{
+    id: number;
+    datum: string;
+    zaehlerstand: number;
+    liter: number;
+    preisProLiter: number;
+  }> = [];
 
   // Benachrichtigung anzeigen
   function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info') {
@@ -250,11 +316,111 @@ if (!aufenthalt) {
         if (response.ok) {
           users = await response.json();
           renderUserSelect();
-          // Checkbox nach Laden der User aktualisieren
-          updateNaechteBerechnenCheckbox();
+          // TEMPORÄR DEAKTIVIERT: Checkbox nach Laden der User aktualisieren
+          // updateNaechteBerechnenCheckbox();
         }
       } catch (error) {
         console.error('Fehler beim Laden der Benutzer:', error);
+      }
+    }
+  }
+
+  // Preise laden
+  async function loadPreise(jahr: string) {
+    try {
+      const response = await fetch(`/api/preise?jahr=${jahr}`);
+      if (response.ok) {
+        currentPreise = await response.json();
+        console.log('💰 Preise geladen:', currentPreise);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Preise:', error);
+    }
+  }
+
+  // Tankfüllungen laden
+  async function loadTankfuellungen() {
+    try {
+      const response = await fetch('/api/tankfuellungen');
+      if (response.ok) {
+        alleTankfuellungen = await response.json();
+        console.log('⛽ Tankfüllungen geladen:', alleTankfuellungen.length);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Tankfüllungen:', error);
+    }
+  }
+
+  // Kostenvorschau berechnen
+  async function calculateCosts() {
+    const ankunftInput = document.getElementById('ankunft') as HTMLInputElement;
+    const abreiseInput = document.getElementById('abreise') as HTMLInputElement;
+    const zaehlerStartInput = document.getElementById('zaehlerStart') as HTMLInputElement;
+    const zaehlerEndeInput = document.getElementById('zaehlerEnde') as HTMLInputElement;
+    const uebernachtungenMitgliederInput = document.getElementById('uebernachtungenMitglieder') as HTMLInputElement;
+
+    const ankunft = ankunftInput?.value;
+    const abreise = abreiseInput?.value;
+    const zaehlerStart = parseFloat(zaehlerStartInput?.value || '0');
+    const zaehlerEnde = parseFloat(zaehlerEndeInput?.value || '0');
+    const uebernachtungenMitglieder = parseInt(uebernachtungenMitgliederInput?.value || '0');
+
+    if (ankunft && abreise && zaehlerStart && zaehlerEnde) {
+      // Anzahl Nächte berechnen
+      const anzahlNaechte = Math.ceil((new Date(abreise).getTime() - new Date(ankunft).getTime()) / (1000 * 60 * 60 * 24));
+
+      // Verbrauchte Stunden
+      const verbrauchteStunden = zaehlerEnde - zaehlerStart;
+
+      // Ölkosten berechnen
+      const oelKosten = berechneOelkostenNachZaehlerstand(zaehlerStart, zaehlerEnde, alleTankfuellungen);
+
+      // TEMPORÄR VEREINFACHT: Übernachtungskosten
+      // Begünstigte User zahlen KEINE Übernachtungskosten (werden nur erfasst für Statistik)
+      // Normale User zahlen immer Übernachtungskosten
+      //
+      // Alte Logik (mit Checkbox):
+      // const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
+      // const istBeguenstigt = isSelectedUserBeguenstigt();
+      // const sollenNaechteBerechnetWerden = istBeguenstigt ? naechteBerechnenCheckbox?.checked : true;
+
+      const istBeguenstigt = isSelectedUserBeguenstigt();
+      const sollenNaechteBerechnetWerden = !istBeguenstigt; // true wenn NICHT begünstigt
+
+      const uebernachtungenGaeste = parseInt((document.getElementById('uebernachtungenGaeste') as HTMLInputElement)?.value || '0');
+      const uebernachtungKosten = sollenNaechteBerechnetWerden ? (
+        uebernachtungenMitglieder * (currentPreise.uebernachtungMitglied || 5) +
+        uebernachtungenGaeste * (currentPreise.uebernachtungGast || 10)
+      ) : 0;
+
+      const gesamtKosten = oelKosten + uebernachtungKosten;
+
+      // Vorschau anzeigen
+      const vorschau = document.getElementById('kosten-vorschau');
+      if (vorschau) {
+        vorschau.classList.remove('hidden');
+
+        const anzahlNaechteEl = document.getElementById('anzahl-naechte');
+        const minMitgliederNaechteEl = document.getElementById('min-mitglieder-naechte');
+        const verbrauchteStundenEl = document.getElementById('verbrauchte-stunden');
+        const oelKostenEl = document.getElementById('oel-kosten');
+        const uebernachtungKostenEl = document.getElementById('uebernachtung-kosten');
+        const gesamtKostenEl = document.getElementById('gesamt-kosten');
+
+        if (anzahlNaechteEl) anzahlNaechteEl.textContent = `${anzahlNaechte}`;
+        if (minMitgliederNaechteEl) {
+          minMitgliederNaechteEl.textContent = `${anzahlNaechte}`;
+          // Warnung wenn zu wenige Mitgliedernächte
+          if (uebernachtungenMitglieder < anzahlNaechte) {
+            minMitgliederNaechteEl.classList.add('text-red-600', 'font-bold');
+          } else {
+            minMitgliederNaechteEl.classList.remove('text-red-600', 'font-bold');
+          }
+        }
+        if (verbrauchteStundenEl) verbrauchteStundenEl.textContent = `${verbrauchteStunden.toFixed(1)} h`;
+        if (oelKostenEl) oelKostenEl.textContent = `€ ${oelKosten.toFixed(2)}`;
+        if (uebernachtungKostenEl) uebernachtungKostenEl.textContent = `€ ${uebernachtungKosten.toFixed(2)}`;
+        if (gesamtKostenEl) gesamtKostenEl.textContent = `€ ${gesamtKosten.toFixed(2)}`;
       }
     }
   }
@@ -270,7 +436,10 @@ if (!aufenthalt) {
     return currentAufenthalt.userBeguenstigt;
   }
 
-  // Checkbox für "Nächte berechnen" anzeigen/verstecken
+  // TEMPORÄR DEAKTIVIERT: Checkbox für "Nächte berechnen" anzeigen/verstecken
+  // Diese Funktion wird aktuell nicht benötigt, da die Checkbox auskommentiert ist.
+  // Begünstigte User zahlen aktuell KEINE Übernachtungskosten (immer false).
+  /*
   function updateNaechteBerechnenCheckbox() {
     const container = document.getElementById('naechte-berechnen-container');
     const istBeguenstigt = isSelectedUserBeguenstigt();
@@ -289,6 +458,7 @@ if (!aufenthalt) {
       container?.classList.add('hidden');
     }
   }
+  */
 
   // Alle Caches leeren
   function clearAllCaches() {
@@ -330,7 +500,8 @@ if (!aufenthalt) {
       // Event-Listener für User-Auswahl
       select.addEventListener('change', (e) => {
         selectedUserId = parseInt((e.target as HTMLSelectElement).value);
-        updateNaechteBerechnenCheckbox();
+        // updateNaechteBerechnenCheckbox(); // TEMPORÄR DEAKTIVIERT
+        calculateCosts(); // Kosten neu berechnen bei User-Wechsel
       });
     }
   }
@@ -339,9 +510,15 @@ if (!aufenthalt) {
   document.getElementById('edit-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
-    // Einfach den Checkbox-Wert senden - Backend entscheidet die Logik
-    const naechteBerechnen = naechteBerechnenCheckbox ? naechteBerechnenCheckbox.checked : false;
+    // TEMPORÄR VEREINFACHT: Nächte berechnen
+    // Begünstigte zahlen KEINE Übernachtungen → naechteBerechnen = false
+    // Normale User zahlen IMMER Übernachtungen → naechteBerechnen = true
+    //
+    // Alte Logik (mit Checkbox):
+    // const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
+    // const naechteBerechnen = naechteBerechnenCheckbox ? naechteBerechnenCheckbox.checked : false;
+
+    const naechteBerechnen = !isSelectedUserBeguenstigt(); // false wenn begünstigt, true wenn nicht
 
     const formData = {
       id: (document.getElementById('aufenthalt-id') as HTMLInputElement).value,
@@ -389,8 +566,37 @@ if (!aufenthalt) {
   });
 
   // Benutzer beim Laden der Seite laden
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     loadUsers();
-    updateNaechteBerechnenCheckbox(); // Checkbox initial anzeigen
+    // TEMPORÄR DEAKTIVIERT: Checkbox initial anzeigen
+    // updateNaechteBerechnenCheckbox();
+
+    // Preise und Tankfüllungen laden
+    const ankunftInput = document.getElementById('ankunft') as HTMLInputElement;
+    const currentYear = ankunftInput?.value ? new Date(ankunftInput.value).getFullYear().toString() : new Date().getFullYear().toString();
+    await loadPreise(currentYear);
+    await loadTankfuellungen();
+
+    // Event Listener für automatische Kostenberechnung
+    const inputIds = ['ankunft', 'abreise', 'zaehlerStart', 'zaehlerEnde', 'uebernachtungenMitglieder', 'uebernachtungenGaeste'];
+    inputIds.forEach(id => {
+      const input = document.getElementById(id);
+      if (input) {
+        input.addEventListener('input', calculateCosts);
+        input.addEventListener('change', calculateCosts);
+      }
+    });
+
+    // TEMPORÄR DEAKTIVIERT: Event Listener für naechteBerechnen Checkbox
+    // Die Checkbox existiert aktuell nicht, da sie auskommentiert ist
+    /*
+    const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen');
+    if (naechteBerechnenCheckbox) {
+      naechteBerechnenCheckbox.addEventListener('change', calculateCosts);
+    }
+    */
+
+    // Initiale Berechnung durchführen
+    calculateCosts();
   });
 </script>

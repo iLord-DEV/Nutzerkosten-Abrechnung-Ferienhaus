@@ -114,7 +114,8 @@ src/
 ├── utils/
 │   ├── auth.ts                       # Authentication helpers
 │   ├── passwordValidation.ts        # Password validation
-│   └── aufenthaltValidation.ts      # Stay validation
+│   ├── aufenthaltValidation.ts      # Stay validation
+│   └── kostenberechnung.ts          # Oil cost calculation (meter-based)
 └── styles/                           # Global styles
 
 prisma/
@@ -270,9 +271,10 @@ This function:
 - Overnight costs: **5€ for members, 10€ for guests**
 
 **Implementation:**
-- Main overview: `src/pages/aufenthalte/index.astro` (line ~300-400)
-- New stay preview: `src/pages/aufenthalte/neu.astro`
-- Both load tankfüllungen and segment stays by meter readings
+- **Utils**: `src/utils/kostenberechnung.ts` - Centralized calculation function with TypeScript types
+- **Usage**: Imported in clientside `<script>` blocks of `index.astro` and `neu.astro`
+- **How**: Astro supports ES module imports in `<script>` tags and bundles them automatically
+- **Single source of truth**: Changes to calculation logic only need to be made in the utils file
 - API endpoints filter invalid data (missing users, invalid meter readings)
 
 ### Validierungslogik (Validation Logic)

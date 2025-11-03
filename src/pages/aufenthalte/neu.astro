@@ -150,7 +150,22 @@ const session = JSON.parse(sessionCookie.value);
                 </div>
               </div>
 
-              <!-- Checkbox für begünstigte User -->
+              <!--
+                TEMPORÄR DEAKTIVIERT: Checkbox für begünstigte User
+
+                Aktuell: Begünstigte User zahlen KEINE Übernachtungskosten.
+                Die Übernachtungen werden trotzdem erfasst (für Statistik/Verbrauchsberechnung),
+                aber nicht in die Kostensumme einberechnet.
+
+                Diese Checkbox ermöglichte es begünstigten Usern, optional Übernachtungen
+                zu berechnen. Diese Funktion kann später wieder aktiviert werden, falls gewünscht.
+
+                Um zu reaktivieren:
+                1. Diesen HTML-Block wieder einkommentieren
+                2. Die JavaScript-Logik unten (bei "TEMPORÄR VEREINFACHT") wieder einkommentieren
+                3. Die Backend-Logik in /api/aufenthalte.ts anpassen
+              -->
+              <!--
               <div id="naechte-berechnen-container" class="hidden mt-4">
                 <div class="flex items-center">
                   <input
@@ -167,6 +182,7 @@ const session = JSON.parse(sessionCookie.value);
                   Nicht aktiviert = Übernachtungen werden nicht berechnet (nur für begünstigte User)
                 </p>
               </div>
+              -->
             </div>
 
             <!-- Validierungswarnung -->
@@ -251,6 +267,8 @@ const session = JSON.parse(sessionCookie.value);
 </ProtectedLayout>
 
 <script>
+  import { berechneOelkostenNachZaehlerstand } from '../../utils/kostenberechnung';
+
   let users: Array<{id: number, name: string, email: string, role: string, beguenstigt: boolean}> = [];
   let currentUser: {id: number, name: string, email: string, role: string, beguenstigt: boolean} | null = null;
   let currentPreise: {
@@ -281,117 +299,6 @@ const session = JSON.parse(sessionCookie.value);
     } catch (error) {
       console.error('Fehler beim Laden der Tankfüllungen:', error);
     }
-  }
-
-  // Ölkosten nach Zählerstand berechnen (mit Segmentierung)
-  function berechneOelkostenNachZaehlerstand(
-    zaehlerStart: number,
-    zaehlerEnde: number,
-    tankfuellungen: typeof alleTankfuellungen
-  ): number {
-    if (zaehlerEnde <= zaehlerStart) {
-      console.warn(`⚠️ Ungültige Zählerstände: Start=${zaehlerStart}, Ende=${zaehlerEnde}`);
-      return 0;
-    }
-
-    const verbrauchteStunden = zaehlerEnde - zaehlerStart;
-
-    // Tankfüllungen in der Spanne finden (Zählerstand > start UND <= ende)
-    const tfInSpanne = tankfuellungen.filter(
-      tf => tf.zaehlerstand > zaehlerStart && tf.zaehlerstand <= zaehlerEnde
-    );
-
-    // Segmente erstellen
-    const segmente: Array<{
-      start: number;
-      ende: number;
-      stunden: number;
-      preis: number;
-      verbrauch: number;
-    }> = [];
-
-    if (tfInSpanne.length === 0) {
-      // Keine Tankfüllung in der Spanne - ein Segment
-      const tfVorStart = tankfuellungen.filter(tf => tf.zaehlerstand <= zaehlerStart);
-      const letzteVorStart = tfVorStart.length > 0 ? tfVorStart[tfVorStart.length - 1] : null;
-      const vorletzteVorStart = tfVorStart.length > 1 ? tfVorStart[tfVorStart.length - 2] : null;
-
-      const preis = letzteVorStart?.preisProLiter || 1.01;
-      const verbrauch = (letzteVorStart && vorletzteVorStart)
-        ? letzteVorStart.liter / (letzteVorStart.zaehlerstand - vorletzteVorStart.zaehlerstand)
-        : 5.5;
-
-      segmente.push({
-        start: zaehlerStart,
-        ende: zaehlerEnde,
-        stunden: verbrauchteStunden,
-        preis,
-        verbrauch
-      });
-    } else {
-      // Tankfüllungen in der Spanne - mehrere Segmente
-      let aktuellerStart = zaehlerStart;
-
-      for (let i = 0; i < tfInSpanne.length; i++) {
-        const tf = tfInSpanne[i];
-
-        // Segment bis zu dieser Tankfüllung
-        const segmentEnde = tf.zaehlerstand;
-        const stunden = segmentEnde - aktuellerStart;
-
-        // Preis und Verbrauch für dieses Segment ermitteln
-        const alleTfBisHier = tankfuellungen.filter(t => t.zaehlerstand <= aktuellerStart);
-        const letzteVor = alleTfBisHier.length > 0 ? alleTfBisHier[alleTfBisHier.length - 1] : null;
-        const vorletzteVor = alleTfBisHier.length > 1 ? alleTfBisHier[alleTfBisHier.length - 2] : null;
-
-        const preis = letzteVor?.preisProLiter || 1.01;
-        const verbrauch = (letzteVor && vorletzteVor)
-          ? letzteVor.liter / (letzteVor.zaehlerstand - vorletzteVor.zaehlerstand)
-          : 5.5;
-
-        segmente.push({
-          start: aktuellerStart,
-          ende: segmentEnde,
-          stunden,
-          preis,
-          verbrauch
-        });
-
-        aktuellerStart = segmentEnde;
-      }
-
-      // Letztes Segment: Von letzter TF bis zaehlerEnde
-      if (aktuellerStart < zaehlerEnde) {
-        const stunden = zaehlerEnde - aktuellerStart;
-        const letzteTF = tfInSpanne[tfInSpanne.length - 1];
-
-        // Verbrauch der letzten TF berechnen
-        const alleTfBisLetzte = tankfuellungen.filter(t => t.zaehlerstand <= letzteTF.zaehlerstand);
-        const vorletzte = alleTfBisLetzte.length > 1 ? alleTfBisLetzte[alleTfBisLetzte.length - 2] : null;
-
-        const preis = letzteTF.preisProLiter;
-        const verbrauch = vorletzte
-          ? letzteTF.liter / (letzteTF.zaehlerstand - vorletzte.zaehlerstand)
-          : 5.5;
-
-        segmente.push({
-          start: aktuellerStart,
-          ende: zaehlerEnde,
-          stunden,
-          preis,
-          verbrauch
-        });
-      }
-    }
-
-    // Kosten aller Segmente summieren
-    const gesamtKosten = segmente.reduce((sum, seg) => {
-      const kosten = seg.stunden * seg.verbrauch * seg.preis;
-      console.log(`💰 Segment ${seg.start}-${seg.ende}h: ${seg.stunden}h × ${seg.verbrauch.toFixed(2)}L/h × €${seg.preis.toFixed(2)} = €${kosten.toFixed(2)}`);
-      return sum + kosten;
-    }, 0);
-
-    return gesamtKosten;
   }
 
   // Benachrichtigung anzeigen
@@ -518,7 +425,10 @@ const session = JSON.parse(sessionCookie.value);
     return currentUser?.beguenstigt || false;
   }
 
-  // Checkbox für "Nächte berechnen" anzeigen/verstecken
+  // TEMPORÄR DEAKTIVIERT: Checkbox für "Nächte berechnen" anzeigen/verstecken
+  // Diese Funktion wird aktuell nicht benötigt, da die Checkbox auskommentiert ist.
+  // Begünstigte User zahlen aktuell KEINE Übernachtungskosten (immer false).
+  /*
   function updateNaechteBerechnenCheckbox() {
     const container = document.getElementById('naechte-berechnen-container');
     const checkbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
@@ -535,6 +445,7 @@ const session = JSON.parse(sessionCookie.value);
       }
     }
   }
+  */
 
   // Benutzer-Select rendern
   function renderUserSelect() {
@@ -554,12 +465,12 @@ const session = JSON.parse(sessionCookie.value);
         if (userId) {
           selectedUserId = userId;
           await loadLastZaehlerstand(userId);
-          updateNaechteBerechnenCheckbox(); // Checkbox aktualisieren
+          // updateNaechteBerechnenCheckbox(); // TEMPORÄR DEAKTIVIERT
           calculateCosts(); // Kosten neu berechnen
         } else {
           selectedUserId = null;
           lastZaehlerstand = null;
-          updateNaechteBerechnenCheckbox(); // Checkbox aktualisieren
+          // updateNaechteBerechnenCheckbox(); // TEMPORÄR DEAKTIVIERT
         }
       });
     }
@@ -625,9 +536,15 @@ const session = JSON.parse(sessionCookie.value);
       // Zählerstand-basierte Berechnung mit Tankfüllungen
       const oelKosten = berechneOelkostenNachZaehlerstand(zaehlerStart, zaehlerEnde, alleTankfuellungen);
 
-      // Übernachtungskosten nur berechnen, wenn Checkbox aktiviert ist (für begünstigte User)
-      const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
-      const naechteBerechnen = !isSelectedUserBeguenstigt() || (naechteBerechnenCheckbox && naechteBerechnenCheckbox.checked);
+      // TEMPORÄR VEREINFACHT: Übernachtungskosten
+      // Begünstigte User zahlen KEINE Übernachtungskosten (werden nur erfasst für Statistik)
+      // Normale User zahlen immer Übernachtungskosten
+      //
+      // Alte Logik (mit Checkbox):
+      // const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
+      // const naechteBerechnen = !isSelectedUserBeguenstigt() || (naechteBerechnenCheckbox && naechteBerechnenCheckbox.checked);
+
+      const naechteBerechnen = !isSelectedUserBeguenstigt(); // true wenn NICHT begünstigt
 
       const uebernachtungKosten = naechteBerechnen ? (
         uebernachtungenMitglieder * (currentPreise.uebernachtungMitglied || 5) +
@@ -964,10 +881,15 @@ const session = JSON.parse(sessionCookie.value);
     const selectedUser = users.find(u => u.id === userId);
     const personName = selectedUser ? selectedUser.name : null;
 
-    // Nächte berechnen-Checkbox prüfen
-    const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
-    // Einfach den Checkbox-Wert senden - Backend entscheidet die Logik
-    const naechteBerechnen = naechteBerechnenCheckbox ? naechteBerechnenCheckbox.checked : false;
+    // TEMPORÄR VEREINFACHT: Nächte berechnen
+    // Begünstigte zahlen KEINE Übernachtungen → naechteBerechnen = false
+    // Normale User zahlen IMMER Übernachtungen → naechteBerechnen = true
+    //
+    // Alte Logik (mit Checkbox):
+    // const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
+    // const naechteBerechnen = naechteBerechnenCheckbox ? naechteBerechnenCheckbox.checked : false;
+
+    const naechteBerechnen = !isSelectedUserBeguenstigt(); // false wenn begünstigt, true wenn nicht
 
     // Daten für die API vorbereiten
     const aufenthaltData = {
@@ -1070,19 +992,22 @@ const session = JSON.parse(sessionCookie.value);
         });
       });
 
-      // Event-Listener für Nächte-berechnen-Checkbox
+      // TEMPORÄR DEAKTIVIERT: Event-Listener für Nächte-berechnen-Checkbox
+      // Die Checkbox existiert aktuell nicht, da sie auskommentiert ist
+      /*
       const naechteBerechnenCheckbox = document.getElementById('naechteBerechnen') as HTMLInputElement;
       if (naechteBerechnenCheckbox) {
         naechteBerechnenCheckbox.addEventListener('change', () => {
           calculateCosts();
         });
       }
+      */
 
       // Formular-Submit-Handler
       form.addEventListener('submit', handleSubmit);
     }
 
-    // Checkbox initial aktualisieren (für normale User)
-    updateNaechteBerechnenCheckbox();
+    // TEMPORÄR DEAKTIVIERT: Checkbox initial aktualisieren
+    // updateNaechteBerechnenCheckbox();
   });
 </script>
