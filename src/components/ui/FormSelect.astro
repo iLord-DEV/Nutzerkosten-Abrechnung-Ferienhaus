@@ -1,0 +1,97 @@
+---
+/**
+ * Wiederverwendbare Form Select-Komponente mit DaisyUI
+ *
+ * Props:
+ * - label: string - Label-Text
+ * - name: string - Select name
+ * - value: string - Selected value
+ * - options: Array<{value: string, label: string}> - Select-Optionen
+ * - required: boolean
+ * - disabled: boolean
+ * - error: string - Error message
+ * - helperText: string - Helper text
+ * - size: 'xs' | 'sm' | 'md' | 'lg'
+ */
+
+interface Props {
+  label?: string;
+  name: string;
+  value?: string | number;
+  options: Array<{ value: string | number; label: string; disabled?: boolean }>;
+  required?: boolean;
+  disabled?: boolean;
+  error?: string;
+  helperText?: string;
+  size?: 'xs' | 'sm' | 'md' | 'lg';
+  class?: string;
+}
+
+const {
+  label,
+  name,
+  value,
+  options,
+  required = false,
+  disabled = false,
+  error,
+  helperText,
+  size = 'md',
+  class: className = '',
+} = Astro.props;
+
+const sizeClasses = {
+  xs: 'select-xs',
+  sm: 'select-sm',
+  md: '',
+  lg: 'select-lg',
+};
+
+const selectClasses = [
+  'select',
+  'select-bordered',
+  'w-full',
+  sizeClasses[size],
+  error && 'select-error',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class="form-control w-full">
+  {label && (
+    <label class="label" for={name}>
+      <span class="label-text">
+        {label}
+        {required && <span class="text-error ml-1">*</span>}
+      </span>
+    </label>
+  )}
+  <select
+    id={name}
+    name={name}
+    required={required}
+    disabled={disabled}
+    class={selectClasses}
+  >
+    <option value="" disabled selected={!value}>
+      Bitte wählen...
+    </option>
+    {options.map((option) => (
+      <option
+        value={option.value}
+        selected={value === option.value}
+        disabled={option.disabled}
+      >
+        {option.label}
+      </option>
+    ))}
+  </select>
+  {(error || helperText) && (
+    <label class="label">
+      {error && <span class="label-text-alt text-error">{error}</span>}
+      {!error && helperText && <span class="label-text-alt">{helperText}</span>}
+    </label>
+  )}
+</div>

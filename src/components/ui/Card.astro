@@ -1,0 +1,59 @@
+---
+/**
+ * Wiederverwendbare Card-Komponente mit DaisyUI
+ *
+ * Props:
+ * - variant: 'default' | 'stat' | 'info' | 'warning' | 'success' | 'error'
+ * - title: string - Card-Titel
+ * - compact: boolean - Kompaktere Darstellung
+ * - bordered: boolean - Mit Border
+ * - hoverable: boolean - Hover-Effekt
+ */
+
+interface Props {
+  variant?: 'default' | 'stat' | 'info' | 'warning' | 'success' | 'error';
+  title?: string;
+  compact?: boolean;
+  bordered?: boolean;
+  hoverable?: boolean;
+  class?: string;
+}
+
+const {
+  variant = 'default',
+  title,
+  compact = false,
+  bordered = false,
+  hoverable = false,
+  class: className = '',
+} = Astro.props;
+
+// Variant-spezifische Klassen
+const variantClasses = {
+  default: 'bg-base-100',
+  stat: 'bg-base-100 stat',
+  info: 'bg-info text-info-content',
+  warning: 'bg-warning text-warning-content',
+  success: 'bg-success text-success-content',
+  error: 'bg-error text-error-content',
+};
+
+const classes = [
+  'card',
+  variantClasses[variant],
+  bordered && 'card-bordered',
+  compact ? 'card-compact' : 'card-normal',
+  hoverable && 'hover:shadow-xl transition-shadow duration-200',
+  'shadow-lg',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class={classes}>
+  <div class={compact ? 'card-body p-4' : 'card-body'}>
+    {title && <h2 class="card-title">{title}</h2>}
+    <slot />
+  </div>
+</div>

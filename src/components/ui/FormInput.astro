@@ -1,0 +1,99 @@
+---
+/**
+ * Wiederverwendbare Form Input-Komponente mit DaisyUI
+ *
+ * Props:
+ * - label: string - Label-Text
+ * - name: string - Input name
+ * - type: string - Input type (default: 'text')
+ * - value: string - Input value
+ * - placeholder: string
+ * - required: boolean
+ * - disabled: boolean
+ * - error: string - Error message
+ * - helperText: string - Helper text unterhalb des Inputs
+ * - size: 'xs' | 'sm' | 'md' | 'lg'
+ */
+
+interface Props {
+  label?: string;
+  name: string;
+  type?: string;
+  value?: string | number;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  error?: string;
+  helperText?: string;
+  size?: 'xs' | 'sm' | 'md' | 'lg';
+  min?: string | number;
+  max?: string | number;
+  step?: string | number;
+  class?: string;
+}
+
+const {
+  label,
+  name,
+  type = 'text',
+  value,
+  placeholder,
+  required = false,
+  disabled = false,
+  error,
+  helperText,
+  size = 'md',
+  min,
+  max,
+  step,
+  class: className = '',
+} = Astro.props;
+
+const sizeClasses = {
+  xs: 'input-xs',
+  sm: 'input-sm',
+  md: '',
+  lg: 'input-lg',
+};
+
+const inputClasses = [
+  'input',
+  'input-bordered',
+  'w-full',
+  sizeClasses[size],
+  error && 'input-error',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class="form-control w-full">
+  {label && (
+    <label class="label" for={name}>
+      <span class="label-text">
+        {label}
+        {required && <span class="text-error ml-1">*</span>}
+      </span>
+    </label>
+  )}
+  <input
+    id={name}
+    name={name}
+    type={type}
+    value={value}
+    placeholder={placeholder}
+    required={required}
+    disabled={disabled}
+    min={min}
+    max={max}
+    step={step}
+    class={inputClasses}
+  />
+  {(error || helperText) && (
+    <label class="label">
+      {error && <span class="label-text-alt text-error">{error}</span>}
+      {!error && helperText && <span class="label-text-alt">{helperText}</span>}
+    </label>
+  )}
+</div>

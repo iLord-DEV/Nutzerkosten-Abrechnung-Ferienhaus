@@ -1,0 +1,84 @@
+---
+/**
+ * Wiederverwendbare Button-Komponente mit DaisyUI
+ *
+ * Props:
+ * - variant: 'primary' | 'secondary' | 'accent' | 'ghost' | 'danger' | 'success' (default: 'primary')
+ * - size: 'xs' | 'sm' | 'md' | 'lg' (default: 'md')
+ * - type: 'button' | 'submit' | 'reset' (default: 'button')
+ * - disabled: boolean
+ * - loading: boolean
+ * - outlined: boolean - Outline-Stil
+ * - wide: boolean - Volle Breite
+ * - href: string - Wenn gesetzt, wird ein Link statt Button gerendert
+ * - icon: boolean - Icon-only Button
+ */
+
+interface Props {
+  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'danger' | 'success' | 'warning' | 'info';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
+  type?: 'button' | 'submit' | 'reset';
+  disabled?: boolean;
+  loading?: boolean;
+  outlined?: boolean;
+  wide?: boolean;
+  href?: string;
+  icon?: boolean;
+  class?: string;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  type = 'button',
+  disabled = false,
+  loading = false,
+  outlined = false,
+  wide = false,
+  href,
+  icon = false,
+  class: className = '',
+} = Astro.props;
+
+// DaisyUI Button-Klassen zusammenstellen
+const variantClasses = {
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  accent: 'btn-accent',
+  ghost: 'btn-ghost',
+  danger: 'btn-error',
+  success: 'btn-success',
+  warning: 'btn-warning',
+  info: 'btn-info',
+};
+
+const sizeClasses = {
+  xs: 'btn-xs',
+  sm: 'btn-sm',
+  md: '',
+  lg: 'btn-lg',
+};
+
+const classes = [
+  'btn',
+  variantClasses[variant],
+  sizeClasses[size],
+  outlined && 'btn-outline',
+  wide && 'btn-wide',
+  icon && 'btn-square',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+
+// Wenn href gesetzt ist, Link rendern, sonst Button
+const Tag = href ? 'a' : 'button';
+const tagProps = href
+  ? { href }
+  : { type, disabled: disabled || loading };
+---
+
+<Tag class={classes} {...tagProps}>
+  {loading && <span class="loading loading-spinner"></span>}
+  <slot />
+</Tag>

@@ -1,0 +1,63 @@
+---
+/**
+ * Stat Card Komponente für Dashboard-Statistiken
+ *
+ * Props:
+ * - title: string - Stat-Titel
+ * - value: string | number - Haupt-Wert
+ * - description: string - Beschreibung/Kontext
+ * - variant: 'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error'
+ * - trend: 'up' | 'down' | 'neutral' - Trend-Indikator (optional)
+ * - trendValue: string - Trend-Wert (z.B. "+12%")
+ */
+
+interface Props {
+  title: string;
+  value: string | number;
+  description?: string;
+  variant?: 'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error';
+  trend?: 'up' | 'down' | 'neutral';
+  trendValue?: string;
+  class?: string;
+}
+
+const {
+  title,
+  value,
+  description,
+  variant = 'neutral',
+  trend,
+  trendValue,
+  class: className = '',
+} = Astro.props;
+
+// Nur die Werte (stat-value) werden eingefärbt, nicht der Hintergrund
+const variantClasses = {
+  neutral: '',
+  primary: 'text-primary',
+  secondary: 'text-secondary',
+  accent: 'text-accent',
+  info: 'text-info',
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-error',
+};
+
+const trendColors = {
+  up: 'text-success',
+  down: 'text-error',
+  neutral: 'text-neutral',
+};
+---
+
+<div class={`stat ${className}`.trim()}>
+  <div class="stat-title opacity-80">{title}</div>
+  <div class={`stat-value ${variantClasses[variant]}`}>{value}</div>
+  {description && <div class="stat-desc">{description}</div>}
+  {trend && trendValue && (
+    <div class={`stat-desc ${trendColors[trend]}`}>
+      <span class="font-semibold">{trendValue}</span>
+    </div>
+  )}
+  <slot />
+</div>
