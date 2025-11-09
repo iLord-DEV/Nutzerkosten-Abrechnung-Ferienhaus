@@ -1,6 +1,9 @@
 ---
 import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
 import { requireAdmin } from '../../utils/auth';
+import StatCard from '../../components/ui/StatCard.astro';
+import Card from '../../components/ui/Card.astro';
+import Badge from '../../components/ui/Badge.astro';
 
 // Admin-Berechtigung prüfen
 try {
@@ -11,192 +14,139 @@ try {
 ---
 
 <ProtectedLayout title="Admin Dashboard - Nutzerkosten">
-  <div class="px-4 sm:px-6 lg:px-8">
+  <div class="container mx-auto px-4 py-6 max-w-7xl">
+    <!-- Header -->
     <div class="mb-8">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            Admin Dashboard
-          </h1>
-          <p class="mt-2 text-gray-600 dark:text-gray-400">
-            Willkommen, <span id="admin-name">Administrator</span>! Hier können Sie alle Verwaltungsaufgaben durchführen.
-          </p>
-        </div>
-
-      </div>
+      <h1 class="text-3xl font-bold mb-2">
+        Admin Dashboard
+      </h1>
+      <p class="text-base-content/70">
+        Willkommen, <span id="admin-name" class="font-medium">Administrator</span>! Hier können Sie alle Verwaltungsaufgaben durchführen.
+      </p>
     </div>
 
-    <!-- Admin-Übersichtskarten -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">👥</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Benutzer
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="user-count">
-                  -
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Admin-Statistiken -->
+    <div class="stats stats-vertical lg:stats-horizontal shadow mb-8 w-full">
+      <StatCard title="Benutzer" value="-" variant="primary">
+        <div id="user-count" slot="default"></div>
+      </StatCard>
 
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">🏠</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Aktive Aufenthalte
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="active-aufenthalte">
-                  -
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StatCard title="Aktive Aufenthalte" value="-" variant="primary">
+        <div id="active-aufenthalte" slot="default"></div>
+      </StatCard>
 
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">⛽</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Tankfüllungen (Jahr)
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="tankfuellungen-count">
-                  -
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StatCard title="Tankfüllungen (Jahr)" value="-" variant="primary">
+        <div id="tankfuellungen-count" slot="default"></div>
+      </StatCard>
 
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">💰</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Gesamtkosten
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="gesamt-kosten">
-                  -
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StatCard title="Gesamtkosten" value="-" variant="primary">
+        <div id="gesamt-kosten" slot="default"></div>
+      </StatCard>
     </div>
 
     <!-- Admin-Aktionen -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       <!-- Schnellaktionen -->
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-            Schnellaktionen
-          </h3>
-          <div class="space-y-3">
-            <a href="/aufenthalte/neu" class="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              ➕ Neuen Aufenthalt erfassen
-            </a>
-            <a href="/tankfuellungen/neu" class="block w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              ⛽ Neue Tankfüllung eintragen
-            </a>
-            <a href="/admin/benutzer" class="block w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              👥 Benutzer verwalten
-            </a>
-            <a href="/admin/preise" class="block w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              💰 Preise konfigurieren
-            </a>
-            <a href="/admin/zaehler" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              🔧 Zähler verwalten
-            </a>
-            <a href="/profil/passwort-aendern" class="block w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              🔒 Mein Passwort ändern
-            </a>
-          </div>
+      <Card title="Schnellaktionen">
+        <div class="space-y-2">
+          <a href="/aufenthalte/neu" class="btn btn-primary w-full justify-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Neuen Aufenthalt erfassen
+          </a>
+          <a href="/tankfuellungen/neu" class="btn btn-ghost w-full justify-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
+            </svg>
+            Neue Tankfüllung eintragen
+          </a>
+          <a href="/admin/benutzer" class="btn btn-ghost w-full justify-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+            Benutzer verwalten
+          </a>
+          <a href="/admin/preise" class="btn btn-ghost w-full justify-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Preise konfigurieren
+          </a>
+          <a href="/admin/zaehler" class="btn btn-ghost w-full justify-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Zähler verwalten
+          </a>
+          <a href="/profil/passwort-aendern" class="btn btn-ghost w-full justify-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+            Mein Passwort ändern
+          </a>
         </div>
-      </div>
+      </Card>
 
       <!-- System-Status -->
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-            System-Status
-          </h3>
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Datenbank</span>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                Verbunden
-              </span>
+      <Card title="System-Status">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between py-2">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-base-content/70">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+              </svg>
+              <span class="text-sm">Datenbank</span>
             </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">API-Endpunkte</span>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                Aktiv
-              </span>
+            <Badge variant="success">Verbunden</Badge>
+          </div>
+          <div class="divider my-0"></div>
+          <div class="flex items-center justify-between py-2">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-base-content/70">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
+              </svg>
+              <span class="text-sm">API-Endpunkte</span>
             </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Überlappungserkennung</span>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                Aktiv
-              </span>
+            <Badge variant="success">Aktiv</Badge>
+          </div>
+          <div class="divider my-0"></div>
+          <div class="flex items-center justify-between py-2">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-base-content/70">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+              </svg>
+              <span class="text-sm">Überlappungserkennung</span>
             </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Verbrauchsberechnung</span>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                Aktiv
-              </span>
+            <Badge variant="success">Aktiv</Badge>
+          </div>
+          <div class="divider my-0"></div>
+          <div class="flex items-center justify-between py-2">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-base-content/70">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V13.5zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V18zm2.498-6.75h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V13.5zm0 2.25h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V18zm2.504-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zm0 2.25h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V18zm2.498-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zM8.25 6h7.5v2.25h-7.5V6zM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 002.25 2.25h10.5a2.25 2.25 0 002.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0012 2.25z" />
+              </svg>
+              <span class="text-sm">Verbrauchsberechnung</span>
             </div>
+            <Badge variant="success">Aktiv</Badge>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
 
     <!-- Letzte Aktivitäten -->
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-      <div class="px-4 py-5 sm:p-6">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-          Letzte Aktivitäten
-        </h3>
-        <div class="flow-root">
-          <ul role="list" class="-mb-8" id="aktivitaeten-liste">
-            <!-- Wird dynamisch geladen -->
-          </ul>
+    <Card title="Letzte Aktivitäten">
+      <div id="aktivitaeten-liste" class="space-y-3">
+        <div class="text-center py-8 text-base-content/50">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 mx-auto mb-3 opacity-50">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p>Aktivitäten werden in Zukunft hier angezeigt</p>
         </div>
       </div>
-    </div>
+    </Card>
   </div>
 </ProtectedLayout>
 
@@ -215,7 +165,6 @@ try {
           adminNameEl.textContent = currentUser.name;
         }
       } else {
-        // Nicht eingeloggt, zurück zum Login
         window.location.href = '/login';
       }
     } catch (error) {
@@ -227,46 +176,49 @@ try {
   // Dashboard-Daten laden
   async function loadDashboardData() {
     try {
-      // Statistiken laden
-      const statsResponse = await fetch('/api/statistiken?jahr=2024');
+      const currentYear = new Date().getFullYear();
+      const statsResponse = await fetch(`/api/statistiken?jahr=${currentYear}`);
       const usersResponse = await fetch('/api/users');
-      
+
       if (statsResponse.ok) {
         const stats = await statsResponse.json();
-        
-        const userCountEl = document.getElementById('user-count');
+
         const activeAufenthalteEl = document.getElementById('active-aufenthalte');
         const tankfuellungenCountEl = document.getElementById('tankfuellungen-count');
         const gesamtKostenEl = document.getElementById('gesamt-kosten');
-        
-        if (activeAufenthalteEl) activeAufenthalteEl.textContent = stats.anzahlAufenthalte || '0';
-        if (tankfuellungenCountEl) tankfuellungenCountEl.textContent = stats.anzahlTankfuellungen || '0';
-        if (gesamtKostenEl) gesamtKostenEl.textContent = `€ ${(stats.gesamtKosten || 0).toFixed(2)}`;
+
+        if (activeAufenthalteEl) {
+          activeAufenthalteEl.textContent = stats.anzahlAufenthalte?.toString() || '0';
+        }
+        if (tankfuellungenCountEl) {
+          tankfuellungenCountEl.textContent = stats.anzahlTankfuellungen?.toString() || '0';
+        }
+        if (gesamtKostenEl) {
+          const kosten = (stats.gesamtKosten || 0).toFixed(2);
+          gesamtKostenEl.textContent = `€${kosten}`;
+        }
       }
-      
-      // Benutzer-Anzahl laden
+
       if (usersResponse.ok) {
         const users = await usersResponse.json();
         const userCountEl = document.getElementById('user-count');
-        if (userCountEl) userCountEl.textContent = users.length.toString();
+        if (userCountEl) {
+          userCountEl.textContent = users.length.toString();
+        }
       }
     } catch (error) {
       console.error('Fehler beim Laden der Dashboard-Daten:', error);
-    }
-  }
 
-  // Logout-Funktion
-  async function logout() {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
-      
-      if (response.ok) {
-        window.location.href = '/login';
-      }
-    } catch (error) {
-      console.error('Logout-Fehler:', error);
+      // Zeige Platzhalter bei Fehler
+      const userCountEl = document.getElementById('user-count');
+      const activeAufenthalteEl = document.getElementById('active-aufenthalte');
+      const tankfuellungenCountEl = document.getElementById('tankfuellungen-count');
+      const gesamtKostenEl = document.getElementById('gesamt-kosten');
+
+      if (userCountEl) userCountEl.textContent = '–';
+      if (activeAufenthalteEl) activeAufenthalteEl.textContent = '–';
+      if (tankfuellungenCountEl) tankfuellungenCountEl.textContent = '–';
+      if (gesamtKostenEl) gesamtKostenEl.textContent = '€–';
     }
   }
 
@@ -274,6 +226,5 @@ try {
   document.addEventListener('DOMContentLoaded', () => {
     loadUserInfo();
     loadDashboardData();
-
   });
 </script>

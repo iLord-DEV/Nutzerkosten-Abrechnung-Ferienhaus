@@ -49,18 +49,24 @@ if (!aufenthalt) {
 ---
 
 <ProtectedLayout title="Aufenthalt bearbeiten - Nutzerkosten">
-  <div class="px-4 sm:px-6 lg:px-8">
+  <div class="container mx-auto px-4 py-6 max-w-4xl">
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-        Aufenthalt bearbeiten
-      </h1>
-      <p class="mt-2 text-gray-600 dark:text-gray-400">
-        Bearbeiten Sie die Details des Aufenthalts
-      </p>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold mb-2">Aufenthalt bearbeiten</h1>
+          <p class="text-base-content/70">Bearbeiten Sie die Details des Aufenthalts</p>
+        </div>
+        <a href="/aufenthalte" class="btn btn-ghost gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+          </svg>
+          Zurück zur Übersicht
+        </a>
+      </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-      <div class="px-4 py-5 sm:p-6">
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
         <form id="edit-form" class="space-y-6">
           <input type="hidden" id="aufenthalt-id" value={aufenthalt.id}>
           <input type="hidden" id="aufenthalt-user-id" value={aufenthalt.user.id}>
@@ -68,74 +74,74 @@ if (!aufenthalt) {
 
           <!-- Benutzer-Auswahl (nur für Admins) -->
           {session.role === 'ADMIN' && (
-            <div>
-              <label for="userId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Benutzer
+            <div class="form-control w-full">
+              <label class="label" for="userId">
+                <span class="label-text">Benutzer *</span>
               </label>
-              <select id="userId" required class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              <select id="userId" required class="select select-bordered w-full">
                 <!-- Wird dynamisch geladen -->
               </select>
             </div>
           )}
 
           <!-- Ankunft -->
-          <div>
-            <label for="ankunft" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Ankunft
+          <div class="form-control w-full">
+            <label class="label" for="ankunft">
+              <span class="label-text">Ankunft *</span>
             </label>
-            <input type="date" id="ankunft" required 
+            <input type="date" id="ankunft" name="ankunft" required
                    value={new Date(aufenthalt.ankunft).toISOString().slice(0, 10)}
-                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                   class="input input-bordered w-full">
           </div>
 
           <!-- Abreise -->
-          <div>
-            <label for="abreise" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Abreise
+          <div class="form-control w-full">
+            <label class="label" for="abreise">
+              <span class="label-text">Abreise *</span>
             </label>
-            <input type="date" id="abreise" required 
+            <input type="date" id="abreise" name="abreise" required
                    value={new Date(aufenthalt.abreise).toISOString().slice(0, 10)}
-                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                   class="input input-bordered w-full">
           </div>
 
           <!-- Zählerstand bei Ankunft -->
-          <div>
-            <label for="zaehlerStart" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Zählerstand bei Ankunft (Stunden)
+          <div class="form-control w-full">
+            <label class="label" for="zaehlerStart">
+              <span class="label-text">Zählerstand bei Ankunft (Stunden) *</span>
             </label>
-            <input type="number" id="zaehlerStart" step="1" required 
+            <input type="number" id="zaehlerStart" name="zaehlerStart" step="1" required
                    value={aufenthalt.zaehlerAnkunft}
-                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                   class="input input-bordered w-full">
           </div>
 
           <!-- Zählerstand bei Abreise -->
-          <div>
-            <label for="zaehlerEnde" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Zählerstand bei Abreise (Stunden)
+          <div class="form-control w-full">
+            <label class="label" for="zaehlerEnde">
+              <span class="label-text">Zählerstand bei Abreise (Stunden) *</span>
             </label>
-            <input type="number" id="zaehlerEnde" step="1" required 
+            <input type="number" id="zaehlerEnde" name="zaehlerEnde" step="1" required
                    value={aufenthalt.zaehlerAbreise}
-                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                   class="input input-bordered w-full">
           </div>
 
           <!-- Übernachtungen Mitglieder -->
-          <div>
-            <label for="uebernachtungenMitglieder" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Übernachtungen Mitglieder
+          <div class="form-control w-full">
+            <label class="label" for="uebernachtungenMitglieder">
+              <span class="label-text">Übernachtungen Mitglieder *</span>
             </label>
-            <input type="number" id="uebernachtungenMitglieder" min="1" required 
+            <input type="number" id="uebernachtungenMitglieder" name="uebernachtungenMitglieder" min="1" required
                    value={aufenthalt.uebernachtungenMitglieder}
-                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                   class="input input-bordered w-full">
           </div>
 
           <!-- Übernachtungen Gäste -->
-          <div>
-            <label for="uebernachtungenGaeste" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Übernachtungen Gäste
+          <div class="form-control w-full">
+            <label class="label" for="uebernachtungenGaeste">
+              <span class="label-text">Übernachtungen Gäste *</span>
             </label>
-            <input type="number" id="uebernachtungenGaeste" min="0" required
+            <input type="number" id="uebernachtungenGaeste" name="uebernachtungenGaeste" min="0" required
                    value={aufenthalt.uebernachtungenGaeste}
-                   class="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                   class="input input-bordered w-full">
           </div>
 
           <!--
@@ -174,58 +180,55 @@ if (!aufenthalt) {
           -->
 
           <!-- Kostenvorschau -->
-          <div id="kosten-vorschau" class="hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h3 class="text-lg font-medium text-blue-800 dark:text-blue-200 mb-3">
-              Kostenvorschau
-            </h3>
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span class="text-blue-700 dark:text-blue-300">Anzahl Nächte:</span>
-                <div class="font-medium text-blue-900 dark:text-blue-100" id="anzahl-naechte">-</div>
-              </div>
-              <div>
-                <span class="text-blue-700 dark:text-blue-300">Min. Mitgliedernächte:</span>
-                <div class="font-medium text-blue-900 dark:text-blue-100" id="min-mitglieder-naechte">-</div>
-              </div>
-              <div>
-                <span class="text-blue-700 dark:text-blue-300">Verbrauchte Stunden:</span>
-                <div class="font-medium text-blue-900 dark:text-blue-100" id="verbrauchte-stunden">-</div>
-              </div>
-              <div>
-                <span class="text-blue-700 dark:text-blue-300">Ölkosten:</span>
-                <div class="font-medium text-blue-900 dark:text-blue-100" id="oel-kosten">-</div>
-              </div>
-              <div>
-                <span class="text-blue-700 dark:text-blue-300">Übernachtungskosten:</span>
-                <div class="font-medium text-blue-900 dark:text-blue-100" id="uebernachtung-kosten">-</div>
-              </div>
-              <div>
-                <span class="text-blue-700 dark:text-blue-300">Gesamtkosten:</span>
-                <div class="font-medium text-blue-900 dark:text-blue-100" id="gesamt-kosten">-</div>
+          <div id="kosten-vorschau" class="hidden alert alert-info">
+            <div class="w-full">
+              <h3 class="text-lg font-bold mb-3">Kostenvorschau</h3>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span class="opacity-70">Anzahl Nächte:</span>
+                  <div class="font-medium" id="anzahl-naechte">-</div>
+                </div>
+                <div>
+                  <span class="opacity-70">Min. Mitgliedernächte:</span>
+                  <div class="font-medium" id="min-mitglieder-naechte">-</div>
+                </div>
+                <div>
+                  <span class="opacity-70">Verbrauchte Stunden:</span>
+                  <div class="font-medium" id="verbrauchte-stunden">-</div>
+                </div>
+                <div>
+                  <span class="opacity-70">Ölkosten:</span>
+                  <div class="font-medium" id="oel-kosten">-</div>
+                </div>
+                <div>
+                  <span class="opacity-70">Übernachtungskosten:</span>
+                  <div class="font-medium" id="uebernachtung-kosten">-</div>
+                </div>
+                <div>
+                  <span class="opacity-70">Gesamtkosten:</span>
+                  <div class="font-medium" id="gesamt-kosten">-</div>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Buttons -->
-          <div class="flex justify-end space-x-3">
-            <a href="/aufenthalte" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md text-sm font-medium">
+          <div class="flex justify-end gap-3">
+            <button type="button" onclick="window.location.href='/aufenthalte'" class="btn btn-ghost">
               Abbrechen
-            </a>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+            </button>
+            <button type="submit" class="btn btn-primary bg-primary text-primary-content gap-2 px-6">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" />
+              </svg>
               Speichern
             </button>
           </div>
           
           <!-- Benachrichtigungs-Bereich -->
-          <div id="notification" class="hidden mt-4 p-4 rounded-md">
-            <div class="flex">
-              <div class="flex-shrink-0">
-                <span id="notification-icon" class="text-lg"></span>
-              </div>
-              <div class="ml-3">
-                <p id="notification-message" class="text-sm font-medium"></p>
-              </div>
-            </div>
+          <div id="notification" class="hidden alert">
+            <svg id="notification-icon" class="h-6 w-6 shrink-0 stroke-current"></svg>
+            <span id="notification-message"></span>
           </div>
         </form>
       </div>
@@ -263,43 +266,41 @@ if (!aufenthalt) {
     const notification = document.getElementById('notification');
     const notificationMessage = document.getElementById('notification-message');
     const notificationIcon = document.getElementById('notification-icon');
-    
+
     if (!notification || !notificationMessage || !notificationIcon) return;
-    
+
     // Nachricht setzen
     notificationMessage.textContent = message;
-    
-    // Icon und Farbe je nach Typ setzen
-    let icon = '';
-    let bgColor = '';
-    let textColor = '';
-    
+
+    // Icon und Alert-Typ setzen
+    let alertClass = 'alert';
+    let iconPath = '';
+
     switch (type) {
       case 'success':
-        icon = '✅';
-        bgColor = 'bg-green-50 dark:bg-green-900/20';
-        textColor = 'text-green-800 dark:text-green-200';
+        alertClass += ' alert-success';
+        iconPath = '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
         break;
       case 'error':
-        icon = '❌';
-        bgColor = 'bg-red-50 dark:bg-red-900/20';
-        textColor = 'text-red-800 dark:text-red-200';
+        alertClass += ' alert-error';
+        iconPath = '<path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
         break;
       case 'info':
       default:
-        icon = 'ℹ️';
-        bgColor = 'bg-blue-50 dark:bg-blue-900/20';
-        textColor = 'text-blue-800 dark:text-blue-200';
+        alertClass += ' alert-info';
+        iconPath = '<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />';
         break;
     }
-    
-    notificationIcon.textContent = icon;
-    notification.className = `mt-4 p-4 rounded-md ${bgColor}`;
-    notificationMessage.className = `text-sm font-medium ${textColor}`;
-    
+
+    notification.className = alertClass;
+    notificationIcon.setAttribute('fill', 'none');
+    notificationIcon.setAttribute('viewBox', '0 0 24 24');
+    notificationIcon.setAttribute('stroke-width', '1.5');
+    notificationIcon.innerHTML = iconPath;
+
     // Benachrichtigung anzeigen
     notification.classList.remove('hidden');
-    
+
     // Bei Erfolg nach 2 Sekunden weiterleiten
     if (type === 'success') {
       setTimeout(() => {
@@ -412,9 +413,9 @@ if (!aufenthalt) {
           minMitgliederNaechteEl.textContent = `${anzahlNaechte}`;
           // Warnung wenn zu wenige Mitgliedernächte
           if (uebernachtungenMitglieder < anzahlNaechte) {
-            minMitgliederNaechteEl.classList.add('text-red-600', 'font-bold');
+            minMitgliederNaechteEl.classList.add('text-error', 'font-bold');
           } else {
-            minMitgliederNaechteEl.classList.remove('text-red-600', 'font-bold');
+            minMitgliederNaechteEl.classList.remove('text-error', 'font-bold');
           }
         }
         if (verbrauchteStundenEl) verbrauchteStundenEl.textContent = `${verbrauchteStunden.toFixed(1)} h`;

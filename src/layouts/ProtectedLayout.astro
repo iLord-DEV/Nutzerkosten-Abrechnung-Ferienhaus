@@ -24,7 +24,7 @@ const isAdmin = user.role === 'ADMIN';
 ---
 
 <!DOCTYPE html>
-<html lang="de" data-theme="wuestenstein">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
@@ -32,6 +32,13 @@ const isAdmin = user.role === 'ADMIN';
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <!-- Load theme immediately to prevent flash -->
+    <script is:inline>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body class="min-h-screen bg-base-200 drawer lg:drawer-open">
     <!-- Mobile Drawer -->
@@ -78,7 +85,7 @@ const isAdmin = user.role === 'ADMIN';
           <!-- User Menu -->
           <div class="dropdown dropdown-end">
             <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar placeholder">
-              <div class="bg-neutral text-neutral-content rounded-full w-10">
+              <div class="bg-neutral text-neutral-content rounded-full w-10 flex items-center justify-center">
                 <span class="text-sm">{user.name.substring(0, 2).toUpperCase()}</span>
               </div>
             </div>
@@ -190,24 +197,32 @@ const isAdmin = user.role === 'ADMIN';
 
 <script>
   // Theme Switcher Logic
+  let themeInitialized = false;
+
   function initTheme() {
+    if (themeInitialized) return; // Prevent multiple initializations
+
     const toggle = document.getElementById('theme-toggle') as HTMLInputElement;
+    if (!toggle) return;
+
     const html = document.documentElement;
 
-    // Load saved theme or default to light
-    const savedTheme = localStorage.getItem('theme') || 'wuestenstein';
-    const isDark = savedTheme === 'wuestenstein-dark';
+    // Get current theme from data-theme attribute (already set by inline script)
+    const currentTheme = html.getAttribute('data-theme') || 'light';
+    const isDark = currentTheme === 'dark';
 
-    // Set data-theme (DaisyUI only)
-    html.setAttribute('data-theme', savedTheme);
-    if (toggle) toggle.checked = isDark;
+    // Set toggle state based on current theme
+    toggle.checked = isDark;
 
     // Theme toggle handler
-    toggle?.addEventListener('change', () => {
-      const newTheme = toggle.checked ? 'wuestenstein-dark' : 'wuestenstein';
+    toggle.addEventListener('change', () => {
+      const newTheme = toggle.checked ? 'dark' : 'light';
       html.setAttribute('data-theme', newTheme);
       localStorage.setItem('theme', newTheme);
+      console.log('Theme changed to:', newTheme); // Debug log
     });
+
+    themeInitialized = true;
   }
 
   // Logout handler

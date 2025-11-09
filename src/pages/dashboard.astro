@@ -1,5 +1,5 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import ProtectedLayout from '../layouts/ProtectedLayout.astro';
 import { getUser } from '../utils/auth';
 
 // Authentifizierung prüfen
@@ -9,15 +9,15 @@ if (!user) {
 }
 ---
 
-<Layout title="Dashboard - Nutzerkosten">
+<ProtectedLayout title="Dashboard - Nutzerkosten">
   <div class="px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 class="text-3xl font-bold">
             Mein Dashboard
           </h1>
-          <p class="mt-2 text-gray-600 dark:text-gray-400">
+          <p class="mt-2 text-base-content/70">
             Willkommen, <span id="user-name">Benutzer</span>! Hier findest du deine persönlichen Aufenthalte und Kosten.
           </p>
         </div>
@@ -26,130 +26,58 @@ if (!user) {
     </div>
 
     <!-- Persönliche Übersichtskarten -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">🏠</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Meine Aufenthalte
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="my-aufenthalte">
-                  -
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+    <div class="stats stats-vertical lg:stats-horizontal shadow w-full mb-8">
+      <div class="stat">
+        <div class="stat-title">Meine Aufenthalte</div>
+        <div class="stat-value text-primary" id="my-aufenthalte">-</div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">📊</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Aufenthalte insgesamt
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="total-aufenthalte">
-                  -
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+      <div class="stat">
+        <div class="stat-title">Aufenthalte insgesamt</div>
+        <div class="stat-value text-primary" id="total-aufenthalte">-</div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">⏱️</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Letzter Zählerstand
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="last-zaehlerstand">
-                  -
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+      <div class="stat">
+        <div class="stat-title">Letzter Zählerstand</div>
+        <div class="stat-value text-primary" id="last-zaehlerstand">-</div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-sm font-medium">💰</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Meine Kosten 2024
-                </dt>
-                <dd class="text-lg font-medium text-gray-900 dark:text-white" id="my-kosten">
-                  -
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+      <div class="stat">
+        <div class="stat-title">Meine Kosten <span id="kosten-jahr">2024</span></div>
+        <div class="stat-value text-primary" id="my-kosten">-</div>
       </div>
     </div>
 
     <!-- Schnellaktionen für Benutzer -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       <!-- Meine Aktionen -->
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-            Meine Aktionen
-          </h3>
-          <div class="space-y-3">
-            <a href="/aufenthalte/neu" class="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              ➕ Neuen Aufenthalt erfassen
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h2 class="card-title">Meine Aktionen</h2>
+          <div class="space-y-2">
+            <a href="/aufenthalte/neu" class="btn btn-primary w-full">
+              Neuen Aufenthalt erfassen
             </a>
-            <a href="/statistiken" class="block w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              📊 Meine Statistiken anzeigen
+            <a href="/statistiken" class="btn btn-ghost w-full">
+              Meine Statistiken anzeigen
             </a>
-            <a href="/statistiken?gesamt=true" class="block w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              🏠 Gesamtübersicht aller Nutzer
+            <a href="/statistiken?gesamt=true" class="btn btn-ghost w-full">
+              Gesamtübersicht aller Nutzer
             </a>
-            <a href="/aufenthalte" class="block w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              📋 Alle meine Aufenthalte
+            <a href="/aufenthalte" class="btn btn-ghost w-full">
+              Alle meine Aufenthalte
             </a>
-            <a href="/profil/passwort-aendern" class="block w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-md text-sm font-medium text-center">
-              🔒 Passwort ändern
+            <a href="/profil/passwort-aendern" class="btn btn-ghost w-full">
+              Passwort ändern
             </a>
           </div>
         </div>
       </div>
 
       <!-- Letzte Aktivitäten -->
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-            Meine letzten Aktivitäten
-          </h3>
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h2 class="card-title">Meine letzten Aktivitäten</h2>
           <div class="flow-root">
             <ul role="list" class="-mb-8" id="my-aktivitaeten-liste">
               <!-- Wird dynamisch geladen -->
@@ -160,36 +88,22 @@ if (!user) {
     </div>
 
     <!-- Meine Aufenthalte -->
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
-      <div class="px-4 py-5 sm:p-6">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-          Meine Aufenthalte
-        </h3>
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title">Meine Aufenthalte</h2>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700">
+          <table class="table table-zebra">
+            <thead>
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Ankunft
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Abreise
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Zählerstand
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Übernachtungen Mitgl.
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Übernachtungen Gäste
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Kosten
-                </th>
+                <th>Ankunft</th>
+                <th>Abreise</th>
+                <th>Zählerstand</th>
+                <th>Übernachtungen Mitgl.</th>
+                <th>Übernachtungen Gäste</th>
+                <th>Kosten</th>
               </tr>
             </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="aufenthalte-tabelle">
+            <tbody id="aufenthalte-tabelle">
               <!-- Wird dynamisch geladen -->
             </tbody>
           </table>
@@ -231,8 +145,12 @@ if (!user) {
   // Dashboard-Daten laden
   async function loadDashboardData() {
     try {
+      const currentYear = new Date().getFullYear();
+      const kostenJahrEl = document.getElementById('kosten-jahr');
+      if (kostenJahrEl) kostenJahrEl.textContent = currentYear.toString();
+
       // Persönliche Statistiken laden
-      const statsResponse = await fetch(`/api/statistiken?jahr=2024`);
+      const statsResponse = await fetch(`/api/statistiken?jahr=${currentYear}`);
       if (statsResponse.ok) {
         const stats = await statsResponse.json();
 
@@ -246,7 +164,7 @@ if (!user) {
       }
 
       // Gesamtanzahl Aufenthalte laden und letzten Zählerstand ermitteln
-      const aufenthalteResponse = await fetch('/api/aufenthalte?jahr=2024');
+      const aufenthalteResponse = await fetch(`/api/aufenthalte?jahr=${currentYear}`);
       if (aufenthalteResponse.ok) {
         const aufenthalte = await aufenthalteResponse.json();
         const totalAufenthalteEl = document.getElementById('total-aufenthalte');
@@ -291,11 +209,11 @@ if (!user) {
     if (!tbody) return;
 
     tbody.innerHTML = '';
-    
+
     if (aufenthalte.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+          <td colspan="6" class="text-center opacity-50">
             Noch keine Aufenthalte erfasst
           </td>
         </tr>
@@ -306,24 +224,12 @@ if (!user) {
     aufenthalte.forEach((aufenthalt: any) => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${new Date(aufenthalt.ankunft).toLocaleDateString('de-DE')}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${new Date(aufenthalt.abreise).toLocaleDateString('de-DE')}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${aufenthalt.zaehlerAnkunft}h - ${aufenthalt.zaehlerAbreise}h
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${aufenthalt.uebernachtungenMitglieder}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${aufenthalt.uebernachtungenGaeste}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          € ${calculateKosten(aufenthalt).toFixed(2)}
-        </td>
+        <td>${new Date(aufenthalt.ankunft).toLocaleDateString('de-DE')}</td>
+        <td>${new Date(aufenthalt.abreise).toLocaleDateString('de-DE')}</td>
+        <td>${aufenthalt.zaehlerAnkunft}h - ${aufenthalt.zaehlerAbreise}h</td>
+        <td>${aufenthalt.uebernachtungenMitglieder}</td>
+        <td>${aufenthalt.uebernachtungenGaeste}</td>
+        <td><span class="font-semibold">€ ${calculateKosten(aufenthalt).toFixed(2)}</span></td>
       `;
       tbody.appendChild(row);
     });
@@ -365,17 +271,19 @@ if (!user) {
     if (!ul) return;
 
     ul.innerHTML = '';
-    
+
     const alleAktivitaeten = [
       ...aufenthalte.map((a: any) => ({
         type: 'aufenthalt',
         datum: new Date(a.ankunft),
-        text: `Aufenthalt: ${new Date(a.ankunft).toLocaleDateString('de-DE')} - ${new Date(a.abreise).toLocaleDateString('de-DE')}`
+        dateRange: `${new Date(a.ankunft).toLocaleDateString('de-DE')} - ${new Date(a.abreise).toLocaleDateString('de-DE')}`,
+        text: `Aufenthalt`
       })),
       ...tankfuellungen.map((t: any) => ({
         type: 'tankfuellung',
         datum: new Date(t.datum),
-        text: `Tankfüllung: ${t.liter}L für €${t.preisProLiter}/L`
+        dateRange: new Date(t.datum).toLocaleDateString('de-DE'),
+        text: `Tankfüllung: ${t.liter}L`
       }))
     ];
 
@@ -383,36 +291,36 @@ if (!user) {
     alleAktivitaeten.sort((a: any, b: any) => b.datum.getTime() - a.datum.getTime());
 
     // Nur die letzten 5 anzeigen
-    alleAktivitaeten.slice(0, 5).forEach((aktivitaet: any) => {
+    alleAktivitaeten.slice(0, 5).forEach((aktivitaet: any, index: number) => {
       const li = document.createElement('li');
       li.className = 'relative pb-8';
-      
-      const icon = aktivitaet.type === 'aufenthalt' ? '🏠' : '⛽';
-      
+
+      const badgeColor = 'badge-primary';
+      const isLast = index === Math.min(alleAktivitaeten.length, 5) - 1;
+
       li.innerHTML = `
         <div class="relative flex space-x-3">
           <div>
-            <span class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white dark:ring-gray-800">
-              <span class="text-white text-sm">${icon}</span>
-            </div>
+            <span class="badge ${badgeColor} badge-lg"></span>
           </div>
-          <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+          <div class="min-w-0 flex-1 flex justify-between space-x-4">
             <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">${aktivitaet.text}</p>
+              <p class="text-sm font-medium">${aktivitaet.text}</p>
             </div>
-            <div class="text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
-              <time>${aktivitaet.datum.toLocaleDateString('de-DE')}</time>
+            <div class="text-right text-sm whitespace-nowrap opacity-70">
+              <time>${aktivitaet.dateRange}</time>
             </div>
           </div>
         </div>
+        ${!isLast ? '<div class="absolute left-2 top-8 -ml-px h-full w-0.5 bg-base-300" aria-hidden="true"></div>' : ''}
       `;
-      
+
       ul.appendChild(li);
     });
 
     if (alleAktivitaeten.length === 0) {
       ul.innerHTML = `
-        <li class="text-center text-gray-500 dark:text-gray-400 py-4">
+        <li class="text-center opacity-50 py-4">
           Noch keine Aktivitäten
         </li>
       `;
@@ -427,3 +335,4 @@ if (!user) {
 
   });
 </script>
+</ProtectedLayout>
