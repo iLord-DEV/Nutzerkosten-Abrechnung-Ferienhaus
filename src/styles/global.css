@@ -28,12 +28,118 @@
   }
 }
 
-/* Inputs müssen sich vom Hintergrund abheben - mit @apply */
+/* Component-Klassen für wiederkehrende Patterns */
 @layer components {
+  /* Form Controls - Inputs müssen sich vom Hintergrund abheben */
   input.input,
   select.select,
   textarea.textarea {
     @apply bg-base-200 text-base-content;
     border-color: color-mix(in srgb, currentColor 20%, transparent);
+  }
+
+  /* Card Container - Standard-Card für Content-Bereiche */
+  .card-container {
+    @apply bg-base-100 shadow-xl rounded-lg p-6;
+  }
+
+  .card-container-compact {
+    @apply bg-base-100 shadow rounded-lg p-4;
+  }
+
+  /* Page Header - Seitentitel mit Beschreibung */
+  .page-header {
+    @apply mb-8;
+  }
+
+  .page-title {
+    @apply text-3xl font-bold text-base-content flex items-center gap-3;
+  }
+
+  .page-description {
+    @apply mt-2 text-base-content/70;
+  }
+
+  /* Stats Cards - Gradient-Cards für Metriken */
+  .stats-card-blue {
+    @apply bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-6 shadow-lg;
+  }
+
+  .stats-card-green {
+    @apply bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-6 shadow-lg;
+  }
+
+  .stats-card-orange {
+    @apply bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg p-6 shadow-lg;
+  }
+
+  .stats-card-purple {
+    @apply bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-6 shadow-lg;
+  }
+
+  .stats-card-yellow {
+    @apply bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg p-6 shadow-lg;
+  }
+
+  /* Buttons - Action Buttons mit Icon-Support */
+  .btn-action {
+    @apply btn btn-primary gap-2;
+  }
+
+  .btn-action-ghost {
+    @apply btn btn-ghost gap-2;
+  }
+
+  .btn-action-outline {
+    @apply btn btn-outline gap-2;
+  }
+
+  /* Tables - Responsive Tabellen-Container */
+  .table-container {
+    @apply overflow-x-auto bg-base-100 shadow rounded-lg;
+  }
+
+  .table-striped {
+    @apply table table-zebra w-full;
+  }
+
+  /* Icon + Text Combinations */
+  .icon-text {
+    @apply flex items-center gap-2;
+  }
+
+  .icon-label {
+    @apply flex items-center gap-2 text-sm font-medium;
+  }
+
+  /* Grid Layouts */
+  .grid-2col {
+    @apply grid grid-cols-1 lg:grid-cols-2 gap-6;
+  }
+
+  .grid-4col {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6;
+  }
+
+  .grid-responsive {
+    @apply grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6;
+  }
+
+  /* Section/Content Wrapper */
+  .section-container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .content-wrapper {
+    @apply container mx-auto px-4 py-6 max-w-7xl;
+  }
+
+  /* Loading & Empty States */
+  .loading-state {
+    @apply text-center py-12;
+  }
+
+  .empty-state {
+    @apply text-center py-12 text-base-content/60;
   }
 }
