@@ -1,5 +1,6 @@
 ---
 import { getUser } from '../utils/auth';
+import '../styles/global.css';
 
 export interface Props {
   title: string;
@@ -35,8 +36,14 @@ const isAdmin = user.role === 'ADMIN';
     <!-- Load theme immediately to prevent flash -->
     <script is:inline>
       (function() {
-        const theme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', theme);
+        try {
+          const theme = localStorage.getItem('theme') || 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+          console.log('[Theme Init] Set theme to:', theme);
+        } catch (e) {
+          console.error('[Theme Init] Error:', e);
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
       })();
     </script>
   </head>
@@ -197,32 +204,38 @@ const isAdmin = user.role === 'ADMIN';
 
 <script>
   // Theme Switcher Logic
-  let themeInitialized = false;
-
   function initTheme() {
-    if (themeInitialized) return; // Prevent multiple initializations
-
     const toggle = document.getElementById('theme-toggle') as HTMLInputElement;
-    if (!toggle) return;
+    if (!toggle) {
+      console.warn('[Theme] Toggle element not found');
+      return;
+    }
 
     const html = document.documentElement;
 
-    // Get current theme from data-theme attribute (already set by inline script)
-    const currentTheme = html.getAttribute('data-theme') || 'light';
-    const isDark = currentTheme === 'dark';
+    // Double-check and force theme from localStorage
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const currentTheme = html.getAttribute('data-theme');
 
-    // Set toggle state based on current theme
-    toggle.checked = isDark;
+    console.log('[Theme DOMLoaded] localStorage:', savedTheme, 'current attr:', currentTheme);
+
+    // If they don't match, force the saved theme
+    if (currentTheme !== savedTheme) {
+      console.warn('[Theme] Mismatch detected! Forcing theme to:', savedTheme);
+      html.setAttribute('data-theme', savedTheme);
+    }
+
+    toggle.checked = (savedTheme === 'dark');
 
     // Theme toggle handler
-    toggle.addEventListener('change', () => {
+    const handler = () => {
       const newTheme = toggle.checked ? 'dark' : 'light';
+      console.log('[Theme] User toggled to:', newTheme);
       html.setAttribute('data-theme', newTheme);
       localStorage.setItem('theme', newTheme);
-      console.log('Theme changed to:', newTheme); // Debug log
-    });
+    };
 
-    themeInitialized = true;
+    toggle.addEventListener('change', handler);
   }
 
   // Logout handler
@@ -249,7 +262,3 @@ const isAdmin = user.role === 'ADMIN';
     mobileLogoutBtn?.addEventListener('click', logout);
   });
 </script>
-
-<style>
-  @import '../styles/global.css';
-</style>

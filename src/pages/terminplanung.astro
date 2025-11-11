@@ -1,5 +1,5 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import ProtectedLayout from '../layouts/ProtectedLayout.astro';
 import { getUser } from '../utils/auth';
 
 // Authentifizierung prüfen
@@ -9,59 +9,62 @@ if (!user) {
 }
 ---
 
-<Layout title="Terminplanung">
-  <div class="container mx-auto px-4 py-8">
+<ProtectedLayout title="Terminplanung">
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
     <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Terminplanung</h1>
-      <button 
+      <h1 class="text-3xl font-bold">Terminplanung</h1>
+      <button
         id="neueTerminplanungBtn"
-        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+        class="btn btn-primary bg-primary text-primary-content gap-2 px-6"
       >
-        + Neue Terminplanung
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Neue Terminplanung
       </button>
     </div>
 
     <!-- Status-Legende -->
-    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-      <h3 class="text-sm font-medium text-gray-700 mb-3">Status-Legende:</h3>
-      <div class="flex flex-wrap gap-4 text-sm">
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 bg-green-500 rounded"></div>
-          <span>Freigegeben</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 bg-yellow-500 rounded"></div>
-          <span>In Diskussion</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 bg-orange-500 rounded"></div>
-          <span>Warten auf Abstimmungen</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 bg-gray-500 rounded"></div>
-          <span>Storniert</span>
+    <div class="alert mb-6">
+      <div>
+        <h3 class="font-semibold mb-2">Status-Legende:</h3>
+        <div class="flex flex-wrap gap-4 text-sm">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-success">Freigegeben</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge badge-warning">In Diskussion</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge badge-info">Warten auf Abstimmungen</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge">Storniert</span>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Kalender-Ansicht -->
-    <div class="bg-white rounded-lg shadow-lg p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-semibold">Kalender</h2>
-        <div class="flex gap-2">
-          <button id="prevMonth" class="px-3 py-1 border rounded hover:bg-gray-50">←</button>
-          <span id="currentMonth" class="px-4 py-1 font-medium"></span>
-          <button id="nextMonth" class="px-3 py-1 border rounded hover:bg-gray-50">→</button>
+    <div class="card bg-base-100 shadow-xl mb-8">
+      <div class="card-body">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="card-title">Kalender</h2>
+          <div class="flex gap-2">
+            <button id="prevMonth" class="btn btn-sm btn-ghost">←</button>
+            <span id="currentMonth" class="px-4 py-2 font-medium"></span>
+            <button id="nextMonth" class="btn btn-sm btn-ghost">→</button>
+          </div>
         </div>
-      </div>
-      
-      <div id="calendar" class="grid grid-cols-7 gap-1 mb-4">
-        <!-- Kalender wird hier dynamisch generiert -->
+
+        <div id="calendar" class="grid grid-cols-7 gap-1">
+          <!-- Kalender wird hier dynamisch generiert -->
+        </div>
       </div>
     </div>
 
     <!-- Terminplanungen-Liste -->
-    <div class="mt-8">
+    <div>
       <h2 class="text-xl font-semibold mb-4">Alle Terminplanungen</h2>
       <div id="terminplanungenListe" class="space-y-4">
         <!-- Terminplanungen werden hier dynamisch geladen -->
@@ -70,135 +73,120 @@ if (!user) {
   </div>
 
   <!-- Modal für Kommentar -->
-  <div id="kommentarModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-      <div class="bg-white rounded-lg max-w-md w-full p-6">
-        <h3 class="text-lg font-semibold mb-4" id="kommentarModalTitle">Kommentar hinzufügen</h3>
-        <form id="kommentarForm">
-          <input type="hidden" id="kommentarTerminplanungId" name="terminplanungId">
-          <input type="hidden" id="kommentarParentId" name="parentId">
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2" id="kommentarLabel">Dein Kommentar:</label>
-            <textarea 
-              id="kommentarInhalt" 
-              name="kommentarInhalt" 
-              rows="4"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Was möchtest du zu diesem Termin sagen?"
-            ></textarea>
-          </div>
-          
-          <div class="flex justify-end gap-3">
-            <button 
-              type="button" 
-              id="kommentarCancelBtn"
-              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Abbrechen
-            </button>
-            <button 
-              type="submit" 
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              id="kommentarSubmitBtn"
-            >
-              Kommentar hinzufügen
-            </button>
-          </div>
-        </form>
-      </div>
+  <dialog id="kommentarModal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4" id="kommentarModalTitle">Kommentar hinzufügen</h3>
+      <form id="kommentarForm" method="dialog">
+        <input type="hidden" id="kommentarTerminplanungId" name="terminplanungId">
+        <input type="hidden" id="kommentarParentId" name="parentId">
+
+        <div class="form-control mb-6">
+          <label class="label" for="kommentarInhalt">
+            <span class="label-text" id="kommentarLabel">Dein Kommentar:</span>
+          </label>
+          <textarea
+            id="kommentarInhalt"
+            name="kommentarInhalt"
+            required
+            class="textarea textarea-bordered"
+            placeholder="Was möchtest du zu diesem Termin sagen?"
+          ></textarea>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" id="kommentarCancelBtn" class="btn">Abbrechen</button>
+          <button type="submit" class="btn btn-primary bg-primary text-primary-content" id="kommentarSubmitBtn">
+            Kommentar hinzufügen
+          </button>
+        </div>
+      </form>
     </div>
-  </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 
   <!-- Modal für neue Terminplanung -->
-  <div id="terminplanungModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-      <div class="bg-white rounded-lg max-w-md w-full p-6">
-        <h3 class="text-lg font-semibold mb-4">Neue Terminplanung</h3>
-        <form id="terminplanungForm">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Titel</label>
-            <input 
-              type="text" 
-              id="titel" 
-              name="titel" 
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="z.B. Sommerferien 2024"
-            >
-          </div>
-          
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Startdatum</label>
-            <input 
-              type="date" 
-              id="startDatum" 
-              name="startDatum" 
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-          </div>
-          
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Enddatum</label>
-            <input 
-              type="date" 
-              id="endDatum" 
-              name="endDatum" 
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-          </div>
-          
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Beschreibung (optional)</label>
-            <textarea 
-              id="beschreibung" 
-              name="beschreibung" 
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Zusätzliche Informationen..."
-            ></textarea>
-          </div>
-          
-          <div class="flex justify-end gap-3">
-            <button 
-              type="button" 
-              id="cancelBtn"
-              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Abbrechen
-            </button>
-            <button 
-              type="submit" 
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Erstellen
-            </button>
-          </div>
-        </form>
-      </div>
+  <dialog id="terminplanungModal" class="modal">
+    <div class="modal-box max-w-2xl">
+      <h3 class="font-bold text-lg mb-4">Neue Terminplanung</h3>
+      <form id="terminplanungForm" method="dialog">
+        <div class="form-control w-full mb-4">
+          <label class="label">
+            <span class="label-text font-semibold">Titel</span>
+          </label>
+          <input
+            type="text"
+            id="titel"
+            name="titel"
+            required
+            class="input input-bordered w-full"
+            placeholder="z.B. Sommerferien 2024"
+          >
+        </div>
+
+        <div class="form-control w-full mb-4">
+          <label class="label">
+            <span class="label-text font-semibold">Startdatum</span>
+          </label>
+          <input
+            type="date"
+            id="startDatum"
+            name="startDatum"
+            required
+            class="input input-bordered w-full"
+          >
+        </div>
+
+        <div class="form-control w-full mb-4">
+          <label class="label">
+            <span class="label-text font-semibold">Enddatum</span>
+          </label>
+          <input
+            type="date"
+            id="endDatum"
+            name="endDatum"
+            required
+            class="input input-bordered w-full"
+          >
+        </div>
+
+        <div class="form-control w-full mb-6">
+          <label class="label">
+            <span class="label-text font-semibold">Beschreibung (optional)</span>
+          </label>
+          <textarea
+            id="beschreibung"
+            name="beschreibung"
+            class="textarea textarea-bordered w-full"
+            placeholder="Zusätzliche Informationen..."
+          ></textarea>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" id="cancelBtn" class="btn">Abbrechen</button>
+          <button type="submit" class="btn btn-primary bg-primary text-primary-content px-6">Erstellen</button>
+        </div>
+      </form>
     </div>
-  </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 
   <!-- Toast Notification -->
-  <div id="toast" class="fixed top-4 right-4 z-50 hidden">
-    <div id="toast-content" class="bg-white border-l-4 p-4 rounded-lg shadow-lg max-w-sm">
-      <div class="flex items-center">
-        <div id="toast-icon" class="flex-shrink-0 mr-3"></div>
+  <div id="toast" class="toast toast-end hidden">
+    <div id="toast-content" class="alert">
+      <div class="flex items-center gap-2">
+        <span id="toast-icon"></span>
         <div>
-          <p id="toast-title" class="text-sm font-medium text-gray-900"></p>
-          <p id="toast-message" class="text-sm text-gray-500"></p>
+          <div id="toast-title" class="font-bold"></div>
+          <div id="toast-message" class="text-sm"></div>
         </div>
-        <button id="toast-close" class="ml-4 text-gray-400 hover:text-gray-600">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
       </div>
     </div>
   </div>
-</Layout>
+</ProtectedLayout>
 
 <script>
   let currentDate = new Date();
@@ -212,50 +200,46 @@ if (!user) {
     const toastIcon = document.getElementById('toast-icon');
     const toastTitle = document.getElementById('toast-title');
     const toastMessage = document.getElementById('toast-message');
-    
+
     // Toast-Typ konfigurieren
     const configs = {
       success: {
         icon: '✅',
-        borderColor: 'border-green-500',
-        bgColor: 'bg-green-50'
+        alertClass: 'alert-success'
       },
       error: {
         icon: '❌',
-        borderColor: 'border-red-500',
-        bgColor: 'bg-red-50'
+        alertClass: 'alert-error'
       },
       info: {
         icon: 'ℹ️',
-        borderColor: 'border-blue-500',
-        bgColor: 'bg-blue-50'
+        alertClass: 'alert-info'
       },
       warning: {
         icon: '⚠️',
-        borderColor: 'border-yellow-500',
-        bgColor: 'bg-yellow-50'
+        alertClass: 'alert-warning'
       }
     };
-    
+
     const config = configs[type] || configs.info;
-    
+
     // Toast-Content aktualisieren
     toastIcon.textContent = config.icon;
     toastTitle.textContent = title;
     toastMessage.textContent = message;
-    
+
     // Styling anwenden
-    toastContent.className = `border-l-4 p-4 rounded-lg shadow-lg max-w-sm ${config.borderColor} ${config.bgColor}`;
-    
+    toastContent.className = `alert ${config.alertClass}`;
+
     // Toast anzeigen
     toast.classList.remove('hidden');
-    
-    // Auto-hide nach 1 Sekunde
+
+    // Auto-hide nach 3 Sekunden
     setTimeout(() => {
       hideToast();
-    }, 1000);
+    }, 3000);
   }
-  
+
   function hideToast() {
     const toast = document.getElementById('toast');
     toast.classList.add('hidden');
@@ -310,44 +294,44 @@ if (!user) {
     const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
     weekdays.forEach(day => {
       const dayHeader = document.createElement('div');
-      dayHeader.className = 'text-center font-medium text-gray-500 py-2';
+      dayHeader.className = 'text-center font-semibold py-2';
       dayHeader.textContent = day;
       calendar.appendChild(dayHeader);
     });
-    
+
     // Tage
     const current = new Date(startDate);
     for (let i = 0; i < 42; i++) {
       const dayElement = document.createElement('div');
-      dayElement.className = 'h-20 border border-gray-200 p-1 text-sm';
-      
+      dayElement.className = 'h-20 border border-base-300 p-1 text-sm';
+
       if (current.getMonth() === month) {
         dayElement.textContent = current.getDate();
-        dayElement.className += ' bg-white';
-        
+        dayElement.className += ' bg-base-100';
+
         // Termine für diesen Tag anzeigen
         const dayTermine = terminplanungen.filter(termin => {
           const start = new Date(termin.startDatum);
           const end = new Date(termin.endDatum);
           return current >= start && current <= end;
         });
-        
+
         dayTermine.forEach(termin => {
           const terminElement = document.createElement('div');
-          terminElement.className = `text-xs p-1 rounded mb-1 truncate ${
-            termin.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-            termin.status === 'DISCUSSING' ? 'bg-yellow-100 text-yellow-800' :
-            termin.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :
-            'bg-gray-100 text-gray-800'
-          }`;
+          const badgeClass =
+            termin.status === 'APPROVED' ? 'badge-success' :
+            termin.status === 'DISCUSSING' ? 'badge-warning' :
+            termin.status === 'PENDING' ? 'badge-info' :
+            'badge';
+          terminElement.className = `badge ${badgeClass} badge-xs p-1 mb-1 truncate block`;
           terminElement.textContent = termin.titel;
           terminElement.title = `${termin.titel} (${termin.status})`;
           dayElement.appendChild(terminElement);
         });
       } else {
-        dayElement.className += ' bg-gray-50 text-gray-400';
+        dayElement.className += ' bg-base-200 opacity-50';
       }
-      
+
       current.setDate(current.getDate() + 1);
       calendar.appendChild(dayElement);
     }
@@ -379,132 +363,149 @@ if (!user) {
   function renderTerminplanungenListe() {
     const liste = document.getElementById('terminplanungenListe');
     if (!liste) return;
-    
+
     liste.innerHTML = '';
-    
+
     terminplanungen.forEach(termin => {
       const terminElement = document.createElement('div');
-      terminElement.className = 'bg-white border border-gray-200 rounded-lg p-4';
-      
-      const statusColor = 
-        termin.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-        termin.status === 'DISCUSSING' ? 'bg-yellow-100 text-yellow-800' :
-        termin.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :
-        'bg-gray-100 text-gray-800';
-      
+      terminElement.className = 'card bg-base-100 shadow-xl';
+
+      const statusBadge =
+        termin.status === 'APPROVED' ? 'badge-success' :
+        termin.status === 'DISCUSSING' ? 'badge-warning' :
+        termin.status === 'PENDING' ? 'badge-info' :
+        'badge';
+
+      const statusText =
+        termin.status === 'APPROVED' ? 'Freigegeben' :
+        termin.status === 'DISCUSSING' ? 'In Diskussion' :
+        termin.status === 'PENDING' ? 'Warten auf Abstimmungen' :
+        'Storniert';
+
       terminElement.innerHTML = `
-        <div class="flex justify-between items-start mb-2">
-          <h3 class="font-semibold text-lg">${termin.titel}</h3>
-          <span class="px-2 py-1 rounded-full text-xs font-medium ${statusColor}">
-            ${termin.status}
-          </span>
-        </div>
-        <div class="text-sm text-gray-600 mb-2">
-          ${new Date(termin.startDatum).toLocaleDateString('de-DE')} - 
-          ${new Date(termin.endDatum).toLocaleDateString('de-DE')}
-        </div>
-        <div class="text-sm text-gray-500 mb-3">
-          von ${termin.user.name}
-        </div>
-        ${termin.beschreibung ? `<p class="text-sm text-gray-700 mb-3">${termin.beschreibung}</p>` : ''}
-        <div class="flex gap-2 mb-3">
-          <a 
-            href="/terminplanung/${termin.id}"
-            class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 font-medium text-center"
-          >
-            📋 Details
-          </a>
-                   ${termin.userId !== currentUser?.id ? `
-           ${termin.abstimmungen.some(a => a.userId === currentUser?.id && a.stimme === 'APPROVE' && a.version === termin.version) ? `
-             <button 
-               onclick="zustimmungEntziehen(${termin.id})"
-               class="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 font-medium"
-             >
-               ❌ Zustimmung entziehen
-             </button>
-           ` : `
-             <button 
-               onclick="zustimmen(${termin.id})"
-               class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 font-medium"
-             >
-               ✅ Zustimmen
-             </button>
-           `}
-           <button 
-             onclick="kommentieren(${termin.id})"
-             class="px-4 py-2 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 font-medium"
-           >
-             💬 Kommentieren
-           </button>
-         ` : ''}
-        </div>
-        
-        <!-- Abstimmungs-Übersicht direkt in der Karte -->
-        <div class="mt-3 pt-3 border-t border-gray-200">
-          <div class="text-sm text-gray-600 mb-2">Abstimmungen:</div>
-          <div class="flex flex-wrap gap-2">
-            ${termin.abstimmungen
-              .filter(a => a.version === termin.version)
-              .map(abstimmung => `
-                <span class="px-2 py-1 rounded text-xs ${
-                  abstimmung.stimme === 'APPROVE' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                }">
-                  ${abstimmung.userId === currentUser?.id ? 'Du' : abstimmung.user.name}: ${abstimmung.stimme === 'APPROVE' ? `✅ ${abstimmung.userId === currentUser?.id ? 'hast' : 'hat'} zugestimmt` : '❓ Mehr Infos'}
-                </span>
-              `).join('')}
-            ${termin.abstimmungen.filter(a => a.version === termin.version).length === 0 ? 
-              '<span class="text-gray-500 text-xs">Noch keine Abstimmungen</span>' : ''}
+        <div class="card-body">
+          <div class="flex justify-between items-start mb-2">
+            <h3 class="card-title">${termin.titel}</h3>
+            <span class="badge ${statusBadge}">${statusText}</span>
           </div>
-          
-          <!-- Kommentare anzeigen -->
-                     ${termin.kommentare.length > 0 ? `
-             <div class="mt-2">
-               <div class="text-xs text-gray-500 mb-1">Kommentare:</div>
-               <div class="space-y-1">
-                 ${termin.kommentare.slice(-2).map(kommentar => `
-                   <div class="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                     <div class="flex justify-between items-start">
-                       <div>
-                         <strong>${kommentar.user.name}:</strong> ${kommentar.inhalt}
-                         ${kommentar.replies.length > 0 ? `
-                           <div class="mt-1 ml-4 space-y-1">
-                             ${kommentar.replies.map(reply => `
-                               <div class="text-xs text-gray-500 bg-gray-100 p-1 rounded">
-                                 <strong>${reply.user.name}:</strong> ${reply.inhalt}
-                               </div>
-                             `).join('')}
-                           </div>
-                         ` : ''}
-                       </div>
-                       <button 
-                         onclick="antworten(${termin.id}, ${kommentar.id})"
-                         class="text-xs text-blue-600 hover:text-blue-800 ml-2"
-                       >
-                         Antworten
-                       </button>
-                     </div>
-                   </div>
-                 `).join('')}
-                 ${termin.kommentare.length > 2 ? `
-                   <div class="text-xs text-gray-400">... und ${termin.kommentare.length - 2} weitere</div>
-                 ` : ''}
-               </div>
-             </div>
-           ` : ''}
+          <div class="text-sm opacity-70 mb-2">
+            ${new Date(termin.startDatum).toLocaleDateString('de-DE')} -
+            ${new Date(termin.endDatum).toLocaleDateString('de-DE')}
+          </div>
+          <div class="text-sm opacity-60 mb-3">
+            von ${termin.user.name}
+          </div>
+          ${termin.beschreibung ? `<p class="text-sm mb-3">${termin.beschreibung}</p>` : ''}
+          <div class="card-actions mb-3">
+            <a
+              href="/terminplanung/${termin.id}"
+              class="btn btn-primary btn-sm bg-primary text-primary-content"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+              Details
+            </a>
+            ${termin.userId !== currentUser?.id ? `
+              ${termin.abstimmungen.some(a => a.userId === currentUser?.id && a.stimme === 'APPROVE' && a.version === termin.version) ? `
+                <button
+                  onclick="zustimmungEntziehen(${termin.id})"
+                  class="btn btn-error btn-sm"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Zustimmung entziehen
+                </button>
+              ` : `
+                <button
+                  onclick="zustimmen(${termin.id})"
+                  class="btn btn-success btn-sm"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  Zustimmen
+                </button>
+              `}
+              <button
+                onclick="kommentieren(${termin.id})"
+                class="btn btn-warning btn-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                </svg>
+                Kommentieren
+              </button>
+            ` : ''}
+          </div>
+
+          <!-- Abstimmungs-Übersicht -->
+          <div class="divider my-2"></div>
+          <div>
+            <div class="text-sm font-semibold mb-2">Abstimmungen:</div>
+            <div class="flex flex-wrap gap-2">
+              ${termin.abstimmungen
+                .filter(a => a.version === termin.version)
+                .map(abstimmung => `
+                  <span class="badge ${abstimmung.stimme === 'APPROVE' ? 'badge-success' : 'badge-warning'}">
+                    ${abstimmung.userId === currentUser?.id ? 'Du' : abstimmung.user.name}: ${abstimmung.stimme === 'APPROVE' ? '✅' : '❓'}
+                  </span>
+                `).join('')}
+              ${termin.abstimmungen.filter(a => a.version === termin.version).length === 0 ?
+                '<span class="text-sm opacity-60">Noch keine Abstimmungen</span>' : ''}
+            </div>
+
+            <!-- Kommentare anzeigen -->
+            ${termin.kommentare.length > 0 ? `
+              <div class="mt-3">
+                <div class="text-xs font-semibold mb-1">Kommentare:</div>
+                <div class="space-y-2">
+                  ${termin.kommentare.slice(-2).map(kommentar => `
+                    <div class="text-xs bg-base-200 p-2 rounded">
+                      <div class="flex justify-between items-start">
+                        <div>
+                          <strong>${kommentar.user.name}:</strong> ${kommentar.inhalt}
+                          ${kommentar.replies.length > 0 ? `
+                            <div class="mt-1 ml-4 space-y-1">
+                              ${kommentar.replies.map(reply => `
+                                <div class="text-xs opacity-70 bg-base-300 p-1 rounded">
+                                  <strong>${reply.user.name}:</strong> ${reply.inhalt}
+                                </div>
+                              `).join('')}
+                            </div>
+                          ` : ''}
+                        </div>
+                        <button
+                          onclick="antworten(${termin.id}, ${kommentar.id})"
+                          class="btn btn-ghost btn-xs"
+                        >
+                          Antworten
+                        </button>
+                      </div>
+                    </div>
+                  `).join('')}
+                  ${termin.kommentare.length > 2 ? `
+                    <div class="text-xs opacity-60">... und ${termin.kommentare.length - 2} weitere</div>
+                  ` : ''}
+                </div>
+              </div>
+            ` : ''}
+          </div>
         </div>
       `;
-      
+
       liste.appendChild(terminElement);
     });
   }
 
   // Modal-Funktionen
   function openModal() {
-    document.getElementById('terminplanungModal').classList.remove('hidden');
+    document.getElementById('terminplanungModal').showModal();
   }
 
   function closeModal() {
-    document.getElementById('terminplanungModal').classList.add('hidden');
+    document.getElementById('terminplanungModal').close();
     document.getElementById('terminplanungForm').reset();
   }
 
@@ -634,7 +635,7 @@ if (!user) {
     document.getElementById('kommentarModalTitle').textContent = 'Kommentar hinzufügen';
     document.getElementById('kommentarLabel').textContent = 'Dein Kommentar:';
     document.getElementById('kommentarSubmitBtn').textContent = 'Kommentar hinzufügen';
-    document.getElementById('kommentarModal').classList.remove('hidden');
+    document.getElementById('kommentarModal').showModal();
   };
 
   window.antworten = function(terminplanungId, parentId) {
@@ -643,19 +644,32 @@ if (!user) {
     document.getElementById('kommentarModalTitle').textContent = 'Antwort hinzufügen';
     document.getElementById('kommentarLabel').textContent = 'Deine Antwort:';
     document.getElementById('kommentarSubmitBtn').textContent = 'Antwort hinzufügen';
-    document.getElementById('kommentarModal').classList.remove('hidden');
+    document.getElementById('kommentarModal').showModal();
   };
 
   function closeKommentarModal() {
-    document.getElementById('kommentarModal').classList.add('hidden');
+    document.getElementById('kommentarModal').close();
     document.getElementById('kommentarForm').reset();
   }
 
-  // Toast Close Button Event Listener
-  const toastCloseBtn = document.getElementById('toast-close');
-  if (toastCloseBtn) {
-    toastCloseBtn.addEventListener('click', hideToast);
+  // Auto-resize für Textareas (Fallback für Browser ohne field-sizing)
+  function autoResizeTextarea(textarea) {
+    // Nur wenn field-sizing nicht unterstützt wird
+    if (!CSS.supports('field-sizing', 'content')) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
   }
+
+  // Alle Textareas mit Auto-Resize
+  document.addEventListener('DOMContentLoaded', () => {
+    const textareas = document.querySelectorAll('textarea');
+    textareas.forEach(textarea => {
+      textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+      // Initial resize
+      autoResizeTextarea(textarea);
+    });
+  });
 
   // Initialisierung
   document.addEventListener('DOMContentLoaded', async () => {

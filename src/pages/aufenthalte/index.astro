@@ -332,12 +332,16 @@ const session = JSON.parse(sessionCookie.value);
     currentAufenthalte = [];
     alleAufenthalte = [];
     currentPreise = {};
-    
-    // localStorage leeren (falls vorhanden)
+
+    // localStorage leeren (falls vorhanden) - ABER THEME BEHALTEN!
     if (typeof localStorage !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
       localStorage.clear();
+      if (savedTheme) {
+        localStorage.setItem('theme', savedTheme);
+      }
     }
-    
+
     // SessionStorage leeren (falls vorhanden)
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.clear();

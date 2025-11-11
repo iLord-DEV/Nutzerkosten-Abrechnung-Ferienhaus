@@ -1,3 +1,39 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Field sizing für moderne Browser (Chrome 123+) */
+  @supports (field-sizing: content) {
+    textarea,
+    select,
+    input {
+      field-sizing: content;
+    }
+
+    textarea {
+      min-height: 3rem;
+      max-height: 20rem;
+      overflow: hidden;
+      resize: vertical;
+    }
+  }
+
+  /* Fallback für Browser ohne field-sizing (Safari, Firefox) */
+  @supports not (field-sizing: content) {
+    textarea {
+      min-height: 3rem;
+      resize: vertical;
+    }
+  }
+}
+
+/* Inputs müssen sich vom Hintergrund abheben - mit @apply */
+@layer components {
+  input.input,
+  select.select,
+  textarea.textarea {
+    @apply bg-base-200 text-base-content;
+    border-color: color-mix(in srgb, currentColor 20%, transparent);
+  }
+}

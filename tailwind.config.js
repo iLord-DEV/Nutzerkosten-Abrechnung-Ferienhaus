@@ -6,13 +6,6 @@ export default {
   },
   plugins: [
     require('daisyui'),
-    function({ addComponents }) {
-      addComponents({
-        'input.input, select.select, textarea.textarea': {
-          backgroundColor: '#f8fafc',
-        },
-      })
-    }
   ],
   daisyui: {
     themes: ["light", "dark"],
