@@ -24,6 +24,15 @@ const session = JSON.parse(sessionCookie.value);
             ? 'Übersicht aller Aufenthalte und Überlappungsberechnung.'
             : 'Übersicht deiner Aufenthalte und Kostenberechnung.'}
         </p>
+        <!-- Bezahlt-Status -->
+        <div id="user-bezahlt-status" class="mt-2" style="display: none;">
+          <span id="bezahlt-badge" class="badge badge-success gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span id="bezahlt-text"></span>
+          </span>
+        </div>
       </div>
       <div>
         <a href="/aufenthalte/neu" class="btn btn-primary text-primary-content gap-2">
@@ -112,6 +121,29 @@ const session = JSON.parse(sessionCookie.value);
       </div>
     </Card>
 
+    <!-- Admin: Bezahlt-Status für abgeschlossene Jahre -->
+    {session.role === 'ADMIN' && (
+      <Card title="Bezahlt-Status verwalten" className="mt-6" id="admin-bezahlt-card" style="display: none;">
+        <p class="text-sm text-base-content/70 mb-4">
+          Markiere Benutzer als bezahlt für das abgeschlossene Jahr <span id="bezahlt-jahr-display" class="font-semibold"></span>
+        </p>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra w-full">
+            <thead>
+              <tr>
+                <th>Benutzer</th>
+                <th>E-Mail</th>
+                <th class="text-center">Bezahlt</th>
+              </tr>
+            </thead>
+            <tbody id="bezahlt-tbody">
+              <!-- Wird dynamisch gefüllt -->
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    )}
+
     <!-- Toast-Benachrichtigung -->
     <div id="toast" class="toast toast-top toast-end hidden">
       <div class="alert" id="toast-alert">
@@ -164,6 +196,9 @@ const session = JSON.parse(sessionCookie.value);
 
 <script>
   import { berechneOelkostenNachZaehlerstand } from '../../utils/kostenberechnung';
+  import { isJahrAbgeschlossen, canEditJahr, formatJahrMitStatus } from '../../utils/jahresabschluss';
+
+  let isAdminUser = false;
 
   let currentAufenthalte: Array<{
     id: number;
@@ -274,17 +309,17 @@ const session = JSON.parse(sessionCookie.value);
   
   // Tatsächliches Löschen durchführen
   async function performDelete(id: number) {
-    console.log('🗑️ Führe Löschung durch für ID:', id);
-    
+    // console.log('🗑️ Führe Löschung durch für ID:', id);
+
     try {
       const response = await fetch(`/api/aufenthalte/${id}`, {
         method: 'DELETE',
       });
-      
-      console.log('📡 DELETE Response Status:', response.status);
-      
+
+      // console.log('📡 DELETE Response Status:', response.status);
+
       if (response.ok) {
-        console.log('✅ Löschen erfolgreich, leere Caches...');
+        // console.log('✅ Löschen erfolgreich, leere Caches...');
         clearAllCaches();
         showToast('Aufenthalt erfolgreich gelöscht!', 'success');
         loadAufenthalte();
@@ -301,17 +336,17 @@ const session = JSON.parse(sessionCookie.value);
   
   // Direkte Löschung für den Button
   async function deleteAufenthaltDirectly(id: number) {
-    console.log('🗑️ Direkte Löschung für ID:', id);
-    
+    // console.log('🗑️ Direkte Löschung für ID:', id);
+
     try {
       const response = await fetch(`/api/aufenthalte/${id}`, {
         method: 'DELETE',
       });
-      
-      console.log('📡 DELETE Response Status:', response.status);
-      
+
+      // console.log('📡 DELETE Response Status:', response.status);
+
       if (response.ok) {
-        console.log('✅ Löschen erfolgreich, leere Caches...');
+        // console.log('✅ Löschen erfolgreich, leere Caches...');
         clearAllCaches();
         showToast('Aufenthalt erfolgreich gelöscht!', 'success');
         loadAufenthalte();
@@ -355,8 +390,8 @@ const session = JSON.parse(sessionCookie.value);
         });
       });
     }
-    
-    console.log('🧹 Alle Caches wurden geleert');
+
+    // console.log('🧹 Alle Caches wurden geleert');
   }
 
   // Überlappungsaufenthalte laden
@@ -375,8 +410,8 @@ const session = JSON.parse(sessionCookie.value);
       
       if (response.ok) {
         alleAufenthalte = await response.json();
-        console.log('📊 Alle Aufenthalte geladen:', alleAufenthalte.length);
-        console.log('🔍 Alle Aufenthalte Details:', alleAufenthalte);
+        // console.log('📊 Alle Aufenthalte geladen:', alleAufenthalte.length);
+        // console.log('🔍 Alle Aufenthalte Details:', alleAufenthalte);
       }
     } catch (error) {
       console.error('❌ Fehler beim Laden der Überlappungsaufenthalte:', error);
@@ -385,8 +420,8 @@ const session = JSON.parse(sessionCookie.value);
   
         // Überlappungsinfo für einen Aufenthalt ermitteln
   function getUeberlappungsInfo(aufenthalt: any, alleAufenthalte: any[]) {
-    console.log(`🔍 Prüfe Überlappungen für ${aufenthalt.user.name} (${aufenthalt.zaehlerAnkunft}-${aufenthalt.zaehlerAbreise})`);
-    console.log(`📋 Verfügbare Aufenthalte:`, alleAufenthalte.length);
+    // console.log(`🔍 Prüfe Überlappungen für ${aufenthalt.user.name} (${aufenthalt.zaehlerAnkunft}-${aufenthalt.zaehlerAbreise})`);
+    // console.log(`📋 Verfügbare Aufenthalte:`, alleAufenthalte.length);
     
     const result = alleAufenthalte.filter((overlap: any) => {
       // Wichtig: Aufenthalt kann nicht mit sich selbst überlappen
@@ -405,7 +440,7 @@ const session = JSON.parse(sessionCookie.value);
       const hatUeberlappung = a1Ende > a2Start && a1Start < a2Ende;
 
       if (!hatUeberlappung) {
-        console.log(`  vs ${overlap.user.name} (${a2Start}-${a2Ende}): Keine Überlappung`);
+        // console.log(`  vs ${overlap.user.name} (${a2Start}-${a2Ende}): Keine Überlappung`);
         return false;
       }
 
@@ -414,13 +449,13 @@ const session = JSON.parse(sessionCookie.value);
       const overlapEnd = Math.min(a1Ende, a2Ende);
       const overlapHours = overlapEnd - overlapStart;
 
-      console.log(`  vs ${overlap.user.name} (${a2Start}-${a2Ende}): Overlap ${overlapStart}-${overlapEnd} = ${overlapHours.toFixed(1)}h`);
+      // console.log(`  vs ${overlap.user.name} (${a2Start}-${a2Ende}): Overlap ${overlapStart}-${overlapEnd} = ${overlapHours.toFixed(1)}h`);
 
       // Nur echte Überlappungen mit mindestens 1 Stunde
       return overlapHours >= 1;
     });
-    
-    console.log(`✅ Gefundene Überlappungen für ${aufenthalt.user.name}:`, result.length);
+
+    // console.log(`✅ Gefundene Überlappungen für ${aufenthalt.user.name}:`, result.length);
     return result;
   }
 
@@ -429,29 +464,48 @@ const session = JSON.parse(sessionCookie.value);
     try {
       showLoading(true);
       const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
+      const statusSelect = document.getElementById('status') as HTMLSelectElement;
       const benutzerSelect = document.getElementById('benutzer') as HTMLSelectElement;
       const currentYear = new Date().getFullYear().toString();
       const jahr = jahrSelect ? jahrSelect.value : currentYear;
+      const status = statusSelect ? statusSelect.value : '';
       const benutzerId = benutzerSelect ? benutzerSelect.value : '';
-      
-      console.log('🔍 Lade Aufenthalte für Jahr:', jahr, 'Benutzer:', benutzerId);
-      
+
+      // console.log('🔍 Lade Aufenthalte für Jahr:', jahr, 'Status:', status, 'Benutzer:', benutzerId);
+
       let url = `/api/aufenthalte?jahr=${jahr}`;
       if (benutzerId) {
         url += `&userId=${benutzerId}`;
       }
-      
+
       const response = await fetch(url);
-      console.log('📡 API Response Status:', response.status);
-      
+      // console.log('📡 API Response Status:', response.status);
+
       if (response.ok) {
-        currentAufenthalte = await response.json();
-        console.log('📊 Aufenthalte geladen:', currentAufenthalte.length);
-        console.log('📋 Erste 2 Aufenthalte:', currentAufenthalte.slice(0, 2));
-        
+        let aufenthalte = await response.json();
+        // console.log('📊 Aufenthalte geladen:', aufenthalte.length);
+
+        // Status-Filter anwenden (clientseitig)
+        if (status === 'aktiv') {
+          // Nur editierbare Jahre (für normale User)
+          aufenthalte = aufenthalte.filter((a: typeof currentAufenthalte[0]) =>
+            canEditJahr(a.jahr, isAdminUser)
+          );
+          // console.log('🟢 Aktive (editierbare) Aufenthalte:', aufenthalte.length);
+        } else if (status === 'abgeschlossen') {
+          // Nur abgeschlossene Jahre (für normale User)
+          aufenthalte = aufenthalte.filter((a: typeof currentAufenthalte[0]) =>
+            !canEditJahr(a.jahr, isAdminUser)
+          );
+          // console.log('✅ Abgeschlossene Aufenthalte:', aufenthalte.length);
+        }
+
+        currentAufenthalte = aufenthalte;
+        // console.log('📋 Erste 2 Aufenthalte:', currentAufenthalte.slice(0, 2));
+
         // Überlappungsaufenthalte laden
         await loadUeberlappungsAufenthalte(jahr);
-        
+
         renderAufenthalte(currentAufenthalte);
       } else {
         console.error('❌ Fehler beim Laden der Aufenthalte');
@@ -479,7 +533,8 @@ const session = JSON.parse(sessionCookie.value);
           years.forEach((year: number) => {
             const option = document.createElement('option');
             option.value = year.toString();
-            option.textContent = year.toString();
+            // Abgeschlossene Jahre mit ✓ markieren
+            option.textContent = formatJahrMitStatus(year);
             if (year === currentYear) {
               option.selected = true; // Aktuelles Jahr als Standard
             }
@@ -493,7 +548,7 @@ const session = JSON.parse(sessionCookie.value);
       const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
       const currentYear = new Date().getFullYear();
       if (jahrSelect) {
-        jahrSelect.innerHTML = `<option value="${currentYear}">${currentYear}</option>`;
+        jahrSelect.innerHTML = `<option value="${currentYear}">${formatJahrMitStatus(currentYear)}</option>`;
       }
     }
   }
@@ -549,7 +604,7 @@ const session = JSON.parse(sessionCookie.value);
         const data = await response.json();
         // Nach Zählerstand sortieren (aufsteigend)
         alleTankfuellungen = data.sort((a: any, b: any) => a.zaehlerstand - b.zaehlerstand);
-        console.log('⛽ Tankfüllungen geladen:', alleTankfuellungen.length);
+        // console.log('⛽ Tankfüllungen geladen:', alleTankfuellungen.length);
       }
     } catch (error) {
       console.error('Fehler beim Laden der Tankfüllungen:', error);
@@ -584,11 +639,11 @@ const session = JSON.parse(sessionCookie.value);
 
   // Session-Info aus dem eingebetteten JSON-Script lesen
   const sessionData = document.getElementById('session-data');
-  const isAdminUser = sessionData ? JSON.parse(sessionData.textContent || '{}').isAdmin : false;
+  // isAdminUser wird im DOMContentLoaded gesetzt
 
   // Aufenthalte rendern (neue kompakte Version)
   function renderAufenthalte(aufenthalte: typeof currentAufenthalte) {
-    console.log('🎨 renderAufenthalte aufgerufen mit', aufenthalte.length, 'Aufenthalten');
+    // console.log('🎨 renderAufenthalte aufgerufen mit', aufenthalte.length, 'Aufenthalten');
     const tbody = document.getElementById('aufenthalte-tbody');
     const noData = document.getElementById('no-data');
 
@@ -598,7 +653,7 @@ const session = JSON.parse(sessionCookie.value);
     }
 
     if (aufenthalte.length === 0) {
-      console.log('📭 Keine Aufenthalte vorhanden');
+      // console.log('📭 Keine Aufenthalte vorhanden');
       tbody.innerHTML = '';
       showNoData();
       return;
@@ -762,7 +817,7 @@ const session = JSON.parse(sessionCookie.value);
             </div>
 
             <!-- Aktionen (klein und unten) -->
-            <div class="flex gap-2 justify-end pt-2 border-t border-base-300">
+            <div class="flex gap-2 justify-end pt-2 border-t border-base-300" id="actions-${aufenthalt.id}">
               <a href="/aufenthalte/${aufenthalt.id}/edit" class="btn btn-sm btn-outline gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
@@ -810,6 +865,14 @@ const session = JSON.parse(sessionCookie.value);
 
       // Berechnungsdetails hinzufügen (NACH dem Anhängen ans DOM)
       loadCalculationDetails(aufenthalt);
+
+      // Aktions-Buttons verstecken wenn Jahr abgeschlossen und User kein Admin
+      if (!canEditJahr(aufenthalt.jahr, isAdminUser)) {
+        const actionsDiv = document.getElementById(`actions-${aufenthalt.id}`);
+        if (actionsDiv) {
+          actionsDiv.style.display = 'none';
+        }
+      }
     });
 
     // Summenzeile
@@ -900,7 +963,7 @@ const session = JSON.parse(sessionCookie.value);
 
         totalSavings += oelSavings + uebernachtungSavings;
 
-        console.log(`💰 Einsparung für ${aufenthalt.user.name} mit ${overlap.user.name}: ${overlapHours.toFixed(1)}h = €${(oelSavings + uebernachtungSavings).toFixed(2)}`);
+        // console.log(`💰 Einsparung für ${aufenthalt.user.name} mit ${overlap.user.name}: ${overlapHours.toFixed(1)}h = €${(oelSavings + uebernachtungSavings).toFixed(2)}`);
       }
     });
     
@@ -1120,49 +1183,286 @@ const session = JSON.parse(sessionCookie.value);
     }
   }
 
+  // Bezahlt-Status Badge aktualisieren (kontextabhängig)
+  async function loadUserBezahltStatus() {
+    const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
+    const benutzerSelect = document.getElementById('benutzer') as HTMLSelectElement;
+
+    if (!jahrSelect) return;
+
+    const jahr = parseInt(jahrSelect.value);
+    if (!jahr) return;
+
+    // Prüfen ob Jahr abgeschlossen ist
+    if (!isJahrAbgeschlossen(jahr)) {
+      const statusDiv = document.getElementById('user-bezahlt-status');
+      if (statusDiv) {
+        statusDiv.style.display = 'none';
+      }
+      return;
+    }
+
+    try {
+      // Aktuelle User-Info holen
+      const meResponse = await fetch('/api/auth/me', {
+        credentials: 'same-origin'
+      });
+      if (!meResponse.ok) return;
+      const currentUser = await meResponse.json();
+
+      // Bezahlt-Status für alle User mit Aufenthalten in diesem Jahr holen
+      const response = await fetch(`/api/jahresabschluss/bezahlt?jahr=${jahr}`, {
+        credentials: 'same-origin'
+      });
+      if (!response.ok) return;
+
+      const users = await response.json();
+
+      const statusDiv = document.getElementById('user-bezahlt-status');
+      const badgeElement = document.getElementById('bezahlt-badge');
+      const textElement = document.getElementById('bezahlt-text');
+
+      if (!statusDiv || !badgeElement || !textElement) return;
+
+      // Kontext bestimmen
+      const isAdmin = currentUser.role === 'ADMIN';
+      const selectedUserId = benutzerSelect ? parseInt(benutzerSelect.value) : null;
+
+      if (isAdmin && !selectedUserId) {
+        // Admin sieht alle User → Zeige Gesamtstatistik
+        const bezahltCount = users.filter((u: any) => u.bezahlt).length;
+        const totalCount = users.length;
+
+        if (bezahltCount === totalCount && totalCount > 0) {
+          // Alle bezahlt
+          badgeElement.className = 'badge badge-success gap-2';
+          textElement.textContent = `Jahr ${jahr}: Alle bezahlt (${totalCount})`;
+          statusDiv.style.display = 'block';
+        } else if (bezahltCount > 0) {
+          // Teilweise bezahlt
+          badgeElement.className = 'badge badge-warning gap-2';
+          textElement.textContent = `Jahr ${jahr}: ${bezahltCount} von ${totalCount} bezahlt`;
+          statusDiv.style.display = 'block';
+        } else {
+          // Niemand bezahlt
+          statusDiv.style.display = 'none';
+        }
+      } else {
+        // Admin mit User-Filter ODER normaler User → Zeige individuellen Status
+        const targetUserId = selectedUserId || currentUser.id;
+        const userStatus = users.find((u: any) => u.userId === targetUserId);
+
+        if (userStatus) {
+          // User hat Aufenthalte in diesem Jahr
+          if (userStatus.bezahlt) {
+            // Bezahlt → Grüner Badge
+            badgeElement.className = 'badge badge-success gap-2';
+            if (isAdmin && selectedUserId) {
+              textElement.textContent = `${userStatus.name}: Jahr ${jahr} bezahlt`;
+            } else {
+              textElement.textContent = `Jahr ${jahr} bezahlt`;
+            }
+          } else {
+            // Nicht bezahlt → Roter Badge
+            badgeElement.className = 'badge badge-error gap-2';
+            if (isAdmin && selectedUserId) {
+              textElement.textContent = `${userStatus.name}: Jahr ${jahr} unbezahlt`;
+            } else {
+              textElement.textContent = `Jahr ${jahr} unbezahlt`;
+            }
+          }
+          statusDiv.style.display = 'block';
+        } else {
+          // User hat keine Aufenthalte in diesem Jahr
+          statusDiv.style.display = 'none';
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des Bezahlt-Status:', error);
+    }
+  }
+
+  // Bezahlt-Status für Admins laden (alle User)
+  async function loadAdminBezahltStatus() {
+    if (!isAdminUser) return;
+
+    const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
+    if (!jahrSelect) return;
+
+    const jahr = parseInt(jahrSelect.value);
+    if (!jahr) return;
+
+    // Prüfen ob Jahr abgeschlossen ist
+    const jahrAbgeschlossen = isJahrAbgeschlossen(jahr);
+
+    const adminCard = document.getElementById('admin-bezahlt-card');
+    if (!adminCard) return;
+
+    // Card nur anzeigen wenn Jahr abgeschlossen ist
+    if (!jahrAbgeschlossen) {
+      adminCard.style.display = 'none';
+      return;
+    }
+
+    adminCard.style.display = 'block';
+
+    // Jahr anzeigen
+    const jahrDisplay = document.getElementById('bezahlt-jahr-display');
+    if (jahrDisplay) {
+      jahrDisplay.textContent = jahr.toString();
+    }
+
+    try {
+      const response = await fetch(`/api/jahresabschluss/bezahlt?jahr=${jahr}`, {
+        credentials: 'same-origin'
+      });
+      if (response.ok) {
+        const users = await response.json();
+        updateBezahltTable(users, jahr);
+      } else {
+        console.error('❌ API-Fehler:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des Bezahlt-Status:', error);
+    }
+  }
+
+  // Bezahlt-Tabelle aktualisieren
+  function updateBezahltTable(users: any[], jahr: number) {
+    const tbody = document.getElementById('bezahlt-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (users.length === 0) {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td colspan="3" class="text-center py-4 text-base-content/60">
+          Keine Benutzer gefunden
+        </td>
+      `;
+      tbody.appendChild(row);
+      return;
+    }
+
+    users.forEach(user => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="font-medium">${user.name}</td>
+        <td>${user.email}</td>
+        <td class="text-center">
+          <input
+            type="checkbox"
+            class="checkbox checkbox-success border-2 border-base-300"
+            data-user-id="${user.userId}"
+            data-jahr="${jahr}"
+            ${user.bezahlt ? 'checked' : ''}
+          />
+        </td>
+      `;
+      tbody.appendChild(row);
+
+      // Event listener für Checkbox
+      const checkbox = row.querySelector('input[type="checkbox"]') as HTMLInputElement;
+      if (checkbox) {
+        checkbox.addEventListener('change', async () => {
+          await updateBezahltStatus(user.userId, jahr, checkbox.checked);
+        });
+      }
+    });
+  }
+
+  // Bezahlt-Status aktualisieren
+  async function updateBezahltStatus(userId: number, jahr: number, bezahlt: boolean) {
+    try {
+      const response = await fetch('/api/jahresabschluss/bezahlt', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          jahr,
+          bezahlt
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Fehler beim Aktualisieren des Bezahlt-Status');
+      }
+
+      // Badge aktualisieren nach Änderung
+      await loadUserBezahltStatus();
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren des Bezahlt-Status:', error);
+      alert('Fehler beim Speichern des Status');
+    }
+  }
+
   // Event-Listener
   document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 DOM geladen, starte Initialisierung...');
-    
+    // console.log('🚀 DOM geladen, starte Initialisierung...');
+
     try {
+      // Prüfen ob User Admin ist
+      const meResponse = await fetch('/api/auth/me');
+      if (meResponse.ok) {
+        const currentUser = await meResponse.json();
+        isAdminUser = currentUser.role === 'ADMIN';
+        // console.log('👤 User-Rolle:', isAdminUser ? 'ADMIN' : 'USER');
+      }
+
       await loadAvailableYears();
-      console.log('✅ Verfügbare Jahre geladen');
+      // console.log('✅ Verfügbare Jahre geladen');
 
       const currentYear = new Date().getFullYear().toString();
       await loadPreise(currentYear);
-      console.log('✅ Preise geladen');
+      // console.log('✅ Preise geladen');
 
       await loadTankfuellungen();
-      console.log('✅ Tankfüllungen geladen');
+      // console.log('✅ Tankfüllungen geladen');
 
       // Benutzer laden (nur für Admins)
       await loadBenutzer();
-      console.log('✅ Benutzer geladen');
+      // console.log('✅ Benutzer geladen');
 
       await loadAufenthalte();
-      console.log('✅ Aufenthalte geladen');
-      
+      // console.log('✅ Aufenthalte geladen');
 
-      
+      // Bezahlt-Status laden
+      await loadUserBezahltStatus();
+      await loadAdminBezahltStatus();
+      // console.log('✅ Bezahlt-Status geladen');
+
+
+
       // Filter-Event-Listener (automatische Filterung bei Select-Änderung)
       const jahrSelect = document.getElementById('jahr');
       const statusSelect = document.getElementById('status');
       const benutzerSelect = document.getElementById('benutzer');
 
       if (jahrSelect) {
-        jahrSelect.addEventListener('change', loadAufenthalte);
-        console.log('✅ Jahr-Select Event-Listener gesetzt');
+        jahrSelect.addEventListener('change', async () => {
+          await loadAufenthalte();
+          await loadUserBezahltStatus();
+          await loadAdminBezahltStatus();
+        });
+        // console.log('✅ Jahr-Select Event-Listener gesetzt');
       }
       if (statusSelect) {
         statusSelect.addEventListener('change', loadAufenthalte);
-        console.log('✅ Status-Select Event-Listener gesetzt');
+        // console.log('✅ Status-Select Event-Listener gesetzt');
       }
       if (benutzerSelect) {
-        benutzerSelect.addEventListener('change', loadAufenthalte);
-        console.log('✅ Benutzer-Select Event-Listener gesetzt');
+        benutzerSelect.addEventListener('change', async () => {
+          await loadAufenthalte();
+          await loadUserBezahltStatus(); // Badge aktualisieren
+        });
+        // console.log('✅ Benutzer-Select Event-Listener gesetzt');
       }
-      
-      console.log('🎯 Alle Event-Listener gesetzt!');
+
+      // console.log('🎯 Alle Event-Listener gesetzt!');
       
       // Cache leeren beim Verlassen der Seite
       window.addEventListener('beforeunload', clearAllCaches);

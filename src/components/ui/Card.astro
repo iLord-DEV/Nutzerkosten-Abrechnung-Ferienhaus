@@ -17,6 +17,8 @@ interface Props {
   bordered?: boolean;
   hoverable?: boolean;
   class?: string;
+  id?: string;
+  style?: string;
 }
 
 const {
@@ -26,6 +28,8 @@ const {
   bordered = false,
   hoverable = false,
   class: className = '',
+  id,
+  style,
 } = Astro.props;
 
 // Variant-spezifische Klassen
@@ -51,7 +55,7 @@ const classes = [
   .join(' ');
 ---
 
-<div class={classes}>
+<div class={classes} id={id} style={style}>
   <div class={compact ? 'card-body p-4' : 'card-body'}>
     {title && <h2 class="card-title">{title}</h2>}
     <slot />
