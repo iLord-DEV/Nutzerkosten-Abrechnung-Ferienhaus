@@ -127,7 +127,7 @@ export function berechneOelkostenNachZaehlerstand(
   // Kosten aller Segmente summieren
   const gesamtKosten = segmente.reduce((sum, seg) => {
     const kosten = seg.stunden * seg.verbrauch * seg.preis;
-    console.log(`💰 Segment ${seg.start}-${seg.ende}h: ${seg.stunden}h × ${seg.verbrauch.toFixed(2)}L/h × €${seg.preis.toFixed(2)} = €${kosten.toFixed(2)}`);
+    // console.log(`💰 Segment ${seg.start}-${seg.ende}h: ${seg.stunden}h × ${seg.verbrauch.toFixed(2)}L/h × €${seg.preis.toFixed(2)} = €${kosten.toFixed(2)}`);
     return sum + kosten;
   }, 0);
 

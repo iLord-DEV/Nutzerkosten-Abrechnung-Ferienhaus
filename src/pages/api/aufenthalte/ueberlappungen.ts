@@ -60,7 +60,7 @@ export const POST: APIRoute = async (context) => {
       return true;
     });
 
-    console.log(`📊 Aufenthalte geladen: ${alleAufenthalteRaw.length} total, ${alleAufenthalte.length} gültig, ${alleAufenthalteRaw.length - alleAufenthalte.length} fehlerhaft`);
+    // console.log(`📊 Aufenthalte geladen: ${alleAufenthalteRaw.length} total, ${alleAufenthalte.length} gültig, ${alleAufenthalteRaw.length - alleAufenthalte.length} fehlerhaft`);
 
     return new Response(JSON.stringify(alleAufenthalte), {
       status: 200,

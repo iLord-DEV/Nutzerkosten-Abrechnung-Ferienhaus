@@ -1,6 +1,6 @@
-import type { APIRoute } from 'astro';
-import { PrismaClient } from '@prisma/client';
-import { requireAdmin } from '../../utils/auth';
+import type { APIRoute } from "astro";
+import { PrismaClient } from "@prisma/client";
+import { requireAdmin } from "../../utils/auth";
 
 const prisma = new PrismaClient();
 
@@ -8,7 +8,7 @@ export const GET: APIRoute = async (context) => {
   try {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
-    
+
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -19,22 +19,22 @@ export const GET: APIRoute = async (context) => {
         createdAt: true,
       },
       orderBy: {
-        name: 'asc',
+        name: "asc",
       },
     });
 
     return new Response(JSON.stringify(users), {
       status: 200,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
   } catch (error) {
-    console.error('Fehler beim Laden der Benutzer:', error);
-    return new Response(JSON.stringify({ error: 'Interner Server-Fehler' }), {
+    console.error("Fehler beim Laden der Benutzer:", error);
+    return new Response(JSON.stringify({ error: "Interner Server-Fehler" }), {
       status: 500,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
   }
@@ -45,15 +45,18 @@ export const POST: APIRoute = async (context) => {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
-    
+
     const body = await request.json();
     const { name, email, role, password } = body;
 
     if (!name || !email || !role || !password) {
-      return new Response(JSON.stringify({ error: 'Alle Felder sind erforderlich' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ error: "Alle Felder sind erforderlich" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Prüfen, ob E-Mail bereits existiert
@@ -62,10 +65,13 @@ export const POST: APIRoute = async (context) => {
     });
 
     if (existingUser) {
-      return new Response(JSON.stringify({ error: 'E-Mail-Adresse bereits vergeben' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ error: "E-Mail-Adresse bereits vergeben" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Benutzer erstellen
@@ -81,13 +87,13 @@ export const POST: APIRoute = async (context) => {
 
     return new Response(JSON.stringify(user), {
       status: 201,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error('Fehler beim Erstellen des Benutzers:', error);
-    return new Response(JSON.stringify({ error: 'Interner Server-Fehler' }), {
+    console.error("Fehler beim Erstellen des Benutzers:", error);
+    return new Response(JSON.stringify({ error: "Interner Server-Fehler" }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 };
@@ -102,10 +108,13 @@ export const PUT: APIRoute = async (context) => {
     const { id, name, email, role, beguenstigt } = body;
 
     if (!id || !name || !email || !role) {
-      return new Response(JSON.stringify({ error: 'Alle Felder sind erforderlich' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ error: "Alle Felder sind erforderlich" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Benutzer aktualisieren
@@ -116,13 +125,13 @@ export const PUT: APIRoute = async (context) => {
 
     return new Response(JSON.stringify(user), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error('Fehler beim Aktualisieren des Benutzers:', error);
-    return new Response(JSON.stringify({ error: 'Interner Server-Fehler' }), {
+    console.error("Fehler beim Aktualisieren des Benutzers:", error);
+    return new Response(JSON.stringify({ error: "Interner Server-Fehler" }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 };
@@ -132,14 +141,14 @@ export const DELETE: APIRoute = async (context) => {
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
-    
+
     const body = await request.json();
     const { id } = body;
 
     if (!id) {
-      return new Response(JSON.stringify({ error: 'ID ist erforderlich' }), {
+      return new Response(JSON.stringify({ error: "ID ist erforderlich" }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
       });
     }
 
@@ -150,13 +159,13 @@ export const DELETE: APIRoute = async (context) => {
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error('Fehler beim Löschen des Benutzers:', error);
-    return new Response(JSON.stringify({ error: 'Interner Server-Fehler' }), {
+    console.error("Fehler beim Löschen des Benutzers:", error);
+    return new Response(JSON.stringify({ error: "Interner Server-Fehler" }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 };

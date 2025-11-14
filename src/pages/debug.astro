@@ -10,20 +10,19 @@ if (!user) {
 ---
 
 <Layout title="Debug - Nutzerkosten">
-  <div class="px-4 sm:px-6 lg:px-8">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+  <div class="section-container">
+    <div class="page-header">
+      <h1 class="page-title">
         Debug & Diagnose
       </h1>
-      <p class="mt-2 text-gray-600 dark:text-gray-400">
+      <p class="page-description">
         Überprüfung der API-Funktionalität und Datenbankdaten
       </p>
     </div>
 
     <!-- API-Tests -->
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
-      <div class="px-4 py-5 sm:p-6">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+    <div class="card-container-compact mb-8">
+      <h3 class="text-lg leading-6 font-medium text-base-content mb-4">
           API-Tests
         </h3>
         <div class="space-y-4">
@@ -57,18 +56,17 @@ if (!user) {
     </div>
 
     <!-- Ergebnisse -->
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-      <div class="px-4 py-5 sm:p-6">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-          Ergebnisse
-        </h3>
-        <div id="results" class="space-y-4">
-          <p class="text-gray-500 dark:text-gray-400">Klicken Sie auf einen der Buttons oben, um Tests auszuführen.</p>
+    <div class="card-container-compact">
+      <h3 class="text-lg leading-6 font-medium text-base-content mb-4">
+        Ergebnisse
+      </h3>
+      <div id="results" class="space-y-4">
+        <p class="text-base-content" style="opacity: 0.6">Klicken Sie auf einen der Buttons oben, um Tests auszuführen.</p>
         </div>
       </div>
     </div>
   </div>
-</ProtectedLayout>
+</Layout>
 
 <script>
   // Ergebnisse anzeigen

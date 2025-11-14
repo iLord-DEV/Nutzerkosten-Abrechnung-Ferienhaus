@@ -48,7 +48,7 @@ async function calculateAllAbsenceConsumption(jahr: number, tankfuellungen: any[
     const nextStart = new Date(nextAufenthalt.ankunft);
     
     // Debug: Log für die Berechnung
-    console.log(`🔍 Abwesenheit: ${currentAufenthalt.abreise} → ${nextAufenthalt.ankunft}`);
+    // console.log(`🔍 Abwesenheit: ${currentAufenthalt.abreise} → ${nextAufenthalt.ankunft}`);
     
     // Prüfen ob es eine Lücke zwischen den Aufenthalten gibt
     // Datum auf Mitternacht setzen für korrekte Tagesberechnung
@@ -221,15 +221,15 @@ export const GET: APIRoute = async (context) => {
       whereClause.userId = user.id;
     }
 
-    console.log('🔍 Filter-Debug:', { 
-      jahr, 
-      personName, 
-      showAlleUser, 
-      showGesamtuebersicht, 
-      whereClause, 
-      userRole: user.role, 
-      userId: user.id 
-    });
+    // console.log('🔍 Filter-Debug:', {
+    //   jahr,
+    //   personName,
+    //   showAlleUser,
+    //   showGesamtuebersicht,
+    //   whereClause,
+    //   userRole: user.role,
+    //   userId: user.id
+    // });
 
     // Aufenthalte laden
     const aufenthalte = await prisma.aufenthalt.findMany({
@@ -249,13 +249,13 @@ export const GET: APIRoute = async (context) => {
       }
     });
 
-    console.log('📊 Gefundene Aufenthalte:', aufenthalte.length);
-    console.log('🔍 Aufenthalte Details:', aufenthalte.map(a => ({
-      user: a.user.name,
-      datum: `${new Date(a.ankunft).toLocaleDateString()} - ${new Date(a.abreise).toLocaleDateString()}`,
-      naechteBerechnen: a.naechteBerechnen,
-      uebernachtungen: `${a.uebernachtungenMitglieder}M + ${a.uebernachtungenGaeste}G`
-    })));
+    // console.log('📊 Gefundene Aufenthalte:', aufenthalte.length);
+    // console.log('🔍 Aufenthalte Details:', aufenthalte.map(a => ({
+    //   user: a.user.name,
+    //   datum: `${new Date(a.ankunft).toLocaleDateString()} - ${new Date(a.abreise).toLocaleDateString()}`,
+    //   naechteBerechnen: a.naechteBerechnen,
+    //   uebernachtungen: `${a.uebernachtungenMitglieder}M + ${a.uebernachtungenGaeste}G`
+    // })));
 
     // Tankfüllungen laden
     const tankfuellungen = await prisma.tankfuellung.findMany({
@@ -284,9 +284,9 @@ export const GET: APIRoute = async (context) => {
     } : await calculateReferenceValues(user.id, parseInt(jahr));
 
     // Abwesenheitsverbrauch berechnen (alle Nutzer)
-    console.log('🚀 Starte Abwesenheitsberechnung für Jahr:', jahr);
+    // console.log('🚀 Starte Abwesenheitsberechnung für Jahr:', jahr);
     const absenceData = await calculateAllAbsenceConsumption(parseInt(jahr), tankfuellungen, preise, prisma);
-    console.log('✅ Abwesenheitsberechnung abgeschlossen:', absenceData);
+    // console.log('✅ Abwesenheitsberechnung abgeschlossen:', absenceData);
 
     // Detaillierte Aufenthaltsstatistiken berechnen
     const aufenthaltsDetails = aufenthalte.map(aufenthalt => {
@@ -404,19 +404,19 @@ export const GET: APIRoute = async (context) => {
       uebernachtungKostenBeguenstigtNichtBerechnet: aufenthaltsDetails.reduce((sum, a) => sum + a.uebernachtungKostenBeguenstigtNichtBerechnet, 0)
     };
 
-    console.log('📈 Finale Statistiken:', {
-      jahr: statistiken.jahr,
-      gesamtVerbrauch: statistiken.gesamtVerbrauch,
-      gesamtKosten: statistiken.gesamtKosten,
-      durchschnittVerbrauchProTag: statistiken.durchschnittVerbrauchProTag,
-      anzahlAufenthalte: statistiken.anzahlAufenthalte,
-      aufenthalteOhneNaechteBerechnung: aufenthalte.filter(a => !a.naechteBerechnen).length,
-      oelKosten: statistiken.oelKosten,
-      uebernachtungKosten: statistiken.uebernachtungKosten,
-      uebernachtungKostenBerechnet: statistiken.uebernachtungKostenBerechnet,
-      uebernachtungKostenBeguenstigtNichtBerechnet: statistiken.uebernachtungKostenBeguenstigtNichtBerechnet,
-      referenceValues: statistiken.referenceValues
-    });
+    // console.log('📈 Finale Statistiken:', {
+    //   jahr: statistiken.jahr,
+    //   gesamtVerbrauch: statistiken.gesamtVerbrauch,
+    //   gesamtKosten: statistiken.gesamtKosten,
+    //   durchschnittVerbrauchProTag: statistiken.durchschnittVerbrauchProTag,
+    //   anzahlAufenthalte: statistiken.anzahlAufenthalte,
+    //   aufenthalteOhneNaechteBerechnung: aufenthalte.filter(a => !a.naechteBerechnen).length,
+    //   oelKosten: statistiken.oelKosten,
+    //   uebernachtungKosten: statistiken.uebernachtungKosten,
+    //   uebernachtungKostenBerechnet: statistiken.uebernachtungKostenBerechnet,
+    //   uebernachtungKostenBeguenstigtNichtBerechnet: statistiken.uebernachtungKostenBeguenstigtNichtBerechnet,
+    //   referenceValues: statistiken.referenceValues
+    // });
 
     return new Response(JSON.stringify(statistiken), {
       status: 200,

@@ -60,22 +60,22 @@ try {
 ---
 
 <ProtectedLayout title="Preise verwalten - Nutzerkosten">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+  <div class="content-wrapper">
+    <div class="page-header">
+      <h1 class="page-title mb-2">
         Preise verwalten
       </h1>
-      <p class="text-gray-600 dark:text-gray-400">
-        Hier können Sie die Übernachtungspreise und Ölpreise verwalten. 
+      <p class="page-description">
+        Hier können Sie die Übernachtungspreise und Ölpreise verwalten.
         Der letzte erstellte Übernachtungspreis gilt ab dem angegebenen Datum für alle zukünftigen Aufenthalte.
       </p>
     </div>
 
     <!-- Übernachtungspreise -->
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
-      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="card-container mb-8">
+      <div class="pb-4 border-b border-base-300">
         <div class="flex justify-between items-center">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          <h2 class="text-xl font-semibold text-base-content">
             Aktuell gültige Übernachtungspreise
           </h2>
           <button
@@ -88,27 +88,27 @@ try {
       </div>
       
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead class="bg-gray-50 dark:bg-gray-700">
+        <table class="min-w-full divide-y divide-base-300">
+          <thead class="bg-base-200">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
                 Gültig ab
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
                 Mitglied (€/Nacht)
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
                 Gast (€/Nacht)
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
                 Erstellt
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
                 Aktionen
               </th>
             </tr>
           </thead>
-          <tbody id="preiseTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody id="preiseTableBody" class="bg-base-100 divide-y divide-base-300">
             <!-- Wird durch JavaScript gefüllt -->
           </tbody>
         </table>
@@ -116,58 +116,58 @@ try {
     </div>
 
     <!-- Ölpreise & Verbrauchswerte -->
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="card-container">
+      <div class="pb-4 border-b border-base-300">
         <div class="flex justify-between items-center">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          <h2 class="text-xl font-semibold text-base-content">
             Ölpreise & Verbrauchswerte
           </h2>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="text-sm text-base-content" style="opacity: 0.6">
             Diese werden automatisch aus Tankfüllungen berechnet
           </p>
         </div>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead class="bg-gray-50 dark:bg-gray-700">
+        <table class="min-w-full divide-y divide-base-300">
+          <thead class="bg-base-200">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
                 Gültig ab (Zählerstand/Jahr)
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
                 Preis pro Liter (€/L)
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
                 Getankte Menge / Verbrauch
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
                 Quelle
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
                 Zusatzinfo
               </th>
             </tr>
           </thead>
-          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody class="bg-base-100 divide-y divide-base-300">
             <!-- Tankfüllungen -->
             {tankfuellungen.map(tf => (
-              <tr class="bg-blue-50 dark:bg-blue-900/10">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+              <tr class="bg-info/10">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                   Ab Zählerstand {tf.zaehlerstand.toFixed(0)}h
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-semibold">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content font-semibold">
                   € {tf.preisProLiter.toFixed(2)}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
                   {tf.liter.toFixed(0)} Liter getankt
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  <span class="badge badge-info">
                     Tankfüllung
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
                   Datum: {new Date(tf.datum).toLocaleDateString('de-DE')}
                 </td>
               </tr>
@@ -176,25 +176,21 @@ try {
             <!-- Berechnete Jahrespreise -->
             {preise.map(preis => (
               <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
                   Jahr {preis.jahr}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
                   € {preis.oelpreisProLiter.toFixed(2)}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
                   {preis.verbrauchProStunde.toFixed(1)} L/h
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span class={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    preis.istBerechnet
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                  }`}>
+                  <span class={preis.istBerechnet ? 'badge badge-success' : 'badge badge-warning'}>
                     {preis.istBerechnet ? 'Berechnet' : 'Fallback'}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
                   Übernachtung: 5€/10€
                 </td>
               </tr>
@@ -202,7 +198,7 @@ try {
 
             {tankfuellungen.length === 0 && preise.length === 0 && (
               <tr>
-                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                <td colspan="5" class="px-6 py-4 text-center text-sm text-base-content" style="opacity: 0.6">
                   Keine Preise vorhanden. Fallback-Werte gelten: 1.01€/L, 5.5 L/h, 5€/10€
                 </td>
               </tr>
@@ -215,59 +211,59 @@ try {
 
   <!-- Modal für neuen Preis -->
   <div id="createPriceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md card-container">
       <div class="mt-3">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+        <h3 class="text-lg font-medium text-base-content mb-4">
           Neuen Übernachtungspreis hinzufügen
         </h3>
         <form id="createPriceForm">
           <div class="mb-4">
-            <label for="gueltigAb" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label for="gueltigAb" class="block text-sm font-medium text-base-content mb-2">
               Gültig ab
             </label>
-            <input 
-              type="date" 
-              id="gueltigAb" 
-              name="gueltigAb" 
-              required 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            <input
+              type="date"
+              id="gueltigAb"
+              name="gueltigAb"
+              required
+              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
           </div>
           <div class="mb-4">
-            <label for="uebernachtungMitglied" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label for="uebernachtungMitglied" class="block text-sm font-medium text-base-content mb-2">
               Preis Mitglied (€/Nacht)
             </label>
-            <input 
-              type="number" 
-              id="uebernachtungMitglied" 
-              name="uebernachtungMitglied" 
-              step="0.01" 
-              min="0" 
-              value="5" 
-              required 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            <input
+              type="number"
+              id="uebernachtungMitglied"
+              name="uebernachtungMitglied"
+              step="0.01"
+              min="0"
+              value="5"
+              required
+              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
           </div>
           <div class="mb-6">
-            <label for="uebernachtungGast" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label for="uebernachtungGast" class="block text-sm font-medium text-base-content mb-2">
               Preis Gast (€/Nacht)
             </label>
-            <input 
-              type="number" 
-              id="uebernachtungGast" 
-              name="uebernachtungGast" 
-              step="0.01" 
-              min="0" 
-              value="10" 
-              required 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            <input
+              type="number"
+              id="uebernachtungGast"
+              name="uebernachtungGast"
+              step="0.01"
+              min="0"
+              value="10"
+              required
+              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
           </div>
           <div class="flex justify-end space-x-3">
             <button
               type="button"
               onclick="window.closeCreatePriceModal()"
-              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+              class="px-4 py-2 text-sm font-medium bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md transition-colors"
             >
               Abbrechen
             </button>
@@ -285,58 +281,58 @@ try {
 
   <!-- Modal für Preis bearbeiten -->
   <div id="editPriceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md card-container">
       <div class="mt-3">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+        <h3 class="text-lg font-medium text-base-content mb-4">
           Übernachtungspreis bearbeiten
         </h3>
         <form id="editPriceForm">
           <input type="hidden" id="editPriceId" name="id">
           <div class="mb-4">
-            <label for="editGueltigAb" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label for="editGueltigAb" class="block text-sm font-medium text-base-content mb-2">
               Gültig ab
             </label>
-            <input 
-              type="date" 
-              id="editGueltigAb" 
-              name="gueltigAb" 
-              required 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            <input
+              type="date"
+              id="editGueltigAb"
+              name="gueltigAb"
+              required
+              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
           </div>
           <div class="mb-4">
-            <label for="editUebernachtungMitglied" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label for="editUebernachtungMitglied" class="block text-sm font-medium text-base-content mb-2">
               Preis Mitglied (€/Nacht)
             </label>
-            <input 
-              type="number" 
-              id="editUebernachtungMitglied" 
-              name="uebernachtungMitglied" 
-              step="0.01" 
-              min="0" 
-              required 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            <input
+              type="number"
+              id="editUebernachtungMitglied"
+              name="uebernachtungMitglied"
+              step="0.01"
+              min="0"
+              required
+              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
           </div>
           <div class="mb-6">
-            <label for="editUebernachtungGast" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label for="editUebernachtungGast" class="block text-sm font-medium text-base-content mb-2">
               Preis Gast (€/Nacht)
             </label>
-            <input 
-              type="number" 
-              id="editUebernachtungGast" 
-              name="uebernachtungGast" 
-              step="0.01" 
-              min="0" 
-              required 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+            <input
+              type="number"
+              id="editUebernachtungGast"
+              name="uebernachtungGast"
+              step="0.01"
+              min="0"
+              required
+              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
           </div>
           <div class="flex justify-end space-x-3">
             <button
               type="button"
               onclick="window.closeEditPriceModal()"
-              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+              class="px-4 py-2 text-sm font-medium bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md transition-colors"
             >
               Abbrechen
             </button>
@@ -408,7 +404,7 @@ try {
     if (allPreise.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+          <td colspan="5" class="px-6 py-4 text-center text-sm text-base-content" style="opacity: 0.6">
             Keine Preise konfiguriert. Fallback-Werte gelten: 5€ (Mitglieder), 10€ (Gäste)
           </td>
         </tr>
@@ -418,28 +414,28 @@ try {
 
     tbody.innerHTML = allPreise.map(preis => `
       <tr>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
           ${preis.gueltigAb ? new Date(preis.gueltigAb).toLocaleDateString('de-DE') : 'Jährlich'}
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
           € ${preis.uebernachtungMitglied.toFixed(2)}
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
           € ${preis.uebernachtungGast.toFixed(2)}
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
           ${preis.createdAt ? new Date(preis.createdAt).toLocaleDateString('de-DE') : 'Unbekannt'}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
           <button
             onclick="window.editPrice(${preis.jahr})"
-            class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+            class="text-blue-600 hover:text-blue-900 mr-3"
           >
             Bearbeiten
           </button>
           <button
             onclick="window.deletePrice(${preis.jahr})"
-            class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+            class="text-red-600 hover:text-red-900"
           >
             Löschen
           </button>

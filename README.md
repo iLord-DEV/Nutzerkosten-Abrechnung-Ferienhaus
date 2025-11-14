@@ -322,3 +322,250 @@ Wenn dir dieses Projekt gefällt und du den Entwickler unterstützen möchtest:
 <a href="https://www.buymeacoffee.com/Christoph.Heim" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 **Entwickelt mit ❤️ und Spaß an der Sache**
+
+---
+
+## 📌 TODO
+
+### Offene Aufgaben
+
+---
+
+### 1. Login-Optionen erweitern
+
+**Ziel:** Login mit E-Mail ODER Username ODER Vorname.Nachname ermöglichen
+
+**Technische Details:**
+- **Dateien:** `src/pages/api/auth/login.ts`, `src/pages/login.astro`
+- **Logik:** Automatische Erkennung des Input-Formats
+  - E-Mail (enthält `@`)
+  - Vorname.Nachname (enthält `.`)
+  - Sonst: Username
+- **Case-insensitive** Vergleich für alle Varianten
+- **Prisma Query:** `OR`-Bedingung für flexible Suche
+
+**UI-Änderungen:**
+- Placeholder: "E-Mail, Username oder Vorname.Nachname"
+- Hilfetext unter Input-Feld
+
+**Priorität:** HOCH (schnell, low-risk)
+
+---
+
+### 2. E-Mail-Benachrichtigung bei Jahresabschluss
+
+**Ziel:** Automatische E-Mail am 1. Februar an alle User mit Jahreskosten
+
+**Technische Implementation:**
+
+**Neue Dependencies:**
+```bash
+npm install nodemailer @types/nodemailer node-cron
+```
+
+**Neue Dateien:**
+- `src/utils/email.ts` - SMTP-Setup mit nodemailer
+- `src/utils/emailTemplates.ts` - HTML-Template für Jahresabschluss-E-Mail
+- `src/pages/api/admin/jahresabschluss-email.ts` - Manueller Versand-Trigger (Admin-Button)
+- `scripts/cron-jahresabschluss.ts` - Automatischer Cron-Job
+
+**Cron-Konfiguration:**
+- Läuft täglich um 8:00 Uhr
+- Prüft: Ist heute der 1. Februar?
+- Lädt alle User mit Aufenthalten im Vorjahr
+- Versendet E-Mails nacheinander
+
+**ENV-Variablen (.env):**
+```env
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=dein-email@example.com
+SMTP_PASS=dein-passwort
+```
+
+**E-Mail-Inhalt:**
+- Betreff: "Jahresabschluss {Jahr} - Deine Kosten"
+- HTML-Template mit:
+  - Gesamtkosten (Öl + Übernachtungen)
+  - Tabelle aller Aufenthalte (Datum, Tage, Kosten)
+  - Link zur detaillierten Statistik-Seite
+  - Zahlungsinformationen
+
+**Datenquelle:**
+- API `/api/statistiken` liefert bereits alle benötigten Daten
+- Aufenthalte, Kostenaufschlüsselung, Jahressumme
+
+**Docker-Integration:**
+- Cron-Job läuft im Container (node-cron)
+- ODER: Zusätzlicher Admin-Button für manuellen Versand
+
+**Priorität:** MITTEL
+
+---
+
+### 3. User-Authentifizierung für Production
+
+**Ziel:** Produktions-taugliche Auth-Konfiguration mit erhöhter Sicherheit
+
+**Änderungen:**
+
+**Cookie-Sicherheit (`src/utils/auth.ts`):**
+```typescript
+context.cookies.set('session', sessionData, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production', // HTTPS only
+  sameSite: 'strict',                           // CSRF-Schutz
+  path: '/',
+  maxAge: 60 * 60 * 24 * 7,                     // 7 Tage
+  signed: true                                   // Cookie-Signing
+});
+```
+
+**ENV-Variablen (.env):**
+```env
+NODE_ENV=production
+SESSION_SECRET=generiere-einen-sicheren-random-string
+```
+
+**Optional: Rate Limiting**
+- Neue Datei: `src/middleware/rateLimit.ts`
+- Max 5 Login-Versuche pro IP/15min
+- In-Memory-Store (oder Redis falls gewünscht)
+- Blockiert Brute-Force-Angriffe
+
+**Security Headers (optional):**
+```typescript
+// astro.config.mjs
+export default {
+  server: {
+    headers: {
+      'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'strict-origin-when-cross-origin'
+    }
+  }
+}
+```
+
+**Priorität:** HOCH (vor Production-Deploy!)
+
+---
+
+### 4. Terminverwaltung ausarbeiten
+
+**Ziel:** Kalender-Ansicht, iCal-Abonnement, UI-Verbesserungen
+
+#### A) Kalender-Ansicht
+
+**Neue Seite:** `src/pages/terminplanung/index.astro`
+
+**Dependencies:**
+```bash
+npm install @fullcalendar/core @fullcalendar/daygrid
+```
+
+**Features:**
+- Visuelle Monatsansicht aller Termine
+- Farbcodierung nach Status:
+  - PENDING: Orange
+  - APPROVED: Grün
+  - DISCUSSING: Blau
+  - CANCELLED: Grau
+- Click auf Termin → Detail-Seite
+- Filter nach Status
+- Navigation: Prev/Next Monat
+
+**Technische Integration:**
+- FullCalendar Vue-Komponente
+- Lädt Termine via `/api/terminplanung`
+- Responsive Design mit DaisyUI
+
+#### B) iCal-Abonnement (Auto-generierte Tokens)
+
+**Prisma Schema-Änderung:**
+```prisma
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String
+  icalToken    String   @unique @default(uuid())  // NEU!
+  // ... rest
+}
+```
+
+**Migration erstellen:**
+```bash
+npx prisma migrate dev --name add_ical_token_to_user
+```
+
+**Neue API:**
+- `GET /api/terminplanung/ical/feed?token=xyz` - iCal-Feed (öffentlich mit Token-Auth)
+- `POST /api/profil/ical-token/regenerate` - Token neu generieren (falls kompromittiert)
+
+**Dependencies:**
+```bash
+npm install ical-generator
+```
+
+**UI-Erweiterung in `/terminplanung/index.astro`:**
+```html
+<Card title="Kalender abonnieren">
+  <p>Dein persönlicher Kalender-Link (automatisch aktualisiert):</p>
+  <input readonly value="https://deine-app.com/api/terminplanung/ical/feed?token={user.icalToken}" />
+
+  <button>Link kopieren</button>
+  <a href="webcal://...">In Apple Kalender öffnen</a>
+  <button>Token erneuern</button>
+</Card>
+```
+
+**Funktionsweise:**
+- Jeder User hat automatisch einen eindeutigen Token (UUID)
+- Token wird bei User-Erstellung automatisch generiert
+- Bestehende User: Migration generiert Token automatisch
+- iCal-URL funktioniert ohne Login (Token = Authentifizierung)
+- Kalender-Apps (Apple, Outlook, Google) können abonnieren
+- Updates automatisch (täglich/stündlich, je nach App)
+
+**Sicherheit:**
+- Token ist UUID v4 (nicht erraten)
+- Token kann regeneriert werden
+- User sieht nur seinen eigenen Link
+- Alte Token werden ungültig nach Regenerierung
+
+#### C) UI/UX-Verbesserungen
+
+**Detail-Seite (`/terminplanung/[id].astro`):**
+- Übersichtlichere Abstimmungs-Anzeige (Teilnehmer-Liste mit Icons)
+- Kommentar-Threads visuell einrücken (Replies)
+- Loading-States für async Aktionen (Spinner)
+- Bessere Error-Meldungen
+
+**Navigation:**
+- "Zurück zur Übersicht"-Link
+- Breadcrumbs: Home → Terminplanung → {Titel}
+
+**Responsive Design:**
+- Mobile-optimierte Darstellung
+- Touch-optimierte Buttons
+- Kollabierbare Abschnitte auf kleinen Screens
+
+**Priorität:** MITTEL
+
+---
+
+### Prioritäten-Reihenfolge (Empfehlung)
+
+1. **Login-Optionen** (schnell, low-risk)
+2. **Terminplanung Kalender** (UI-Verbesserung, hoher User-Value)
+3. **E-Mail-System** (Infrastruktur, zeitkritisch für 1. Februar)
+4. **Auth-Sicherheit** (vor Production-Deploy!)
+
+---
+
+### Notizen
+
+- **Hosting:** Raspberry Pi mit Docker
+- **Kein PDF-Export** nötig für Statistiken
+- **Keine Erinnerungen/Recurring** für Termine
+- **Aktueller Login:** E-Mail (nur für Dev)

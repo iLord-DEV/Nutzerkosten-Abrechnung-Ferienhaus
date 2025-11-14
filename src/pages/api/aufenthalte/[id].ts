@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../../utils/auth';
 import { validateAufenthaltData, type AufenthaltData } from '../../../utils/aufenthaltValidation';
+import { canEditJahr } from '../../../utils/jahresabschluss';
 
 const prisma = new PrismaClient();
 
@@ -81,7 +82,7 @@ export const PUT: APIRoute = async (context) => {
     // Aufenthalt laden um zu prüfen, ob der Benutzer ihn bearbeiten darf
     const existingAufenthalt = await prisma.aufenthalt.findUnique({
       where: { id: parseInt(id) },
-      select: { userId: true }
+      select: { userId: true, jahr: true }
     });
 
     if (!existingAufenthalt) {
@@ -94,6 +95,16 @@ export const PUT: APIRoute = async (context) => {
     // Normale Benutzer können nur ihre eigenen Aufenthalte bearbeiten
     if (user.role !== 'ADMIN' && existingAufenthalt.userId !== user.id) {
       return new Response(JSON.stringify({ error: 'Keine Berechtigung' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Jahresabschluss-Prüfung: Normale User können abgeschlossene Jahre nicht bearbeiten
+    if (!canEditJahr(existingAufenthalt.jahr, user.role === 'ADMIN')) {
+      return new Response(JSON.stringify({
+        error: `Das Jahr ${existingAufenthalt.jahr} ist abgeschlossen und kann nicht mehr bearbeitet werden. Ab 1. Februar des Folgejahres können nur noch Administratoren Änderungen vornehmen.`
+      }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -232,7 +243,7 @@ export const DELETE: APIRoute = async (context) => {
     // Aufenthalt laden um zu prüfen, ob der Benutzer ihn löschen darf
     const aufenthalt = await prisma.aufenthalt.findUnique({
       where: { id: parseInt(id) },
-      select: { userId: true }
+      select: { userId: true, jahr: true }
     });
 
     if (!aufenthalt) {
@@ -245,6 +256,16 @@ export const DELETE: APIRoute = async (context) => {
     // Normale Benutzer können nur ihre eigenen Aufenthalte löschen
     if (user.role !== 'ADMIN' && aufenthalt.userId !== user.id) {
       return new Response(JSON.stringify({ error: 'Keine Berechtigung' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Jahresabschluss-Prüfung: Normale User können abgeschlossene Jahre nicht bearbeiten
+    if (!canEditJahr(aufenthalt.jahr, user.role === 'ADMIN')) {
+      return new Response(JSON.stringify({
+        error: `Das Jahr ${aufenthalt.jahr} ist abgeschlossen und kann nicht mehr bearbeitet werden. Ab 1. Februar des Folgejahres können nur noch Administratoren Änderungen vornehmen.`
+      }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
       });

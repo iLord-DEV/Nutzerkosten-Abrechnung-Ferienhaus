@@ -146,7 +146,40 @@ API routes use:
 - **Astro pages** for server-rendered UI with islands architecture
 - **Vue 3 components** for interactive elements (charts, forms)
 - **Tailwind CSS 4** via Vite plugin (no separate config file needed)
+- **DaisyUI Design System** for consistent component styling
 - **Chart.js + vue-chartjs** for data visualization
+
+### Standard CSS Classes
+
+**IMPORTANT: Use these centralized classes for consistent styling across all pages!**
+
+**Layout & Containers:**
+- `content-wrapper` - Main content wrapper with responsive padding (max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8)
+- `section-container` - Section wrapper with padding (px-4 sm:px-6 lg:px-8)
+- `card-container` - Card/panel wrapper (bg-base-100 shadow rounded-lg p-6)
+
+**Typography:**
+- `page-title` - Main page heading (text-3xl font-bold text-base-content)
+- `page-description` - Page subtitle/description (text-base-content with opacity)
+- `page-header` - Header section wrapper (mb-8)
+
+**Form Elements:**
+- `input` - DaisyUI input field (use instead of manual Tailwind classes)
+- `select` - DaisyUI select dropdown
+- `checkbox` - DaisyUI checkbox
+- `btn` - DaisyUI button (add variants like btn-primary, btn-secondary, etc.)
+
+**Colors & Theme:**
+- Use `text-base-content` instead of `text-gray-900 dark:text-white`
+- Use `bg-base-100`, `bg-base-200`, `bg-base-300` for backgrounds
+- Use `border-base-300` for borders
+- DaisyUI handles dark mode automatically via theme switching
+
+**Why this approach:**
+- ✅ **Consistency**: Same look & feel across all pages
+- ✅ **Maintainability**: Update styling in one place (global.css)
+- ✅ **Dark Mode**: Automatic theme support via DaisyUI
+- ✅ **Less code**: Reusable classes instead of repeated Tailwind utilities
 
 ## Environment Setup
 

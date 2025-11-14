@@ -14,14 +14,14 @@ if (session.role !== 'ADMIN') {
 ---
 
 <ProtectedLayout title="Neue Tankfüllung - Nutzerkosten">
-  <div class="px-4 sm:px-6 lg:px-8">
-    <div class="mb-8">
+  <div class="section-container">
+    <div class="page-header">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 class="page-title">
             Neue Tankfüllung erfassen
           </h1>
-          <p class="mt-2 text-gray-600 dark:text-gray-400">
+          <p class="page-description">
             Erfassen Sie eine neue Tankfüllung für die Verbrauchsberechnung.
           </p>
         </div>
@@ -32,13 +32,13 @@ if (session.role !== 'ADMIN') {
     </div>
 
     <div class="max-w-2xl">
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
+      <div class="card-container">
+        <div>
           <form id="tankfuellung-form">
             <div class="grid grid-cols-1 gap-6">
               <!-- Datum -->
               <div>
-                <label for="datum" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label for="datum" class="block text-sm font-medium text-base-content">
                   Datum der Tankfüllung *
                 </label>
                 <input
@@ -46,13 +46,13 @@ if (session.role !== 'ADMIN') {
                   id="datum"
                   name="datum"
                   required
-                  class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  class="input mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
               <!-- Zählerstand -->
               <div>
-                <label for="zaehlerstand" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label for="zaehlerstand" class="block text-sm font-medium text-base-content">
                   Zählerstand (Stunden) *
                 </label>
                 <input
@@ -61,16 +61,16 @@ if (session.role !== 'ADMIN') {
                   name="zaehlerstand"
                   step="0.1"
                   required
-                  class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  class="input mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-sm text-base-content" style="opacity: 0.6">
                   Aktueller Zählerstand der Heizung in Betriebsstunden
                 </p>
               </div>
 
               <!-- Getankte Liter -->
               <div>
-                <label for="liter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label for="liter" class="block text-sm font-medium text-base-content">
                   Getankte Liter *
                 </label>
                 <input
@@ -79,13 +79,13 @@ if (session.role !== 'ADMIN') {
                   name="liter"
                   step="0.1"
                   required
-                  class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  class="input mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
               <!-- Preis pro Liter -->
               <div>
-                <label for="preisProLiter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label for="preisProLiter" class="block text-sm font-medium text-base-content">
                   Preis pro Liter (€) *
                 </label>
                 <input
@@ -94,27 +94,27 @@ if (session.role !== 'ADMIN') {
                   name="preisProLiter"
                   step="0.01"
                   required
-                  class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  class="input mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
 
 
               <!-- Vorschau der Kosten -->
-              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              <div class="bg-base-200 p-4 rounded-md">
+                <h3 class="text-lg font-medium text-base-content mb-2">
                   Kostenübersicht
                 </h3>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <span class="text-sm text-gray-600 dark:text-gray-400">Gesamtkosten:</span>
-                    <div class="text-lg font-semibold text-gray-900 dark:text-white" id="gesamt-kosten">
+                    <span class="text-sm text-base-content" style="opacity: 0.6">Gesamtkosten:</span>
+                    <div class="text-lg font-semibold text-base-content" id="gesamt-kosten">
                       € 0.00
                     </div>
                   </div>
                   <div>
-                    <span class="text-sm text-gray-600 dark:text-gray-400">Verbrauch pro Stunde:</span>
-                    <div class="text-sm text-gray-900 dark:text-white" id="verbrauch-pro-stunde">
+                    <span class="text-sm text-base-content" style="opacity: 0.6">Verbrauch pro Stunde:</span>
+                    <div class="text-sm text-base-content" id="verbrauch-pro-stunde">
                       -
                     </div>
                   </div>
