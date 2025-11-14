@@ -60,6 +60,81 @@ if (!user) {
       </div>
     </div>
 
+    <!-- Wetter & Außentemperatur -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+      <div class="card-body">
+        <h2 class="card-title">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+          </svg>
+          Wetter & Außentemperatur
+        </h2>
+
+        <!-- Wetterwarnungen (falls vorhanden) -->
+        <div id="weather-alerts" class="hidden mb-4">
+          <div class="alert alert-warning">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <div id="weather-alerts-content"></div>
+          </div>
+        </div>
+
+        <!-- Aktuelles Wetter -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Hauptwetter -->
+          <div class="flex items-center gap-6">
+            <div class="flex-shrink-0">
+              <img id="weather-icon" src="" alt="Wetter" class="w-24 h-24">
+            </div>
+            <div>
+              <div class="text-4xl font-bold" id="weather-temp">--°C</div>
+              <div class="text-lg opacity-70" id="weather-description">Lädt...</div>
+              <div class="text-sm opacity-60" id="weather-feels-like">Gefühlt: --°C</div>
+            </div>
+          </div>
+
+          <!-- Wetter-Details -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-sm opacity-60">Wind</div>
+              <div class="font-semibold" id="weather-wind">-- km/h</div>
+            </div>
+            <div>
+              <div class="text-sm opacity-60">Luftfeuchtigkeit</div>
+              <div class="font-semibold" id="weather-humidity">--%</div>
+            </div>
+            <div>
+              <div class="text-sm opacity-60">UV-Index</div>
+              <div class="font-semibold" id="weather-uv">--</div>
+            </div>
+            <div>
+              <div class="text-sm opacity-60">Sichtweite</div>
+              <div class="font-semibold" id="weather-visibility">-- km</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vorhersage nächste Stunden -->
+        <div class="mt-6">
+          <h3 class="text-lg font-semibold mb-3">Nächste Stunden</h3>
+          <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3" id="weather-hourly">
+            <!-- Wird dynamisch geladen -->
+          </div>
+        </div>
+
+        <!-- Vorhersage nächste Tage -->
+        <div class="mt-6">
+          <h3 class="text-lg font-semibold mb-3">7-Tage Vorhersage</h3>
+          <div class="grid grid-cols-1 gap-2" id="weather-daily">
+            <!-- Wird dynamisch geladen -->
+          </div>
+        </div>
+
+        <div class="text-xs opacity-50 mt-4" id="weather-update">
+          Lädt...
+        </div>
+      </div>
+    </div>
+
     <!-- Persönliche Übersichtskarten -->
     <div class="stats stats-vertical lg:stats-horizontal shadow w-full mb-8">
       <div class="stat">
@@ -402,13 +477,115 @@ if (!user) {
     }
   }
 
+  // Wetter laden
+  async function loadWetter() {
+    try {
+      const response = await fetch('/api/wetter');
+      if (response.ok) {
+        const data = await response.json();
+
+        // Alerts anzeigen (falls vorhanden)
+        const alertsDiv = document.getElementById('weather-alerts');
+        const alertsContent = document.getElementById('weather-alerts-content');
+        if (data.alerts && data.alerts.length > 0) {
+          if (alertsContent) {
+            alertsContent.innerHTML = data.alerts.map((alert: any) => `
+              <div class="font-semibold">${alert.event}</div>
+              <div class="text-sm">${alert.description}</div>
+            `).join('<div class="divider"></div>');
+          }
+          if (alertsDiv) alertsDiv.classList.remove('hidden');
+        }
+
+        // Aktuelles Wetter
+        const current = data.current;
+        const tempEl = document.getElementById('weather-temp');
+        const descEl = document.getElementById('weather-description');
+        const feelsLikeEl = document.getElementById('weather-feels-like');
+        const iconEl = document.getElementById('weather-icon') as HTMLImageElement;
+        const windEl = document.getElementById('weather-wind');
+        const humidityEl = document.getElementById('weather-humidity');
+        const uvEl = document.getElementById('weather-uv');
+        const visibilityEl = document.getElementById('weather-visibility');
+        const updateEl = document.getElementById('weather-update');
+
+        if (tempEl) tempEl.textContent = `${current.temp}°C`;
+        if (descEl) descEl.textContent = current.description.charAt(0).toUpperCase() + current.description.slice(1);
+        if (feelsLikeEl) feelsLikeEl.textContent = `Gefühlt: ${current.feelsLike}°C`;
+        if (iconEl) iconEl.src = `https://openweathermap.org/img/wn/${current.icon}@2x.png`;
+        if (windEl) windEl.textContent = `${current.windSpeed} km/h`;
+        if (humidityEl) humidityEl.textContent = `${current.humidity}%`;
+        if (uvEl) {
+          uvEl.textContent = current.uvIndex.toString();
+          // UV-Index Farbcodierung
+          const uvValue = current.uvIndex;
+          if (uvValue <= 2) uvEl.className = 'font-semibold text-success';
+          else if (uvValue <= 5) uvEl.className = 'font-semibold text-warning';
+          else if (uvValue <= 7) uvEl.className = 'font-semibold text-orange-500';
+          else uvEl.className = 'font-semibold text-error';
+        }
+        if (visibilityEl) visibilityEl.textContent = `${current.visibility} km`;
+        if (updateEl) {
+          const time = new Date(current.timestamp);
+          updateEl.textContent = `Aktualisiert: ${time.toLocaleString('de-DE')}`;
+        }
+
+        // Stündliche Vorhersage (nächste 8 Stunden)
+        const hourlyDiv = document.getElementById('weather-hourly');
+        if (hourlyDiv && data.hourly) {
+          hourlyDiv.innerHTML = data.hourly.slice(0, 8).map((hour: any) => {
+            const time = new Date(hour.time);
+            return `
+              <div class="text-center p-2 bg-base-200 rounded-lg">
+                <div class="text-xs opacity-60">${time.getHours()}:00</div>
+                <img src="https://openweathermap.org/img/wn/${hour.icon}.png" alt="${hour.description}" class="w-10 h-10 mx-auto">
+                <div class="font-semibold">${hour.temp}°C</div>
+                ${hour.pop > 0 ? `<div class="text-xs text-info">${hour.pop}%</div>` : ''}
+              </div>
+            `;
+          }).join('');
+        }
+
+        // Tägliche Vorhersage
+        const dailyDiv = document.getElementById('weather-daily');
+        if (dailyDiv && data.daily) {
+          const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+          dailyDiv.innerHTML = data.daily.map((day: any) => {
+            const date = new Date(day.date);
+            const weekday = weekdays[date.getDay()];
+            return `
+              <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                <div class="flex items-center gap-3 flex-1">
+                  <div class="w-16 text-sm font-semibold">${weekday}, ${date.getDate()}.${date.getMonth() + 1}.</div>
+                  <img src="https://openweathermap.org/img/wn/${day.icon}.png" alt="${day.description}" class="w-10 h-10">
+                  <div class="flex-1 text-sm opacity-70">${day.description.charAt(0).toUpperCase() + day.description.slice(1)}</div>
+                </div>
+                <div class="flex items-center gap-4">
+                  ${day.pop > 0 ? `<div class="text-sm text-info">${day.pop}%</div>` : ''}
+                  <div class="text-sm opacity-60">${day.tempMin}°</div>
+                  <div class="font-semibold">${day.tempMax}°C</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Wetterdaten:', error);
+    }
+  }
+
   // Event-Listener
   document.addEventListener('DOMContentLoaded', () => {
     loadUserInfo();
     loadTemperaturen();
+    loadWetter();
 
-    // Temperaturen alle 5 Minuten aktualisieren
-    setInterval(loadTemperaturen, 5 * 60 * 1000);
+    // Temperaturen und Wetter alle 10 Minuten aktualisieren
+    setInterval(() => {
+      loadTemperaturen();
+      loadWetter();
+    }, 10 * 60 * 1000);
   });
 </script>
 </ProtectedLayout>
