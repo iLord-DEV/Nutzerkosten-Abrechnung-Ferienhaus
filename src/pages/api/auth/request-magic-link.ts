@@ -68,12 +68,17 @@ export const POST: APIRoute = async ({ request }) => {
     } catch (error) {
       // Rate-Limit überschritten
       if (error instanceof Error && error.message === 'RATE_LIMIT_EXCEEDED') {
-        // Gleiche Antwort (Security), aber interner Log
         console.warn(`Rate-Limit überschritten für User ${user.id}`);
-        return new Response(JSON.stringify(successResponse), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Zu viele Anfragen. Bitte versuchen Sie es in einer Stunde erneut.'
+          }),
+          {
+            status: 429,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
       }
       throw error;
     }
