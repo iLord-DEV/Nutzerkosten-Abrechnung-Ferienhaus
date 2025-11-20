@@ -1,0 +1,85 @@
+---
+import '../styles/global.css';
+
+// URL-Parameter prüfen
+const token = Astro.url.searchParams.get('token');
+
+if (!token) {
+  return Astro.redirect('/login');
+}
+---
+
+<!DOCTYPE html>
+<html lang="de" data-theme="wuestenstein">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anmeldung wird verarbeitet...</title>
+  </head>
+  <body class="min-h-screen bg-base-200">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4">
+      <div class="max-w-md w-full">
+        <div class="text-center">
+          <div class="loading loading-spinner loading-lg text-primary mb-4"></div>
+          <h1 class="text-2xl font-bold text-base-content mb-2">
+            Anmeldung wird verarbeitet...
+          </h1>
+          <p class="text-base-content/70">
+            Sie werden in Kürze weitergeleitet.
+          </p>
+
+          <!-- Error-Display -->
+          <div id="error-container" class="hidden mt-6">
+            <div class="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span id="error-message">Fehler</span>
+            </div>
+            <a href="/login" class="btn btn-primary btn-block mt-4">
+              Zurück zum Login
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script define:vars={{ token }}>
+      async function verifyToken() {
+        try {
+          const response = await fetch('/api/auth/verify-magic-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            // Erfolg - Redirect
+            window.location.href = data.redirectTo;
+          } else {
+            // Fehler anzeigen
+            document.getElementById('error-message').textContent =
+              data.error || 'Ungültiger oder abgelaufener Link';
+            document.getElementById('error-container').classList.remove('hidden');
+            document.querySelector('.loading').classList.add('hidden');
+            document.querySelector('h1').textContent = 'Anmeldung fehlgeschlagen';
+            document.querySelector('p').textContent = '';
+          }
+        } catch (error) {
+          console.error('Verify-Fehler:', error);
+          document.getElementById('error-message').textContent =
+            'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
+          document.getElementById('error-container').classList.remove('hidden');
+          document.querySelector('.loading').classList.add('hidden');
+          document.querySelector('h1').textContent = 'Anmeldung fehlgeschlagen';
+          document.querySelector('p').textContent = '';
+        }
+      }
+
+      // Automatisch beim Laden ausführen
+      verifyToken();
+    </script>
+  </body>
+</html>

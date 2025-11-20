@@ -47,11 +47,11 @@ export const POST: APIRoute = async (context) => {
     const { request } = context;
 
     const body = await request.json();
-    const { name, email, role, password } = body;
+    const { name, email, role, username } = body;
 
-    if (!name || !email || !role || !password) {
+    if (!name || !email || !role) {
       return new Response(
-        JSON.stringify({ error: "Alle Felder sind erforderlich" }),
+        JSON.stringify({ error: "Name, E-Mail und Rolle sind erforderlich" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -60,11 +60,11 @@ export const POST: APIRoute = async (context) => {
     }
 
     // Prüfen, ob E-Mail bereits existiert
-    const existingUser = await prisma.user.findUnique({
+    const existingEmail = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (existingUser) {
+    if (existingEmail) {
       return new Response(
         JSON.stringify({ error: "E-Mail-Adresse bereits vergeben" }),
         {
@@ -74,14 +74,30 @@ export const POST: APIRoute = async (context) => {
       );
     }
 
-    // Benutzer erstellen
+    // Prüfen, ob Username bereits existiert (falls angegeben)
+    if (username) {
+      const existingUsername = await prisma.user.findUnique({
+        where: { username },
+      });
+
+      if (existingUsername) {
+        return new Response(
+          JSON.stringify({ error: "Benutzername bereits vergeben" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+    }
+
+    // Benutzer erstellen (ohne Passwort, mit optionalem Username)
     const user = await prisma.user.create({
       data: {
         name,
         email,
         role,
-        // Hier würde normalerweise das Passwort gehashed werden
-        // Für den Moment speichern wir es als Plaintext (nicht empfohlen für Produktion)
+        username: username || null,
       },
     });
 

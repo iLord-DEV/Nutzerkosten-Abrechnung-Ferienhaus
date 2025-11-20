@@ -1,0 +1,66 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: wuestenstein-nutzerkosten-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-nutzerkosten_db}
+      MYSQL_USER: ${MYSQL_USER:-nutzerkosten}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - wuestenstein-nutzerkosten-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wuestenstein-nutzerkosten-app
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      HOST: ${HOST:-0.0.0.0}
+      PORT: ${PORT:-3002}
+      DATABASE_URL: mysql://${MYSQL_USER:-nutzerkosten}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-nutzerkosten_db}
+      # Magic-Link Authentication
+      APP_URL: ${APP_URL}
+      # SMTP Settings (für E-Mail-Versand)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      # Mobile Alerts API (Temperatur-Sensoren)
+      MOBILE_ALERTS_PHONE_ID: ${MOBILE_ALERTS_PHONE_ID}
+      # OpenWeather API
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
+      OPENWEATHER_LAT: ${OPENWEATHER_LAT}
+      OPENWEATHER_LON: ${OPENWEATHER_LON}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - wuestenstein-nutzerkosten-network
+    volumes:
+      # Optional: Mount für Uploads/Bilder falls benötigt
+      - app_uploads:/app/public/uploads
+
+networks:
+  wuestenstein-nutzerkosten-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  app_uploads:

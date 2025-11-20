@@ -18,6 +18,10 @@ pnpm-debug.log*
 .env.production
 .env.local
 .env.development
+.env.docker
+
+# deployment configuration
+.deploy-config
 
 # macOS-specific files
 .DS_Store

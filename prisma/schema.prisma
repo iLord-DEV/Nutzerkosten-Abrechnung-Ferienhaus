@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -10,11 +11,11 @@ datasource db {
 model User {
   id                 Int                    @id @default(autoincrement())
   email              String                 @unique
+  username           String?                @unique
   name               String
   role               Role                   @default(USER)
   beguenstigt        Boolean                @default(false)
   createdAt          DateTime               @default(now())
-  password           String
   aufenthalte        Aufenthalt[]
   BlogComment        BlogComment[]
   BlogPost           BlogPost[]
@@ -24,6 +25,7 @@ model User {
   terminKommentare   TerminKommentar[]
   terminPlanungen    TerminPlanung[]
   jahresabschluesse  UserJahresabschluss[]
+  magicLinkTokens    MagicLinkToken[]
 }
 
 model Aufenthalt {
@@ -291,6 +293,20 @@ model PollVote {
   @@index([optionId], map: "PollVote_optionId_fkey")
   @@index([pollId], map: "PollVote_pollId_fkey")
   @@index([userId], map: "PollVote_userId_fkey")
+}
+
+model MagicLinkToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId], map: "MagicLinkToken_userId_fkey")
+  @@index([expiresAt])
 }
 
 enum TerminStatus {

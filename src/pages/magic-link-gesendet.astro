@@ -1,0 +1,106 @@
+---
+import '../styles/global.css';
+---
+
+<!DOCTYPE html>
+<html lang="de" data-theme="wuestenstein">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Magic-Link gesendet - Nutzerkosten</title>
+  </head>
+  <body class="min-h-screen bg-base-200">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4">
+      <div class="max-w-md w-full">
+        <div class="text-center mb-8">
+          <div class="mx-auto w-16 h-16 bg-success rounded-2xl flex items-center justify-center shadow-lg mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-success-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h1 class="text-4xl font-bold text-base-content mb-2">
+            E-Mail gesendet!
+          </h1>
+          <p class="text-base-content/70">
+            Überprüfen Sie Ihr E-Mail-Postfach
+          </p>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <div class="alert alert-success mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Falls ein Account existiert, wurde ein Anmelde-Link gesendet.</span>
+            </div>
+
+            <div class="space-y-3 text-sm">
+              <h3 class="font-bold text-base-content">Nächste Schritte:</h3>
+              <ol class="list-decimal list-inside space-y-2 text-base-content/70">
+                <li>Öffnen Sie Ihr E-Mail-Postfach</li>
+                <li>Klicken Sie auf den Link in der E-Mail</li>
+                <li>Sie werden automatisch eingeloggt</li>
+              </ol>
+
+              <div class="alert alert-warning mt-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <div class="font-bold">Wichtig!</div>
+                  <div class="text-xs">Der Link ist nur 15 Minuten gültig und kann nur einmal verwendet werden.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="text-center">
+              <p class="text-sm text-base-content/70 mb-2">
+                E-Mail nicht erhalten?
+              </p>
+              <a href="/login" class="btn btn-outline btn-sm">
+                Erneut anfordern
+              </a>
+            </div>
+
+            <!-- Development-Mode: Magic-Link direkt anzeigen -->
+            <div id="dev-magic-link" class="hidden mt-6 p-4 bg-warning/10 border border-warning rounded-lg">
+              <div class="flex items-start gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm text-warning mb-2">Development-Mode</div>
+                  <p class="text-xs text-base-content/70 mb-3">
+                    Der Magic-Link wurde in der Server-Console ausgegeben. Hier ist er zur einfacheren Nutzung:
+                  </p>
+                  <a id="dev-link" href="#" class="btn btn-warning btn-sm btn-block">
+                    🔗 Zum Login-Link
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Development-Mode: Magic-Link aus URL-Parameter anzeigen
+      const urlParams = new URLSearchParams(window.location.search);
+      const magicLink = urlParams.get('link');
+
+      if (magicLink) {
+        const devLinkContainer = document.getElementById('dev-magic-link');
+        const devLink = document.getElementById('dev-link');
+
+        if (devLinkContainer && devLink) {
+          devLink.href = magicLink;
+          devLinkContainer.classList.remove('hidden');
+        }
+      }
+    </script>
+  </body>
+</html>

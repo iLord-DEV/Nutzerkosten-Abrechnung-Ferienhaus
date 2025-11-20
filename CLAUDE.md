@@ -34,12 +34,31 @@ npm run db:seed                # Seed database with test data
 
 # Database Backup/Restore
 npm run db:backup              # Local database backup
-npm run db:backup:prod         # Production backup
 npm run db:restore             # Shows restore command
 
 # Deployment (Uberspace)
 npx prisma migrate deploy      # Apply migrations in production
+
+# Docker Deployment (Raspberry Pi)
+./deploy-to-pi.sh              # Deploy from Mac to Raspberry Pi (recommended!)
+docker compose up -d           # Start all containers (on Pi)
+docker compose down            # Stop all containers (on Pi)
+docker compose logs -f         # View logs (on Pi)
+docker compose ps              # Check status (on Pi)
+docker compose build --no-cache # Rebuild images (on Pi)
+docker compose exec app npx prisma studio  # Open Prisma Studio (on Pi)
+
+# Docker Management (on Pi)
+docker compose restart         # Restart containers
+docker compose up -d --build   # Rebuild and start
+docker exec wuestenstein-nutzerkosten-mysql mysqldump ... # Database backup
 ```
+
+**Development Workflow:**
+1. Develop locally: `npm run dev` (with HMR and local MySQL)
+2. Deploy to Pi: `./deploy-to-pi.sh` (copies files via rsync, builds Docker, runs migrations)
+
+**See [DOCKER.md](./DOCKER.md) for complete Docker deployment guide.**
 
 ## Architecture
 
@@ -194,6 +213,36 @@ DATABASE_URL="mysql://user:password@localhost:3306/nutzerkosten_db"
 - Server runs on `HOST=0.0.0.0` (required for external access)
 - Use `screen` for process management
 - Set web backend: `uberspace web backend set / --http --port 4321`
+
+**For Docker deployment (Raspberry Pi):**
+- Copy `.env.docker.example` to `.env.docker` and set secure passwords
+- App runs on port 3002 (configurable in docker compose.yml)
+- MySQL data persists in Docker volume `mysql_data`
+- ARM64 compatible (Raspberry Pi 3B+ or newer)
+- See [DOCKER.md](./DOCKER.md) for detailed deployment guide
+
+### Environment Files Overview
+
+**IMPORTANT: Only these environment files should exist!**
+
+| File | Status | Purpose | Contains |
+|------|--------|---------|----------|
+| `.env` | Local (gitignored) | Local development | `DATABASE_URL` for local MySQL |
+| `.env-example` | Committed | Template for `.env` | Example values for local setup |
+| `.env.docker` | Local (gitignored) | Docker credentials for Pi | `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`, etc. |
+| `.env.docker.example` | Committed | Template for `.env.docker` | Example values, gets copied to Pi |
+| `.deploy-config` | Local (gitignored) | SSH config for deployment | `PI_USER`, `PI_HOST`, `PI_PORT`, etc. |
+| `.deploy-config.example` | Committed | Template for `.deploy-config` | Example SSH configuration |
+
+**What NOT to create:**
+- ❌ `.env.production` - NOT NEEDED! Use `.env.docker` for Pi deployment
+- ❌ `.env.local` - Use `.env` instead
+- ❌ Any other `.env.*` files
+
+**Credentials Flow:**
+1. **Local dev**: Use `.env` with local MySQL
+2. **Docker (Pi)**: Use `.env.docker` with Docker MySQL container
+3. **Deployment**: `deploy-to-pi.sh` copies files to Pi (excluding `.env`, including `.env.docker.example`)
 
 ## Important Notes
 

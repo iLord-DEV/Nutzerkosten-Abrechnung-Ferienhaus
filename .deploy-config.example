@@ -1,0 +1,10 @@
+# Raspberry Pi Deploy Konfiguration
+# Kopiere diese Datei zu .deploy-config und passe die Werte an
+
+# SSH-Zugangsdaten
+PI_USER=pi                                              # SSH-Username auf dem Raspberry Pi
+PI_HOST=heimserver.local                                # Hostname oder IP-Adresse
+PI_PORT=22                                              # SSH-Port (Standard: 22)
+
+# App-Verzeichnis auf dem Pi
+PI_APP_DIR=/mnt/piStorage/docker/wuestenstein-nutzerkosten   # Pfad zum App-Verzeichnis auf dem Pi
