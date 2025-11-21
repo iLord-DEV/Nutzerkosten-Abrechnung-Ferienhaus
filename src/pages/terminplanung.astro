@@ -27,8 +27,12 @@ if (!user) {
     <!-- Status-Legende -->
     <div class="alert mb-6">
       <div>
-        <h3 class="font-semibold mb-2">Status-Legende:</h3>
+        <h3 class="font-semibold mb-2">Legende:</h3>
         <div class="flex flex-wrap gap-4 text-sm">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-primary badge-sm opacity-80">Aufenthalt</span>
+            <span class="text-xs opacity-60">(eingetragen)</span>
+          </div>
           <div class="flex items-center gap-2">
             <span class="badge badge-success">Freigegeben</span>
           </div>
@@ -191,6 +195,7 @@ if (!user) {
 <script>
   let currentDate = new Date();
   let terminplanungen = [];
+  let aufenthalte = [];
   let currentUser = null;
 
   // Toast Notification System
@@ -264,13 +269,27 @@ if (!user) {
   // Kalender initialisieren
   function initCalendar() {
     updateCalendar();
-    document.getElementById('prevMonth').addEventListener('click', () => {
+    document.getElementById('prevMonth').addEventListener('click', async () => {
+      const oldYear = currentDate.getFullYear();
       currentDate.setMonth(currentDate.getMonth() - 1);
-      updateCalendar();
+      const newYear = currentDate.getFullYear();
+      // Aufenthalte neu laden wenn sich das Jahr ändert
+      if (oldYear !== newYear) {
+        await loadAufenthalte();
+      } else {
+        updateCalendar();
+      }
     });
-    document.getElementById('nextMonth').addEventListener('click', () => {
+    document.getElementById('nextMonth').addEventListener('click', async () => {
+      const oldYear = currentDate.getFullYear();
       currentDate.setMonth(currentDate.getMonth() + 1);
-      updateCalendar();
+      const newYear = currentDate.getFullYear();
+      // Aufenthalte neu laden wenn sich das Jahr ändert
+      if (oldYear !== newYear) {
+        await loadAufenthalte();
+      } else {
+        updateCalendar();
+      }
     });
   }
 
@@ -323,10 +342,29 @@ if (!user) {
             termin.status === 'DISCUSSING' ? 'badge-warning' :
             termin.status === 'PENDING' ? 'badge-info' :
             'badge';
-          terminElement.className = `badge ${badgeClass} badge-xs p-1 mb-1 truncate block`;
+          terminElement.className = `badge ${badgeClass} badge-sm mb-1 truncate block text-xs`;
           terminElement.textContent = termin.titel;
           terminElement.title = `${termin.titel} (${termin.status})`;
           dayElement.appendChild(terminElement);
+        });
+
+        // Aufenthalte für diesen Tag anzeigen
+        const dayAufenthalte = aufenthalte.filter(aufenthalt => {
+          const ankunft = new Date(aufenthalt.ankunft);
+          const abreise = new Date(aufenthalt.abreise);
+          // Datum ohne Zeit vergleichen
+          const currentDateOnly = new Date(current.getFullYear(), current.getMonth(), current.getDate());
+          const ankunftDateOnly = new Date(ankunft.getFullYear(), ankunft.getMonth(), ankunft.getDate());
+          const abreiseDateOnly = new Date(abreise.getFullYear(), abreise.getMonth(), abreise.getDate());
+          return currentDateOnly >= ankunftDateOnly && currentDateOnly <= abreiseDateOnly;
+        });
+
+        dayAufenthalte.forEach(aufenthalt => {
+          const aufenthaltElement = document.createElement('div');
+          aufenthaltElement.className = 'badge badge-primary badge-sm mb-1 truncate block text-xs opacity-80';
+          aufenthaltElement.textContent = aufenthalt.user.name;
+          aufenthaltElement.title = `Aufenthalt: ${aufenthalt.user.name} (${new Date(aufenthalt.ankunft).toLocaleDateString('de-DE')} - ${new Date(aufenthalt.abreise).toLocaleDateString('de-DE')})`;
+          dayElement.appendChild(aufenthaltElement);
         });
       } else {
         dayElement.className += ' bg-base-200 opacity-50';
@@ -356,6 +394,20 @@ if (!user) {
       }
     } catch (error) {
       console.error('Fehler beim Laden der Terminplanungen:', error);
+    }
+  }
+
+  // Aufenthalte laden (für Kalender-Anzeige)
+  async function loadAufenthalte() {
+    try {
+      const year = currentDate.getFullYear();
+      const response = await fetch(`/api/aufenthalte?jahr=${year}`);
+      if (response.ok) {
+        aufenthalte = await response.json();
+        updateCalendar();
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Aufenthalte:', error);
     }
   }
 
@@ -676,5 +728,6 @@ if (!user) {
     await loadCurrentUser();
     initCalendar();
     await loadTerminplanungen();
+    await loadAufenthalte();
   });
 </script>
