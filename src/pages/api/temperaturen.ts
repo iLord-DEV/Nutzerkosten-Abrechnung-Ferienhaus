@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 
 const MOBILE_ALERTS_API = 'https://www.data199.com/api/pv1/device/lastmeasurement';
-const PHONE_ID = import.meta.env.MOBILE_ALERTS_PHONE_ID;
+const PHONE_ID = process.env.MOBILE_ALERTS_PHONE_ID;
 
 // Sensor-IDs
 const SENSORS = {

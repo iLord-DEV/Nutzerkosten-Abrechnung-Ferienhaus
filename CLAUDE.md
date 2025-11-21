@@ -36,6 +36,10 @@ npm run db:seed                # Seed database with test data
 npm run db:backup              # Local database backup
 npm run db:restore             # Shows restore command
 
+# Database Synchronization (Local ↔ Production)
+npm run db:pull:prod           # Pull Production DB from Pi to local (OVERWRITES LOCAL!)
+npm run db:push:prod           # Push local DB to Pi (DANGEROUS! OVERWRITES PROD!)
+
 # Deployment (Uberspace)
 npx prisma migrate deploy      # Apply migrations in production
 
@@ -57,6 +61,25 @@ docker exec wuestenstein-nutzerkosten-mysql mysqldump ... # Database backup
 **Development Workflow:**
 1. Develop locally: `npm run dev` (with HMR and local MySQL)
 2. Deploy to Pi: `./deploy-to-pi.sh` (copies files via rsync, builds Docker, runs migrations)
+
+**Database Workflow (Hybrid Approach):**
+- **Production (Pi) = Single Source of Truth**
+  - Real data should be entered directly on production (www.schloss-wuestenstein.de)
+  - Production data is the authoritative version
+
+- **Local Development:**
+  - Weekly refresh: `npm run db:pull:prod` → Pulls fresh production data to local
+  - Use for testing with real data
+  - Local changes are typically discarded on next pull
+
+- **Data Entry:**
+  - **Preferred:** Enter data directly on production (www.schloss-wuestenstein.de)
+  - **Alternative:** Enter locally, then `npm run db:push:prod` (with extreme caution!)
+
+- **Code Deployment:**
+  - `./deploy-to-pi.sh` → Deploys code + migrations (does NOT sync data)
+  - Production data remains untouched
+  - Only schema migrations are applied
 
 **See [DOCKER.md](./DOCKER.md) for complete Docker deployment guide.**
 

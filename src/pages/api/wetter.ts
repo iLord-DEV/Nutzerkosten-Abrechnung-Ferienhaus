@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 
-const OPENWEATHER_API_KEY = import.meta.env.OPENWEATHER_API_KEY;
-const LATITUDE = import.meta.env.OPENWEATHER_LAT;
-const LONGITUDE = import.meta.env.OPENWEATHER_LON;
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+const LATITUDE = process.env.OPENWEATHER_LAT;
+const LONGITUDE = process.env.OPENWEATHER_LON;
 
 // OpenWeatherMap One Call API 3.0
 const ONE_CALL_API = 'https://api.openweathermap.org/data/3.0/onecall';

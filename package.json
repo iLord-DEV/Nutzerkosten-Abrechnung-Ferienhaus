@@ -11,7 +11,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:backup": "./scripts/backup-database.sh",
     "db:backup:prod": "./scripts/backup-production.sh",
-    "db:restore": "echo 'Verwende: gunzip -c backup.sql.gz | mysql -u root -p nutzerkosten_db'"
+    "db:restore": "echo 'Verwende: gunzip -c backup.sql.gz | mysql -u root -p nutzerkosten_db'",
+    "db:pull:prod": "./scripts/pull-prod-db.sh",
+    "db:push:prod": "./scripts/push-prod-db.sh"
   },
   "dependencies": {
     "@astrojs/node": "^9.4.3",

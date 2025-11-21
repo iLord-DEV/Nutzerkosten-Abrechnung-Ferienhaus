@@ -93,6 +93,7 @@ export const POST: APIRoute = async (context) => {
         preisProLiter: parseFloat(body.preisProLiter),
         zaehlerstand: parseFloat(body.zaehlerstand),
         zaehlerId: aktiverZaehler.id,
+        notizen: body.notizen || null,
       },
     });
 

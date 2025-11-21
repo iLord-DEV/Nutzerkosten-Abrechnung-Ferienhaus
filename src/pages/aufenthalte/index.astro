@@ -676,6 +676,9 @@ const session = JSON.parse(sessionCookie.value);
       const zaehlerEnde = aufenthalt.zaehlerAbreise;
       const verbrauchteStunden = zaehlerEnde - zaehlerStart;
 
+      // Tage berechnen
+      const tage = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
+
       // Kosten berechnen
       const oelKosten = berechneOelkostenNachZaehlerstand(zaehlerStart, zaehlerEnde, alleTankfuellungen);
       const naechteBerechnen = (aufenthalt as any).naechteBerechnen ?? !aufenthalt.user.beguenstigt;
@@ -753,13 +756,31 @@ const session = JSON.parse(sessionCookie.value);
                   Kostenaufschlüsselung
                 </h3>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <!-- Anwesenheit -->
+                  <div class="bg-base-200 rounded-lg p-3">
+                    <div class="text-xs text-base-content/70 mb-1">Anwesenheitstage</div>
+                    <div class="text-xl font-bold text-primary">${tage} Tage</div>
+                    <div class="text-xs text-base-content/60 mt-2">
+                      ${ankunft} → ${abreise}
+                    </div>
+                  </div>
+
                   <!-- Verbrauch -->
                   <div class="bg-base-200 rounded-lg p-3">
                     <div class="text-xs text-base-content/70 mb-1">Verbrauchte Stunden</div>
                     <div class="text-xl font-bold text-primary">${verbrauchteStunden}h</div>
-                    <div id="calc-details-${aufenthalt.id}" class="text-xs text-base-content/60 mt-2">
-                      <!-- Wird dynamisch gefüllt -->
+                    <div class="text-xs text-base-content/60 mt-2">
+                      ${(verbrauchteStunden / tage).toFixed(1)}h pro Tag
+                    </div>
+                  </div>
+
+                  <!-- Kosten pro Tag -->
+                  <div class="bg-base-200 rounded-lg p-3">
+                    <div class="text-xs text-base-content/70 mb-1">Kosten pro Tag</div>
+                    <div class="text-xl font-bold text-primary">€${(aufenthaltKosten / tage).toFixed(2)}</div>
+                    <div class="text-xs text-base-content/60 mt-2">
+                      Gesamt: €${aufenthaltKosten.toFixed(2)}
                     </div>
                   </div>
 
@@ -767,6 +788,9 @@ const session = JSON.parse(sessionCookie.value);
                   <div class="bg-base-200 rounded-lg p-3">
                     <div class="text-xs text-base-content/70 mb-1">Ölkosten</div>
                     <div class="text-xl font-bold">€${oelKosten.toFixed(2)}</div>
+                    <div id="calc-details-${aufenthalt.id}" class="text-xs text-base-content/60 mt-2">
+                      <!-- Wird dynamisch gefüllt -->
+                    </div>
                   </div>
 
                   <!-- Übernachtungen -->

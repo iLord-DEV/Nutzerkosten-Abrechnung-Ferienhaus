@@ -104,7 +104,6 @@ try {
               id="letzterStandAlterZaehler"
               name="letzterStandAlterZaehler"
               step="0.1"
-              required
               class="input w-full rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="z.B. 100.0"
             >
@@ -260,15 +259,17 @@ try {
     document.getElementById('einbauDatum').value = heute;
 
     // Wenn ein aktiver Zähler existiert, Ausbaustand-Feld anzeigen
+    const letzterStandInput = document.getElementById('letzterStandAlterZaehler');
     if (aktiverZaehler) {
       letzterStandContainer.style.display = 'block';
+      letzterStandInput.required = true;
       // Letzten Aufenthalt-Stand als Vorschlag eintragen
-      const letzterStandInput = document.getElementById('letzterStandAlterZaehler');
       if (letzterStandInput && aktiverZaehler.letzterAufenthaltStand) {
         letzterStandInput.value = aktiverZaehler.letzterAufenthaltStand.toFixed(1);
       }
     } else {
       letzterStandContainer.style.display = 'none';
+      letzterStandInput.required = false;
     }
 
     modal.classList.remove('hidden');

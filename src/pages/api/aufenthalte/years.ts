@@ -8,12 +8,15 @@ export const GET: APIRoute = async (context) => {
   try {
     // Authentifizierung prüfen
     const user = await requireAuth(context);
-    
-    // Verfügbare Jahre aus Aufenthalten des angemeldeten Benutzers laden
+
+    // Verfügbare Jahre aus Aufenthalten laden
+    // Admin sieht alle Jahre (von allen Usern), normale User nur ihre eigenen
+    const whereClause = user.role === 'ADMIN'
+      ? {} // Admin: Keine Einschränkung, alle Aufenthalte
+      : { userId: user.id }; // User: Nur eigene Aufenthalte
+
     const years = await prisma.aufenthalt.findMany({
-      where: {
-        userId: user.id, // Nur Aufenthalte des angemeldeten Benutzers
-      },
+      where: whereClause,
       select: {
         jahr: true,
       },
