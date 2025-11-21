@@ -7,7 +7,9 @@ import { writeFile, unlink, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 
-const UPLOAD_DIR = 'public/uploads/profiles';
+// In Production: dist/client, in Development: public
+const IS_PROD = import.meta.env.PROD;
+const UPLOAD_DIR = IS_PROD ? 'dist/client/uploads/profiles' : 'public/uploads/profiles';
 const PUBLIC_PATH = '/uploads/profiles';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -55,7 +57,8 @@ export const POST: APIRoute = async (context) => {
     });
 
     if (currentUser?.profileImage) {
-      const oldFilePath = path.join('public', currentUser.profileImage);
+      const baseDir = IS_PROD ? 'dist/client' : 'public';
+      const oldFilePath = path.join(baseDir, currentUser.profileImage);
       if (existsSync(oldFilePath)) {
         try {
           await unlink(oldFilePath);
@@ -120,7 +123,8 @@ export const DELETE: APIRoute = async (context) => {
 
     // Datei löschen falls vorhanden
     if (currentUser?.profileImage) {
-      const filePath = path.join('public', currentUser.profileImage);
+      const baseDir = IS_PROD ? 'dist/client' : 'public';
+      const filePath = path.join(baseDir, currentUser.profileImage);
       if (existsSync(filePath)) {
         try {
           await unlink(filePath);

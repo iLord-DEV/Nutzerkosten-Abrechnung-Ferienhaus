@@ -54,8 +54,8 @@ services:
     networks:
       - wuestenstein-nutzerkosten-network
     volumes:
-      # Optional: Mount für Uploads/Bilder falls benötigt
-      - app_uploads:/app/public/uploads
+      # Mount für Uploads/Bilder (Astro serviert aus dist/client)
+      - app_uploads:/app/dist/client/uploads
 
 networks:
   wuestenstein-nutzerkosten-network:
