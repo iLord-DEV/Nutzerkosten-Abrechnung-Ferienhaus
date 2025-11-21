@@ -392,9 +392,13 @@ const session = JSON.parse(sessionCookie.value);
 
   // Alle Caches leeren
   function clearAllCaches() {
-    // localStorage leeren (falls vorhanden)
+    // localStorage leeren (falls vorhanden) - ABER USER-SETTINGS BEHALTEN!
     if (typeof localStorage !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      const savedFontSize = localStorage.getItem('fontSize');
       localStorage.clear();
+      if (savedTheme) localStorage.setItem('theme', savedTheme);
+      if (savedFontSize) localStorage.setItem('fontSize', savedFontSize);
     }
     
     // SessionStorage leeren (falls vorhanden)

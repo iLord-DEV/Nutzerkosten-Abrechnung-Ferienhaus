@@ -33,15 +33,16 @@ const isAdmin = user.role === 'ADMIN';
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    <!-- Load theme immediately to prevent flash -->
+    <!-- Load theme and font size immediately to prevent flash -->
     <script is:inline>
       (function() {
         try {
           const theme = localStorage.getItem('theme') || 'light';
           document.documentElement.setAttribute('data-theme', theme);
-          console.log('[Theme Init] Set theme to:', theme);
+          const fontSize = localStorage.getItem('fontSize') || '100';
+          document.documentElement.style.fontSize = fontSize + '%';
         } catch (e) {
-          console.error('[Theme Init] Error:', e);
+          console.error('[Init] Error:', e);
           document.documentElement.setAttribute('data-theme', 'light');
         }
       })();
@@ -51,60 +52,8 @@ const isAdmin = user.role === 'ADMIN';
     <!-- Mobile Drawer -->
     <input id="main-drawer" type="checkbox" class="drawer-toggle" />
 
-    <!-- Navigation -->
+    <!-- Main Content Area -->
     <div class="drawer-content flex flex-col">
-      <!-- Navbar -->
-      <div class="navbar bg-base-100 shadow-md sticky top-0 z-50">
-        <!-- Mobile Menu Button -->
-        <div class="flex-none lg:hidden">
-          <label for="main-drawer" aria-label="open sidebar" class="btn btn-square btn-ghost">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-          </label>
-        </div>
-
-        <!-- Logo -->
-        <div class="flex-1">
-          <a href="/dashboard" class="btn btn-ghost normal-case text-xl gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-            </svg>
-            <span class="hidden sm:inline">Nutzerkosten</span>
-          </a>
-        </div>
-
-        <!-- Right Side Actions -->
-        <div class="flex-none gap-2">
-          <!-- Theme Switcher -->
-          <label class="swap swap-rotate btn btn-ghost btn-circle">
-            <input type="checkbox" id="theme-toggle" class="theme-controller" />
-            <!-- Sun Icon -->
-            <svg class="swap-off fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>
-            </svg>
-            <!-- Moon Icon -->
-            <svg class="swap-on fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/>
-            </svg>
-          </label>
-
-          <!-- User Menu -->
-          <div class="dropdown dropdown-end">
-            <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar placeholder">
-              <div class="bg-neutral text-neutral-content rounded-full w-10 flex items-center justify-center">
-                <span class="text-sm">{user.name.substring(0, 2).toUpperCase()}</span>
-              </div>
-            </div>
-            <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-              <li class="menu-title">{user.name}</li>
-              {isAdmin && <li><a href="/admin/dashboard">Admin Dashboard</a></li>}
-              <li><a href="/profil">Profil</a></li>
-              <li><button id="logout-btn" class="text-error">Abmelden</button></li>
-            </ul>
-          </div>
-        </div>
-      </div>
 
       <!-- Main Content -->
       <main class="flex-1 p-4 lg:p-6">
@@ -124,9 +73,15 @@ const isAdmin = user.role === 'ADMIN';
     <!-- Sidebar (Desktop) + Drawer (Mobile) -->
     <div class="drawer-side z-40">
       <label for="main-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-      <aside class="bg-base-100 w-64 min-h-full">
+      <aside class="bg-base-100 w-64 min-h-full flex flex-col">
+        <!-- Logo Section -->
         <div class="p-4 border-b">
-          <h2 class="text-lg font-bold">Navigation</h2>
+          <a href="/dashboard" class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-primary">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205l3 1m1.5.5l-1.5-.5M6.75 7.364V3h-3v18m3-13.636l10.5-3.819" />
+            </svg>
+            <span class="text-xl font-bold">Wüstenstein</span>
+          </a>
         </div>
         <ul class="menu p-4 space-y-2">
           <!-- Dashboard -->
@@ -193,49 +148,107 @@ const isAdmin = user.role === 'ADMIN';
           </li>
         </ul>
 
-        <!-- Mobile Logout Button -->
-        <div class="p-4 border-t lg:hidden">
-          <button id="mobile-logout-btn" class="btn btn-error btn-block btn-sm">Abmelden</button>
+        <!-- Spacer to push bottom section down -->
+        <div class="flex-1"></div>
+
+        <!-- Bottom Section: User & Settings -->
+        <div class="border-t">
+          <!-- User Info -->
+          <a href="/profil" class="flex items-center gap-3 p-4 hover:bg-base-200 transition-colors">
+            <div class="avatar placeholder">
+              <div class="bg-neutral text-neutral-content rounded-full w-10 flex items-center justify-center">
+                <span class="text-sm">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate">{user.name}</p>
+              <p class="text-xs opacity-60">Profil anzeigen</p>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 opacity-50">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </a>
+
+          <!-- Settings Row: Theme & Font Size -->
+          <div class="flex items-center justify-between px-4 py-3 border-t">
+            <!-- Theme Toggle -->
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 opacity-60">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+              </svg>
+              <button id="theme-toggle-btn" class="text-xs hover:underline">
+                <span id="theme-label">Dunkel</span>
+              </button>
+            </div>
+
+            <!-- Font Size Controls -->
+            <div class="flex items-center gap-1">
+              <button id="font-decrease" class="btn btn-ghost btn-xs btn-square" title="Schrift kleiner">
+                <span class="text-xs font-bold">A-</span>
+              </button>
+              <button id="font-increase" class="btn btn-ghost btn-xs btn-square" title="Schrift größer">
+                <span class="text-sm font-bold">A+</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Logout -->
+          <button id="logout-btn" class="flex items-center gap-3 w-full px-4 py-3 mb-4 text-error hover:bg-error/10 transition-colors border-t">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+            </svg>
+            <span class="text-sm">Abmelden</span>
+          </button>
         </div>
       </aside>
     </div>
+
+    <!-- Floating Action Button for Mobile Navigation -->
+    <label for="main-drawer" class="btn btn-circle btn-primary fixed bottom-4 right-4 z-50 shadow-lg lg:hidden">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+      </svg>
+    </label>
   </body>
 </html>
 
 <script>
   // Theme Switcher Logic
   function initTheme() {
-    const toggle = document.getElementById('theme-toggle') as HTMLInputElement;
-    if (!toggle) {
-      console.warn('[Theme] Toggle element not found');
+    const toggleBtn = document.getElementById('theme-toggle-btn');
+    const themeLabel = document.getElementById('theme-label');
+    if (!toggleBtn || !themeLabel) {
+      console.warn('[Theme] Toggle elements not found');
       return;
     }
 
     const html = document.documentElement;
 
+    // Update label to show the OPPOSITE of current theme
+    function updateThemeLabel() {
+      const currentTheme = html.getAttribute('data-theme') || 'light';
+      // Show what clicking will switch TO (opposite of current)
+      themeLabel.textContent = currentTheme === 'light' ? 'Dunkel' : 'Hell';
+    }
+
     // Double-check and force theme from localStorage
     const savedTheme = localStorage.getItem('theme') || 'light';
     const currentTheme = html.getAttribute('data-theme');
 
-    console.log('[Theme DOMLoaded] localStorage:', savedTheme, 'current attr:', currentTheme);
-
-    // If they don't match, force the saved theme
     if (currentTheme !== savedTheme) {
-      console.warn('[Theme] Mismatch detected! Forcing theme to:', savedTheme);
       html.setAttribute('data-theme', savedTheme);
     }
 
-    toggle.checked = (savedTheme === 'dark');
+    updateThemeLabel();
 
     // Theme toggle handler
-    const handler = () => {
-      const newTheme = toggle.checked ? 'dark' : 'light';
-      console.log('[Theme] User toggled to:', newTheme);
+    toggleBtn.addEventListener('click', () => {
+      const current = html.getAttribute('data-theme') || 'light';
+      const newTheme = current === 'light' ? 'dark' : 'light';
       html.setAttribute('data-theme', newTheme);
       localStorage.setItem('theme', newTheme);
-    };
-
-    toggle.addEventListener('change', handler);
+      updateThemeLabel();
+    });
   }
 
   // Logout handler
@@ -250,15 +263,37 @@ const isAdmin = user.role === 'ADMIN';
     }
   }
 
+  // Font Size Logic
+  function initFontSize() {
+    const html = document.documentElement;
+    const savedSize = localStorage.getItem('fontSize') || '100';
+    html.style.fontSize = savedSize + '%';
+
+    const decreaseBtn = document.getElementById('font-decrease');
+    const increaseBtn = document.getElementById('font-increase');
+
+    decreaseBtn?.addEventListener('click', () => {
+      const current = parseInt(localStorage.getItem('fontSize') || '100');
+      const newSize = Math.max(80, current - 10); // Min 80%
+      html.style.fontSize = newSize + '%';
+      localStorage.setItem('fontSize', newSize.toString());
+    });
+
+    increaseBtn?.addEventListener('click', () => {
+      const current = parseInt(localStorage.getItem('fontSize') || '100');
+      const newSize = Math.min(130, current + 10); // Max 130%
+      html.style.fontSize = newSize + '%';
+      localStorage.setItem('fontSize', newSize.toString());
+    });
+  }
+
   // Initialize on load
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
+    initFontSize();
 
-    // Logout button handlers
+    // Logout button handler
     const logoutBtn = document.getElementById('logout-btn');
-    const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
-
     logoutBtn?.addEventListener('click', logout);
-    mobileLogoutBtn?.addEventListener('click', logout);
   });
 </script>
