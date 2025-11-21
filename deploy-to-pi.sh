@@ -4,23 +4,29 @@
 # Kopiert lokale Dateien direkt per rsync auf den Pi und führt Docker-Deployment durch
 #
 # Usage:
-#   ./deploy-to-pi.sh           # Normales Deployment (kein Seeding)
-#   ./deploy-to-pi.sh --seed    # Mit Testdaten-Seeding
+#   ./deploy-to-pi.sh           # Normales Deployment (mit Migrationen)
+#   ./deploy-to-pi.sh --quick   # Schnell (ohne Migrationen, mit Build-Cache)
+#   ./deploy-to-pi.sh --seed    # Mit User-Seeding
 
 set -e
 
 # Parameter parsen
 SEED_DB=false
+QUICK_MODE=false
 if [ "$1" = "--seed" ]; then
     SEED_DB=true
+elif [ "$1" = "--quick" ]; then
+    QUICK_MODE=true
 fi
 
 echo "🚀 Nutzerkosten - Deploy to Raspberry Pi"
 echo "=========================================="
 if [ "$SEED_DB" = "true" ]; then
     echo "🌱 Seeding aktiviert (--seed Flag)"
+elif [ "$QUICK_MODE" = "true" ]; then
+    echo "⚡ Quick Mode aktiviert (keine Migrationen, mit Cache)"
 else
-    echo "📝 Seeding deaktiviert (nutze --seed zum Aktivieren)"
+    echo "📝 Standard Deploy (mit Migrationen)"
 fi
 echo ""
 
@@ -105,8 +111,13 @@ echo ""
 echo "🛑 Stoppe Container..."
 ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose down"
 
-echo "🏗️  Baue Images..."
-ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose build --no-cache"
+if [ "$QUICK_MODE" = "true" ]; then
+    echo "🏗️  Baue Images (mit Cache)..."
+    ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose build"
+else
+    echo "🏗️  Baue Images (ohne Cache)..."
+    ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose build --no-cache"
+fi
 
 echo "📦 Starte MySQL..."
 ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose up -d mysql"
@@ -114,8 +125,12 @@ ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose up -d mysql"
 echo "⏳ Warte auf MySQL (15 Sekunden)..."
 sleep 15
 
-echo "🔄 Migrationen..."
-ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose run -T --rm app npx prisma migrate deploy"
+if [ "$QUICK_MODE" = "true" ]; then
+    echo "⏭️  Überspringe Migrationen (--quick Mode)"
+else
+    echo "🔄 Migrationen..."
+    ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose run -T --rm app npx prisma migrate deploy"
+fi
 
 if [ "$SEED_DB" = "true" ]; then
     echo "🌱 Seeding..."
