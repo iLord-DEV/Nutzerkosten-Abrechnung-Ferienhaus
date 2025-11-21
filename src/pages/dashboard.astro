@@ -47,33 +47,34 @@ if (!user) {
           </div>
 
           <div class="stat">
-            <div class="stat-figure text-secondary">
+            <div class="stat-figure text-warning">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
               </svg>
             </div>
             <div class="stat-title">Wohnzimmer</div>
-            <div class="stat-value text-secondary" id="temp-wohnzimmer">--°C</div>
+            <div class="stat-value text-warning" id="temp-wohnzimmer">--°C</div>
             <div class="stat-desc" id="temp-wohnzimmer-update">Lädt...</div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Wetter & Außentemperatur -->
-    <div class="card bg-base-100 shadow-xl mb-8">
-      <div class="card-body">
-        <h2 class="card-title">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
-          </svg>
-          Wetter & Außentemperatur
-        </h2>
-
+        <!-- Wetter & Außentemperatur (ausklappbar) -->
+        <div class="collapse collapse-arrow bg-base-200 mt-6">
+          <input type="checkbox" />
+          <div class="collapse-title text-lg font-semibold flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+              </svg>
+              Wetter & Außentemperatur
+            </div>
+            <span class="text-2xl font-bold text-primary" id="weather-temp-preview">--°C</span>
+          </div>
+          <div class="collapse-content">
         <!-- Wetterwarnungen (falls vorhanden) -->
         <div id="weather-alerts" class="hidden mb-4">
-          <div class="alert alert-warning">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <div class="alert bg-base-100 border-l-4 border-secondary shadow">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-secondary shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
             <div id="weather-alerts-content"></div>
           </div>
         </div>
@@ -129,8 +130,10 @@ if (!user) {
           </div>
         </div>
 
-        <div class="text-xs opacity-50 mt-4" id="weather-update">
-          Lädt...
+            <div class="text-xs opacity-50 mt-4" id="weather-update">
+              Lädt...
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -153,8 +156,14 @@ if (!user) {
       </div>
 
       <div class="stat">
-        <div class="stat-title">Meine Kosten <span id="kosten-jahr">2024</span></div>
+        <div class="stat-title flex items-center gap-2">
+          Meine Kosten <span id="kosten-jahr">2024</span>
+          <span id="bezahlt-status" class="hidden">
+            <!-- Badge wird dynamisch hinzugefügt -->
+          </span>
+        </div>
         <div class="stat-value text-primary" id="my-kosten">-</div>
+        <div class="stat-desc" id="bezahlt-info"></div>
       </div>
     </div>
 
@@ -273,6 +282,27 @@ if (!user) {
         if (myKostenEl) myKostenEl.textContent = `€ ${(stats.gesamtKosten || 0).toFixed(2)}`;
       }
 
+      // Bezahlt-Status laden
+      const jahresabschlussResponse = await fetch(`/api/jahresabschluss/bezahlt?jahr=${currentYear}`);
+      if (jahresabschlussResponse.ok) {
+        const users = await jahresabschlussResponse.json();
+        const bezahltStatusEl = document.getElementById('bezahlt-status');
+        const bezahltInfoEl = document.getElementById('bezahlt-info');
+
+        // Für normale User wird nur ein Eintrag zurückgegeben (der eigene)
+        if (bezahltStatusEl && users.length > 0) {
+          const userStatus = users[0]; // Erster (und einziger) Eintrag für normale User
+          bezahltStatusEl.classList.remove('hidden');
+          if (userStatus.bezahlt) {
+            bezahltStatusEl.innerHTML = '<span class="badge badge-success">Bezahlt</span>';
+            if (bezahltInfoEl) bezahltInfoEl.textContent = 'Jahresabschluss beglichen';
+          } else {
+            bezahltStatusEl.innerHTML = '<span class="badge badge-warning">Offen</span>';
+            if (bezahltInfoEl) bezahltInfoEl.textContent = 'Jahresabschluss noch nicht beglichen';
+          }
+        }
+      }
+
       // Gesamtanzahl Aufenthalte laden und letzten Zählerstand ermitteln
       const aufenthalteResponse = await fetch(`/api/aufenthalte?jahr=${currentYear}`);
       if (aufenthalteResponse.ok) {
@@ -358,16 +388,14 @@ if (!user) {
   async function loadMyAktivitaeten() {
     try {
       const aufenthalteResponse = await fetch('/api/aufenthalte');
-      const tankfuellungenResponse = await fetch('/api/tankfuellungen');
-      
-      if (aufenthalteResponse.ok && tankfuellungenResponse.ok) {
+
+      if (aufenthalteResponse.ok) {
         const aufenthalte = await aufenthalteResponse.json();
-        const tankfuellungen = await tankfuellungenResponse.json();
-        
         const myAufenthalte = aufenthalte.filter((a: any) => a.userId === currentUser.id);
+
         // Normale Benutzer haben keine Tankfüllungen
         const myTankfuellungen: any[] = [];
-        
+
         renderAktivitaeten(myAufenthalte, myTankfuellungen);
       }
     } catch (error) {
@@ -489,10 +517,24 @@ if (!user) {
         const alertsContent = document.getElementById('weather-alerts-content');
         if (data.alerts && data.alerts.length > 0) {
           if (alertsContent) {
-            alertsContent.innerHTML = data.alerts.map((alert: any) => `
-              <div class="font-semibold">${alert.event}</div>
-              <div class="text-sm">${alert.description}</div>
-            `).join('<div class="divider"></div>');
+            alertsContent.innerHTML = data.alerts.map((alert: any, index: number) => {
+              const startDate = new Date(alert.start);
+              const endDate = new Date(alert.end);
+              const formatDate = (date: Date) => date.toLocaleString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+
+              return `
+                <div>
+                  <div class="font-semibold">${alert.event} (Warnung ${index + 1}/${data.alerts.length})</div>
+                  <div class="text-xs opacity-70 mb-1">${formatDate(startDate)} - ${formatDate(endDate)}</div>
+                  <div class="text-sm">${alert.description}</div>
+                </div>
+              `;
+            }).join('<div class="divider my-2"></div>');
           }
           if (alertsDiv) alertsDiv.classList.remove('hidden');
         }
@@ -500,6 +542,7 @@ if (!user) {
         // Aktuelles Wetter
         const current = data.current;
         const tempEl = document.getElementById('weather-temp');
+        const tempPreviewEl = document.getElementById('weather-temp-preview');
         const descEl = document.getElementById('weather-description');
         const feelsLikeEl = document.getElementById('weather-feels-like');
         const iconEl = document.getElementById('weather-icon') as HTMLImageElement;
@@ -510,6 +553,7 @@ if (!user) {
         const updateEl = document.getElementById('weather-update');
 
         if (tempEl) tempEl.textContent = `${current.temp}°C`;
+        if (tempPreviewEl) tempPreviewEl.textContent = `${current.temp}°C`;
         if (descEl) descEl.textContent = current.description.charAt(0).toUpperCase() + current.description.slice(1);
         if (feelsLikeEl) feelsLikeEl.textContent = `Gefühlt: ${current.feelsLike}°C`;
         if (iconEl) iconEl.src = `https://openweathermap.org/img/wn/${current.icon}@2x.png`;

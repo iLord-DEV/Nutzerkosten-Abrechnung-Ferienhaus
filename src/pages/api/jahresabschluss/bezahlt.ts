@@ -1,16 +1,16 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
-import { requireAdmin } from '../../../utils/auth';
+import { requireAuth } from '../../../utils/auth';
 
 const prisma = new PrismaClient();
 
 /**
  * GET /api/jahresabschluss/bezahlt?jahr=2024
- * Holt den Bezahlt-Status für alle User für ein bestimmtes Jahr
+ * Holt den Bezahlt-Status für alle User (Admin) oder nur eigenen Status (User)
  */
 export const GET: APIRoute = async (context) => {
   try {
-    await requireAdmin(context);
+    const user = await requireAuth(context);
 
     const url = new URL(context.request.url);
     const jahr = url.searchParams.get('jahr');
@@ -22,10 +22,15 @@ export const GET: APIRoute = async (context) => {
       });
     }
 
+    // Admin: Alle User mit Aufenthalten
+    // User: Nur eigenen Status
+    const isAdmin = user.role === 'ADMIN';
+
     // Nur User laden, die in diesem Jahr Aufenthalte haben
     const userIdsWithAufenthalte = await prisma.aufenthalt.findMany({
       where: {
-        jahr: parseInt(jahr)
+        jahr: parseInt(jahr),
+        ...(isAdmin ? {} : { userId: user.id }), // User sieht nur eigene Aufenthalte
       },
       select: {
         userId: true
@@ -34,6 +39,13 @@ export const GET: APIRoute = async (context) => {
     });
 
     const userIds = userIdsWithAufenthalte.map(a => a.userId);
+
+    if (userIds.length === 0) {
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     // Diese User laden
     const users = await prisma.user.findMany({

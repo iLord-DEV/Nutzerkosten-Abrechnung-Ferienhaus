@@ -26,12 +26,17 @@ const session = JSON.parse(sessionCookie.value);
         </p>
         <!-- Bezahlt-Status -->
         <div id="user-bezahlt-status" class="mt-2" style="display: none;">
-          <span id="bezahlt-badge" class="badge badge-success gap-2">
+          <!-- Bezahlt: Grüner Badge -->
+          <span id="bezahlt-badge" class="badge badge-success gap-2 hidden">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span id="bezahlt-text"></span>
           </span>
+          <!-- Unbezahlt: Roter Button -->
+          <button id="bezahlen-btn" class="btn btn-error hidden border-4 border-error px-6 py-3" onclick="bezahlen_modal.showModal()">
+            <span id="bezahlen-btn-text">Jahr bezahlen</span>
+          </button>
         </div>
       </div>
       <div>
@@ -189,6 +194,72 @@ const session = JSON.parse(sessionCookie.value);
       </form>
     </dialog>
 
+    <!-- Bezahlen Modal -->
+    <dialog id="bezahlen_modal" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Jahresabschluss bezahlen</h3>
+
+        <div class="space-y-4">
+          <div>
+            <p class="text-sm font-semibold mb-1">Betrag</p>
+            <p class="text-2xl font-bold text-primary" id="modal-kosten">-</p>
+          </div>
+
+          <div class="divider"></div>
+
+          <div>
+            <p class="text-sm font-semibold mb-2">Bankverbindung</p>
+            <div class="bg-base-200 p-4 rounded-lg space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-sm opacity-70">Bank:</span>
+                <span class="font-medium">Commerzbank</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm opacity-70">IBAN:</span>
+                <span class="font-mono font-medium">DE97 2308 0040 0312 0600 00</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm opacity-70">BIC:</span>
+                <span class="font-mono font-medium">DRESDEFF230</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-sm font-semibold mb-2">Verwendungszweck</p>
+            <div class="bg-base-200 p-4 rounded-lg">
+              <p class="font-mono" id="modal-betreff">Jahresabschluss 2024</p>
+            </div>
+          </div>
+
+          <div class="divider">oder</div>
+
+          <!-- QR-Code für Banking-App -->
+          <div class="text-center">
+            <p class="text-sm font-semibold mb-3">Mit Banking-App scannen</p>
+            <div class="flex justify-center">
+              <div id="qr-code-container" class="bg-white p-4 rounded-lg inline-block">
+                <div id="qr-code-loading" class="flex items-center justify-center w-[300px] h-[300px]">
+                  <span class="loading loading-spinner loading-lg"></span>
+                </div>
+                <img id="qr-code-image" src="" alt="QR-Code" class="hidden w-[300px] h-[300px]" />
+              </div>
+            </div>
+            <p class="text-xs opacity-70 mt-2">Alle Daten werden automatisch übernommen</p>
+          </div>
+        </div>
+
+        <div class="modal-action">
+          <form method="dialog">
+            <button class="btn">Schließen</button>
+          </form>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+
     <!-- Session-Info für JavaScript -->
     <script id="session-data" type="application/json" set:html={JSON.stringify({ isAdmin: session.role === 'ADMIN' })} />
   </div>
@@ -197,6 +268,7 @@ const session = JSON.parse(sessionCookie.value);
 <script>
   import { berechneOelkostenNachZaehlerstand } from '../../utils/kostenberechnung';
   import { isJahrAbgeschlossen, canEditJahr, formatJahrMitStatus } from '../../utils/jahresabschluss';
+  import { generateGiroCodeQR } from '../../utils/giroCode';
 
   let isAdminUser = false;
 
@@ -599,15 +671,15 @@ const session = JSON.parse(sessionCookie.value);
 
   async function loadTankfuellungen() {
     try {
-      const response = await fetch('/api/tankfuellungen');
+      const response = await fetch('/api/preise/verlauf');
       if (response.ok) {
         const data = await response.json();
         // Nach Zählerstand sortieren (aufsteigend)
         alleTankfuellungen = data.sort((a: any, b: any) => a.zaehlerstand - b.zaehlerstand);
-        // console.log('⛽ Tankfüllungen geladen:', alleTankfuellungen.length);
+        // console.log('⛽ Preisverlauf geladen:', alleTankfuellungen.length);
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Tankfüllungen:', error);
+      console.error('Fehler beim Laden des Preisverlaufs:', error);
     }
   }
 
@@ -1207,6 +1279,70 @@ const session = JSON.parse(sessionCookie.value);
     }
   }
 
+  // Modal-Daten für Bezahlung aktualisieren (inkl. QR-Code)
+  async function updateModalData(jahr: number) {
+    const modalKostenEl = document.getElementById('modal-kosten');
+    const modalBetreffEl = document.getElementById('modal-betreff');
+    const qrCodeImage = document.getElementById('qr-code-image') as HTMLImageElement;
+    const qrCodeLoading = document.getElementById('qr-code-loading');
+
+    if (!modalKostenEl || !modalBetreffEl) return;
+
+    // Gesamtkosten aus aktuellen Aufenthalten berechnen
+    let gesamtKosten = 0;
+
+    currentAufenthalte.forEach((aufenthalt) => {
+      // Ölkosten berechnen
+      const oelKosten = berechneOelkostenNachZaehlerstand(
+        aufenthalt.zaehlerAnkunft,
+        aufenthalt.zaehlerAbreise,
+        alleTankfuellungen
+      );
+
+      // Übernachtungskosten berechnen (nur wenn naechteBerechnen nicht explizit false ist)
+      const sollBerechnen = (aufenthalt as any).naechteBerechnen !== false;
+      const uebernachtungKosten = sollBerechnen ? (
+        ((aufenthalt as any).uebernachtungenMitglieder || 0) * (currentPreise.uebernachtungMitglied || 5) +
+        ((aufenthalt as any).uebernachtungenGaeste || 0) * (currentPreise.uebernachtungGast || 10)
+      ) : 0;
+
+      gesamtKosten += oelKosten + uebernachtungKosten;
+    });
+
+    // Modal aktualisieren
+    modalKostenEl.textContent = `€ ${gesamtKosten.toFixed(2)}`;
+    modalBetreffEl.textContent = `Jahresabschluss ${jahr}`;
+
+    // QR-Code generieren
+    if (qrCodeImage && qrCodeLoading) {
+      try {
+        // Loading-Spinner anzeigen
+        qrCodeLoading.classList.remove('hidden');
+        qrCodeImage.classList.add('hidden');
+
+        // GiroCode QR-Code generieren
+        const qrCodeDataURL = await generateGiroCodeQR({
+          iban: 'DE97230800400312060000',
+          bic: 'DRESDEFF230',
+          name: 'Familien-Stiftung-Wüstenstein',
+          amount: gesamtKosten,
+          reference: `Jahresabschluss ${jahr}`
+        });
+
+        // QR-Code anzeigen
+        qrCodeImage.src = qrCodeDataURL;
+        qrCodeImage.classList.remove('hidden');
+        qrCodeLoading.classList.add('hidden');
+      } catch (error) {
+        console.error('Fehler beim Generieren des QR-Codes:', error);
+        // Bei Fehler: Spinner verstecken und Fehlermeldung anzeigen
+        if (qrCodeLoading) {
+          qrCodeLoading.innerHTML = '<span class="text-error text-sm">QR-Code konnte nicht generiert werden</span>';
+        }
+      }
+    }
+  }
+
   // Bezahlt-Status Badge aktualisieren (kontextabhängig)
   async function loadUserBezahltStatus() {
     const jahrSelect = document.getElementById('jahr') as HTMLSelectElement;
@@ -1252,20 +1388,27 @@ const session = JSON.parse(sessionCookie.value);
       const isAdmin = currentUser.role === 'ADMIN';
       const selectedUserId = benutzerSelect ? parseInt(benutzerSelect.value) : null;
 
+      const bezahlenBtn = document.getElementById('bezahlen-btn');
+      const bezahlenBtnText = document.getElementById('bezahlen-btn-text');
+
       if (isAdmin && !selectedUserId) {
-        // Admin sieht alle User → Zeige Gesamtstatistik
+        // Admin sieht alle User → Zeige Gesamtstatistik als Badge
         const bezahltCount = users.filter((u: any) => u.bezahlt).length;
         const totalCount = users.length;
 
         if (bezahltCount === totalCount && totalCount > 0) {
           // Alle bezahlt
+          badgeElement.classList.remove('hidden');
           badgeElement.className = 'badge badge-success gap-2';
           textElement.textContent = `Jahr ${jahr}: Alle bezahlt (${totalCount})`;
+          if (bezahlenBtn) bezahlenBtn.classList.add('hidden');
           statusDiv.style.display = 'block';
         } else if (bezahltCount > 0) {
           // Teilweise bezahlt
+          badgeElement.classList.remove('hidden');
           badgeElement.className = 'badge badge-warning gap-2';
           textElement.textContent = `Jahr ${jahr}: ${bezahltCount} von ${totalCount} bezahlt`;
+          if (bezahlenBtn) bezahlenBtn.classList.add('hidden');
           statusDiv.style.display = 'block';
         } else {
           // Niemand bezahlt
@@ -1279,26 +1422,42 @@ const session = JSON.parse(sessionCookie.value);
         if (userStatus) {
           // User hat Aufenthalte in diesem Jahr
           if (userStatus.bezahlt) {
-            // Bezahlt → Grüner Badge
+            // Bezahlt → Grüner Badge, Button versteckt
+            badgeElement.classList.remove('hidden');
             badgeElement.className = 'badge badge-success gap-2';
             if (isAdmin && selectedUserId) {
               textElement.textContent = `${userStatus.name}: Jahr ${jahr} bezahlt`;
             } else {
               textElement.textContent = `Jahr ${jahr} bezahlt`;
             }
+            if (bezahlenBtn) bezahlenBtn.classList.add('hidden');
+            statusDiv.style.display = 'block';
           } else {
-            // Nicht bezahlt → Roter Badge
-            badgeElement.className = 'badge badge-error gap-2';
-            if (isAdmin && selectedUserId) {
-              textElement.textContent = `${userStatus.name}: Jahr ${jahr} unbezahlt`;
+            // Nicht bezahlt → Badge versteckt, roter Button angezeigt
+            badgeElement.classList.add('hidden');
+
+            // Button nur für normale User anzeigen (nicht für Admin mit Filter)
+            if (bezahlenBtn && !isAdmin) {
+              bezahlenBtn.classList.remove('hidden');
+              if (bezahlenBtnText) {
+                bezahlenBtnText.textContent = `Jahr ${jahr} bezahlen`;
+              }
+              // Modal-Daten aktualisieren mit Gesamtkosten
+              updateModalData(jahr);
+              statusDiv.style.display = 'block';
             } else {
-              textElement.textContent = `Jahr ${jahr} unbezahlt`;
+              // Admin mit Filter sieht roten Badge
+              badgeElement.classList.remove('hidden');
+              badgeElement.className = 'badge badge-error gap-2';
+              textElement.textContent = `${userStatus.name}: Jahr ${jahr} unbezahlt`;
+              if (bezahlenBtn) bezahlenBtn.classList.add('hidden');
+              statusDiv.style.display = 'block';
             }
           }
-          statusDiv.style.display = 'block';
         } else {
           // User hat keine Aufenthalte in diesem Jahr
           statusDiv.style.display = 'none';
+          if (bezahlenBtn) bezahlenBtn.classList.add('hidden');
         }
       }
     } catch (error) {
