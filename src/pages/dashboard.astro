@@ -36,24 +36,20 @@ if (!user) {
         </h2>
         <div class="stats stats-horizontal shadow mt-4">
           <div class="stat">
-            <div class="stat-figure text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+            <div class="stat-figure">
+              <i class="wi wi-thermometer text-3xl" id="temp-bad-icon"></i>
             </div>
             <div class="stat-title">Bad</div>
-            <div class="stat-value text-primary" id="temp-bad">--°C</div>
+            <div class="stat-value" id="temp-bad">--°C</div>
             <div class="stat-desc" id="temp-bad-update">Lädt...</div>
           </div>
 
           <div class="stat">
-            <div class="stat-figure text-warning">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-              </svg>
+            <div class="stat-figure">
+              <i class="wi wi-thermometer text-3xl" id="temp-wohnzimmer-icon"></i>
             </div>
             <div class="stat-title">Wohnzimmer</div>
-            <div class="stat-value text-warning" id="temp-wohnzimmer">--°C</div>
+            <div class="stat-value" id="temp-wohnzimmer">--°C</div>
             <div class="stat-desc" id="temp-wohnzimmer-update">Lädt...</div>
           </div>
         </div>
@@ -84,7 +80,7 @@ if (!user) {
           <!-- Hauptwetter -->
           <div class="flex items-center gap-6">
             <div class="flex-shrink-0">
-              <img id="weather-icon" src="" alt="Wetter" class="w-24 h-24">
+              <i id="weather-icon" class="wi wi-na text-6xl text-primary"></i>
             </div>
             <div>
               <div class="text-4xl font-bold" id="weather-temp">--°C</div>
@@ -158,12 +154,9 @@ if (!user) {
       <div class="stat">
         <div class="stat-title flex items-center gap-2">
           Meine Kosten <span id="kosten-jahr">2024</span>
-          <span id="bezahlt-status" class="hidden">
-            <!-- Badge wird dynamisch hinzugefügt -->
-          </span>
         </div>
         <div class="stat-value text-primary" id="my-kosten">-</div>
-        <div class="stat-desc" id="bezahlt-info"></div>
+        <div class="stat-desc">Laufendes Jahr</div>
       </div>
     </div>
 
@@ -282,26 +275,6 @@ if (!user) {
         if (myKostenEl) myKostenEl.textContent = `€ ${(stats.gesamtKosten || 0).toFixed(2)}`;
       }
 
-      // Bezahlt-Status laden
-      const jahresabschlussResponse = await fetch(`/api/jahresabschluss/bezahlt?jahr=${currentYear}`);
-      if (jahresabschlussResponse.ok) {
-        const users = await jahresabschlussResponse.json();
-        const bezahltStatusEl = document.getElementById('bezahlt-status');
-        const bezahltInfoEl = document.getElementById('bezahlt-info');
-
-        // Für normale User wird nur ein Eintrag zurückgegeben (der eigene)
-        if (bezahltStatusEl && users.length > 0) {
-          const userStatus = users[0]; // Erster (und einziger) Eintrag für normale User
-          bezahltStatusEl.classList.remove('hidden');
-          if (userStatus.bezahlt) {
-            bezahltStatusEl.innerHTML = '<span class="badge badge-success">Bezahlt</span>';
-            if (bezahltInfoEl) bezahltInfoEl.textContent = 'Jahresabschluss beglichen';
-          } else {
-            bezahltStatusEl.innerHTML = '<span class="badge badge-warning">Offen</span>';
-            if (bezahltInfoEl) bezahltInfoEl.textContent = 'Jahresabschluss noch nicht beglichen';
-          }
-        }
-      }
 
       // Gesamtanzahl Aufenthalte laden und letzten Zählerstand ermitteln
       const aufenthalteResponse = await fetch(`/api/aufenthalte?jahr=${currentYear}`);
@@ -481,9 +454,21 @@ if (!user) {
 
         if (tempBadEl) {
           tempBadEl.textContent = data.bad !== null ? `${data.bad.toFixed(1)}°C` : 'N/A';
+          if (data.bad !== null) {
+            const color = getTempColor(data.bad);
+            tempBadEl.style.color = color;
+            const badIcon = document.getElementById('temp-bad-icon');
+            if (badIcon) badIcon.style.color = color;
+          }
         }
         if (tempWohnzimmerEl) {
           tempWohnzimmerEl.textContent = data.wohnzimmer !== null ? `${data.wohnzimmer.toFixed(1)}°C` : 'N/A';
+          if (data.wohnzimmer !== null) {
+            const color = getTempColor(data.wohnzimmer);
+            tempWohnzimmerEl.style.color = color;
+            const wohnzimmerIcon = document.getElementById('temp-wohnzimmer-icon');
+            if (wohnzimmerIcon) wohnzimmerIcon.style.color = color;
+          }
         }
 
         // Update-Zeitpunkt anzeigen
@@ -503,6 +488,74 @@ if (!user) {
       if (tempBadEl) tempBadEl.textContent = 'Fehler';
       if (tempWohnzimmerEl) tempWohnzimmerEl.textContent = 'Fehler';
     }
+  }
+
+  // OpenWeatherMap Icon zu Weather Icons Mapping
+  function getWeatherIconClass(owmIcon: string): string {
+    const iconMap: Record<string, string> = {
+      '01d': 'wi-day-sunny',
+      '01n': 'wi-night-clear',
+      '02d': 'wi-day-cloudy',
+      '02n': 'wi-night-alt-cloudy',
+      '03d': 'wi-cloud',
+      '03n': 'wi-cloud',
+      '04d': 'wi-cloudy',
+      '04n': 'wi-cloudy',
+      '09d': 'wi-showers',
+      '09n': 'wi-showers',
+      '10d': 'wi-day-rain',
+      '10n': 'wi-night-alt-rain',
+      '11d': 'wi-thunderstorm',
+      '11n': 'wi-thunderstorm',
+      '13d': 'wi-snow',
+      '13n': 'wi-snow',
+      '50d': 'wi-fog',
+      '50n': 'wi-fog',
+    };
+    return iconMap[owmIcon] || 'wi-na';
+  }
+
+  // Temperatur-Farbcodierung (HSL)
+  function getTempColor(temp: number): string {
+    // Clamp zwischen -10 und +30
+    const t = Math.max(-10, Math.min(30, temp));
+    let hue;
+    if (t <= 0) {
+      // -10°C bis 0°C: Blau bleibt blau (220-200)
+      hue = 220 - ((t + 10) / 10) * 20;
+    } else if (t <= 10) {
+      // 0°C bis +10°C: Blau (200) bis Grün (120)
+      hue = 200 - (t / 10) * 80;
+    } else {
+      // +10°C bis +30°C: Grün (120) bis Rot (0)
+      hue = 120 - ((t - 10) / 20) * 120;
+    }
+    return `hsl(${Math.round(hue)}, 80%, 45%)`;
+  }
+
+  // Farbe basierend auf Wetter-Icon
+  function getWeatherIconColor(owmIcon: string): string {
+    const colorMap: Record<string, string> = {
+      '01d': 'bg-gradient-to-br from-yellow-400 to-orange-500 bg-clip-text text-transparent', // Sonne
+      '01n': 'text-slate-300', // Nacht klar
+      '02d': 'bg-gradient-to-br from-yellow-400 to-slate-400 bg-clip-text text-transparent', // Sonne + Wolke
+      '02n': 'text-slate-400', // Nacht bewölkt
+      '03d': 'text-slate-400', // Wolken
+      '03n': 'text-slate-500',
+      '04d': 'text-slate-500', // Bedeckt
+      '04n': 'text-slate-600',
+      '09d': 'text-blue-400', // Schauer
+      '09n': 'text-blue-500',
+      '10d': 'bg-gradient-to-b from-slate-400 to-blue-500 bg-clip-text text-transparent', // Regen
+      '10n': 'text-blue-600',
+      '11d': 'bg-gradient-to-b from-slate-500 to-yellow-400 bg-clip-text text-transparent', // Gewitter
+      '11n': 'text-purple-500',
+      '13d': 'text-sky-200', // Schnee
+      '13n': 'text-sky-300',
+      '50d': 'text-slate-400', // Nebel
+      '50n': 'text-slate-500',
+    };
+    return colorMap[owmIcon] || 'text-primary';
   }
 
   // Wetter laden
@@ -527,9 +580,12 @@ if (!user) {
                 minute: '2-digit'
               });
 
+              // Ersten Buchstaben des Events großschreiben
+              const eventName = alert.event.charAt(0).toUpperCase() + alert.event.slice(1);
+
               return `
                 <div>
-                  <div class="font-semibold">${alert.event} (Warnung ${index + 1}/${data.alerts.length})</div>
+                  <div class="font-semibold">${eventName} (Warnung ${index + 1}/${data.alerts.length})</div>
                   <div class="text-xs opacity-70 mb-1">${formatDate(startDate)} - ${formatDate(endDate)}</div>
                   <div class="text-sm">${alert.description}</div>
                 </div>
@@ -545,18 +601,27 @@ if (!user) {
         const tempPreviewEl = document.getElementById('weather-temp-preview');
         const descEl = document.getElementById('weather-description');
         const feelsLikeEl = document.getElementById('weather-feels-like');
-        const iconEl = document.getElementById('weather-icon') as HTMLImageElement;
+        const iconEl = document.getElementById('weather-icon');
         const windEl = document.getElementById('weather-wind');
         const humidityEl = document.getElementById('weather-humidity');
         const uvEl = document.getElementById('weather-uv');
         const visibilityEl = document.getElementById('weather-visibility');
         const updateEl = document.getElementById('weather-update');
 
-        if (tempEl) tempEl.textContent = `${current.temp}°C`;
-        if (tempPreviewEl) tempPreviewEl.textContent = `${current.temp}°C`;
+        if (tempEl) {
+          tempEl.textContent = `${current.temp}°C`;
+          tempEl.style.color = getTempColor(current.temp);
+        }
+        if (tempPreviewEl) {
+          tempPreviewEl.textContent = `${current.temp}°C`;
+          tempPreviewEl.style.color = getTempColor(current.temp);
+        }
         if (descEl) descEl.textContent = current.description.charAt(0).toUpperCase() + current.description.slice(1);
         if (feelsLikeEl) feelsLikeEl.textContent = `Gefühlt: ${current.feelsLike}°C`;
-        if (iconEl) iconEl.src = `https://openweathermap.org/img/wn/${current.icon}@2x.png`;
+        if (iconEl) {
+          iconEl.className = `wi ${getWeatherIconClass(current.icon)} text-6xl`;
+          iconEl.style.color = getTempColor(current.temp);
+        }
         if (windEl) windEl.textContent = `${current.windSpeed} km/h`;
         if (humidityEl) humidityEl.textContent = `${current.humidity}%`;
         if (uvEl) {
@@ -580,10 +645,10 @@ if (!user) {
           hourlyDiv.innerHTML = data.hourly.slice(0, 8).map((hour: any) => {
             const time = new Date(hour.time);
             return `
-              <div class="text-center p-2 bg-base-200 rounded-lg">
+              <div class="text-center p-2 bg-base-100 border border-base-300 rounded-lg">
                 <div class="text-xs opacity-60">${time.getHours()}:00</div>
-                <img src="https://openweathermap.org/img/wn/${hour.icon}.png" alt="${hour.description}" class="w-10 h-10 mx-auto">
-                <div class="font-semibold">${hour.temp}°C</div>
+                <i class="wi ${getWeatherIconClass(hour.icon)} text-3xl" style="color: ${getTempColor(hour.temp)}"></i>
+                <div class="font-semibold" style="color: ${getTempColor(hour.temp)}">${hour.temp}°C</div>
                 ${hour.pop > 0 ? `<div class="text-xs text-info">${hour.pop}%</div>` : ''}
               </div>
             `;
@@ -597,17 +662,18 @@ if (!user) {
           dailyDiv.innerHTML = data.daily.map((day: any) => {
             const date = new Date(day.date);
             const weekday = weekdays[date.getDay()];
+            const avgTemp = (day.tempMin + day.tempMax) / 2;
             return `
-              <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+              <div class="flex items-center justify-between p-3 bg-base-100 border border-base-300 rounded-lg">
                 <div class="flex items-center gap-3 flex-1">
                   <div class="w-16 text-sm font-semibold">${weekday}, ${date.getDate()}.${date.getMonth() + 1}.</div>
-                  <img src="https://openweathermap.org/img/wn/${day.icon}.png" alt="${day.description}" class="w-10 h-10">
+                  <i class="wi ${getWeatherIconClass(day.icon)} text-2xl w-8" style="color: ${getTempColor(avgTemp)}"></i>
                   <div class="flex-1 text-sm opacity-70">${day.description.charAt(0).toUpperCase() + day.description.slice(1)}</div>
                 </div>
                 <div class="flex items-center gap-4">
                   ${day.pop > 0 ? `<div class="text-sm text-info">${day.pop}%</div>` : ''}
-                  <div class="text-sm opacity-60">${day.tempMin}°</div>
-                  <div class="font-semibold">${day.tempMax}°C</div>
+                  <div class="text-sm" style="color: ${getTempColor(day.tempMin)}">${day.tempMin}°</div>
+                  <div class="font-semibold" style="color: ${getTempColor(day.tempMax)}">${day.tempMax}°C</div>
                 </div>
               </div>
             `;

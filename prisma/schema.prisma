@@ -13,6 +13,7 @@ model User {
   email              String                 @unique
   username           String?                @unique
   name               String
+  profileImage       String?
   role               Role                   @default(USER)
   beguenstigt        Boolean                @default(false)
   createdAt          DateTime               @default(now())

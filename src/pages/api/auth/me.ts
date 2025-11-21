@@ -1,9 +1,12 @@
 import type { APIRoute } from 'astro';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export const GET: APIRoute = async ({ cookies }) => {
   try {
     const sessionCookie = cookies.get('session');
-    
+
     if (!sessionCookie || !sessionCookie.value) {
       return new Response(JSON.stringify({ error: 'Nicht eingeloggt' }), {
         status: 401,
@@ -14,7 +17,7 @@ export const GET: APIRoute = async ({ cookies }) => {
     }
 
     const sessionData = JSON.parse(sessionCookie.value);
-    
+
     if (!sessionData.loggedIn) {
       return new Response(JSON.stringify({ error: 'Session abgelaufen' }), {
         status: 401,
@@ -24,13 +27,30 @@ export const GET: APIRoute = async ({ cookies }) => {
       });
     }
 
-    return new Response(JSON.stringify({
-      id: sessionData.userId,
-      name: sessionData.name,
-      email: sessionData.email,
-      role: sessionData.role,
-      beguenstigt: sessionData.beguenstigt || false,
-    }), {
+    // User aus Datenbank holen für aktuelle Daten (inkl. profileImage)
+    const user = await prisma.user.findUnique({
+      where: { id: sessionData.userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        role: true,
+        beguenstigt: true,
+        profileImage: true,
+      }
+    });
+
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Benutzer nicht gefunden' }), {
+        status: 404,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+
+    return new Response(JSON.stringify(user), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

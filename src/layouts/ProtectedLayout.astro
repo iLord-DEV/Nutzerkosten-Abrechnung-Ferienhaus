@@ -10,14 +10,8 @@ export interface Props {
 const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" } = Astro.props;
 
 // Authentifizierung prüfen
-let user;
-try {
-  user = await getUser(Astro);
-  if (!user) {
-    return Astro.redirect('/login');
-  }
-} catch (error) {
-  console.error('Authentifizierungsfehler:', error);
+const user = await getUser(Astro);
+if (!user) {
   return Astro.redirect('/login');
 }
 
@@ -148,8 +142,9 @@ const isAdmin = user.role === 'ADMIN';
           <!-- User Info -->
           <a href="/profil" class="flex items-center gap-3 p-4 hover:bg-base-200 transition-colors">
             <div class="avatar placeholder">
-              <div class="bg-neutral text-neutral-content rounded-full w-10 flex items-center justify-center">
-                <span class="text-sm">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
+              <div id="sidebar-avatar" class="bg-neutral text-neutral-content rounded-full w-10 flex items-center justify-center overflow-hidden">
+                <span id="sidebar-avatar-initials" class="text-sm">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
+                <img id="sidebar-avatar-image" src="" alt="" class="w-full h-full object-cover hidden" />
               </div>
             </div>
             <div class="flex-1 min-w-0">
@@ -297,10 +292,34 @@ const isAdmin = user.role === 'ADMIN';
     });
   }
 
+  // Load profile image from API
+  async function loadProfileImage() {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const user = await response.json();
+        if (user.profileImage) {
+          const avatarImage = document.getElementById('sidebar-avatar-image') as HTMLImageElement;
+          const avatarInitials = document.getElementById('sidebar-avatar-initials');
+
+          if (avatarImage && avatarInitials) {
+            avatarImage.src = user.profileImage;
+            avatarImage.alt = user.name;
+            avatarImage.classList.remove('hidden');
+            avatarInitials.classList.add('hidden');
+          }
+        }
+      }
+    } catch (error) {
+      // Profilbild-Fehler ist nicht kritisch, Initialen bleiben sichtbar
+    }
+  }
+
   // Initialize on load
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initFontSize();
+    loadProfileImage();
 
     // Logout button handler
     const logoutBtn = document.getElementById('logout-btn');
