@@ -42,6 +42,7 @@ export const GET: APIRoute = async (context) => {
             email: true,
             role: true,
             beguenstigt: true,
+            profileImage: true,
           },
         },
 

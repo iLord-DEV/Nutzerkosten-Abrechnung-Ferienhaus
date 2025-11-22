@@ -770,10 +770,15 @@ const session = JSON.parse(sessionCookie.value);
         ${isAdminUser ? `
           <td>
             <div class="flex items-center gap-3">
-              <div class="avatar placeholder">
-                <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
-                  <span class="text-sm">${aufenthalt.user.name.charAt(0)}</span>
-                </div>
+              <div class="avatar ${aufenthalt.user.profileImage ? '' : 'placeholder'}">
+                ${aufenthalt.user.profileImage
+                  ? `<div class="w-10 h-10 rounded-full overflow-hidden">
+                      <img src="${aufenthalt.user.profileImage}" alt="${aufenthalt.user.name}" class="w-full h-full object-cover" />
+                    </div>`
+                  : `<div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
+                      <span class="text-sm">${aufenthalt.user.name.charAt(0)}</span>
+                    </div>`
+                }
               </div>
               <div>
                 <div class="font-medium">${aufenthalt.user.name}</div>
