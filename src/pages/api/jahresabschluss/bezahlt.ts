@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
-import { requireAuth } from '../../../utils/auth';
+import { requireAuth, requireAdmin } from '../../../utils/auth';
 
 const prisma = new PrismaClient();
 
