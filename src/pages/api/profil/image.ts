@@ -12,7 +12,7 @@ const IS_PROD = import.meta.env.PROD;
 const UPLOAD_DIR = IS_PROD ? 'dist/client/uploads/profiles' : 'public/uploads/profiles';
 const PUBLIC_PATH = '/uploads/profiles';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
 
 export const POST: APIRoute = async (context) => {
   try {
@@ -32,7 +32,7 @@ export const POST: APIRoute = async (context) => {
     // Dateityp prüfen
     if (!ALLOWED_TYPES.includes(file.type)) {
       return new Response(
-        JSON.stringify({ error: 'Ungültiger Dateityp. Erlaubt: JPEG, PNG, GIF, WebP' }),
+        JSON.stringify({ error: 'Ungültiger Dateityp. Erlaubt: JPEG, PNG, GIF, WebP, AVIF' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
