@@ -38,6 +38,8 @@ export const GET: APIRoute = async ({ cookies }) => {
         role: true,
         beguenstigt: true,
         profileImage: true,
+        notifyOnComments: true,
+        notifyOnTermine: true,
       }
     });
 

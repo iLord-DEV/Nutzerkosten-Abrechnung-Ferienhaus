@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../../../utils/auth';
+import { sendNewCommentEmail } from '../../../../utils/email';
 
 const prisma = new PrismaClient();
 
@@ -101,6 +102,15 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
+    // Email-Benachrichtigungen versenden (async, nicht blockierend)
+    sendCommentNotifications(
+      user.id,
+      user.name,
+      terminplanung.titel,
+      terminplanungId,
+      inhalt.trim()
+    ).catch(err => console.error('Fehler beim Versenden der Kommentar-Benachrichtigungen:', err));
+
     return new Response(JSON.stringify(kommentar), {
       status: 201,
       headers: {
@@ -128,3 +138,45 @@ export const POST: APIRoute = async (context) => {
     });
   }
 };
+
+/**
+ * Sendet Email-Benachrichtigungen an alle User die notifyOnComments aktiviert haben
+ * (außer dem Autor des Kommentars)
+ */
+async function sendCommentNotifications(
+  authorId: number,
+  authorName: string,
+  terminTitel: string,
+  terminId: number,
+  kommentarInhalt: string
+): Promise<void> {
+  // Alle User holen die Benachrichtigungen aktiviert haben (außer dem Autor)
+  const usersToNotify = await prisma.user.findMany({
+    where: {
+      notifyOnComments: true,
+      id: { not: authorId }
+    },
+    select: {
+      email: true,
+      name: true
+    }
+  });
+
+  // Emails parallel versenden
+  await Promise.all(
+    usersToNotify.map(user =>
+      sendNewCommentEmail(
+        user.email,
+        user.name,
+        authorName,
+        terminTitel,
+        terminId,
+        kommentarInhalt
+      )
+    )
+  );
+
+  if (usersToNotify.length > 0) {
+    console.log(`📧 Kommentar-Benachrichtigungen an ${usersToNotify.length} User gesendet`);
+  }
+}

@@ -16,6 +16,8 @@ model User {
   profileImage       String?
   role               Role                   @default(USER)
   beguenstigt        Boolean                @default(false)
+  notifyOnComments   Boolean                @default(false)
+  notifyOnTermine    Boolean                @default(false)
   createdAt          DateTime               @default(now())
   aufenthalte        Aufenthalt[]
   BlogComment        BlogComment[]

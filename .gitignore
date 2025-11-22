@@ -64,3 +64,6 @@ Desktop.ini
 *.bak
 *.backup
 backups/*.sql
+
+# User uploads
+public/uploads/

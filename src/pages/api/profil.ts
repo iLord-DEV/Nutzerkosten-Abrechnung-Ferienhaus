@@ -9,7 +9,7 @@ export const PUT: APIRoute = async (context) => {
     const user = await requireAuth(context);
 
     const data = await context.request.json();
-    const { email, username } = data;
+    const { email, username, notifyOnComments, notifyOnTermine } = data;
 
     // Validierung E-Mail
     if (!email) {
@@ -80,6 +80,8 @@ export const PUT: APIRoute = async (context) => {
       data: {
         email,
         username: trimmedUsername,
+        ...(typeof notifyOnComments === 'boolean' && { notifyOnComments }),
+        ...(typeof notifyOnTermine === 'boolean' && { notifyOnTermine }),
       },
       select: {
         id: true,
@@ -89,6 +91,8 @@ export const PUT: APIRoute = async (context) => {
         role: true,
         beguenstigt: true,
         profileImage: true,
+        notifyOnComments: true,
+        notifyOnTermine: true,
       }
     });
 

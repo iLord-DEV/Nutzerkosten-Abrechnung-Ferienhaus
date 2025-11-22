@@ -105,6 +105,38 @@ try {
       </div>
     </div>
 
+    <!-- Benachrichtigungs-Einstellungen -->
+    <div class="card-container mt-6">
+      <h2 class="text-lg font-medium text-base-content mb-4">E-Mail-Benachrichtigungen</h2>
+      <p class="text-sm text-base-content/60 mb-4">
+        Wählen Sie, bei welchen Ereignissen Sie per E-Mail benachrichtigt werden möchten.
+      </p>
+
+      <div class="space-y-4">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" id="notify-comments" class="checkbox checkbox-primary" />
+          <div>
+            <span class="font-medium text-base-content">Neue Kommentare</span>
+            <p class="text-sm text-base-content/60">Bei neuen Kommentaren zur Terminplanung</p>
+          </div>
+        </label>
+
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" id="notify-termine" class="checkbox checkbox-primary" />
+          <div>
+            <span class="font-medium text-base-content">Neue Termine</span>
+            <p class="text-sm text-base-content/60">Wenn jemand einen neuen Termin erstellt</p>
+          </div>
+        </label>
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-base-300">
+        <button id="save-notifications-btn" class="btn btn-primary btn-sm">
+          Einstellungen speichern
+        </button>
+      </div>
+    </div>
+
     <!-- Feedback Messages -->
     <div id="success-message" class="alert alert-success mt-6 hidden">
       <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -127,6 +159,8 @@ try {
     role: 'ADMIN' | 'USER';
     beguenstigt: boolean;
     profileImage: string | null;
+    notifyOnComments: boolean;
+    notifyOnTermine: boolean;
   }
 
   let currentUser: User | null = null;
@@ -194,6 +228,13 @@ try {
         .substring(0, 2);
       avatarInitials.textContent = initials;
     }
+
+    // Notification-Einstellungen
+    const notifyComments = document.getElementById('notify-comments') as HTMLInputElement;
+    const notifyTermine = document.getElementById('notify-termine') as HTMLInputElement;
+
+    if (notifyComments) notifyComments.checked = currentUser.notifyOnComments;
+    if (notifyTermine) notifyTermine.checked = currentUser.notifyOnTermine;
   }
 
   // Profil speichern
@@ -306,6 +347,37 @@ try {
     }
   }
 
+  // Benachrichtigungs-Einstellungen speichern
+  async function saveNotifications() {
+    const notifyComments = (document.getElementById('notify-comments') as HTMLInputElement)?.checked;
+    const notifyTermine = (document.getElementById('notify-termine') as HTMLInputElement)?.checked;
+
+    try {
+      const response = await fetch('/api/profil', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: currentUser?.email,
+          notifyOnComments: notifyComments,
+          notifyOnTermine: notifyTermine,
+        }),
+      });
+
+      if (response.ok) {
+        showMessage('success');
+        currentUser = await response.json();
+      } else {
+        const error = await response.json();
+        showMessage('error', error.error || 'Fehler beim Speichern');
+      }
+    } catch (error) {
+      console.error('Fehler beim Speichern der Benachrichtigungen:', error);
+      showMessage('error', 'Netzwerkfehler beim Speichern');
+    }
+  }
+
   // Nachricht anzeigen
   function showMessage(type: 'success' | 'error', text?: string) {
     const successEl = document.getElementById('success-message');
@@ -351,5 +423,8 @@ try {
         removeProfileImage();
       }
     });
+
+    // Benachrichtigungen speichern
+    document.getElementById('save-notifications-btn')?.addEventListener('click', saveNotifications);
   });
 </script>

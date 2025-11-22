@@ -14,6 +14,7 @@ This is a **vacation home cost tracking and billing application** (Nutzerkosten-
 - Cost calculation and statistics
 - Event planning (Terminplanung) with voting and comments
 - Blog system with polls, image galleries, and modular content
+- Email notifications (new comments, new events, yearly summaries)
 
 ## Development Commands
 
@@ -96,6 +97,26 @@ docker exec wuestenstein-nutzerkosten-mysql mysqldump ... # Database backup
 - **Protected layouts**:
   - `ProtectedLayout.astro`: Requires authentication, redirects to `/login`
   - `ProtectedBlogLayout.astro`: Blog-specific protected layout
+
+### Email System
+
+**Email utilities in `src/utils/email.ts`:**
+- `sendEmail()`: Generic email sending (SMTP in production, console in development)
+- `sendMagicLinkEmail()`: Authentication magic links
+- `sendNewCommentEmail()`: Notification when someone comments on an event
+- `sendNewTerminEmail()`: Notification when someone creates a new event
+- `sendJahresabschlussEmail()`: Yearly cost summary email
+
+**User Notification Preferences:**
+- `User.notifyOnComments`: Receive emails for new comments
+- `User.notifyOnTermine`: Receive emails for new events
+- Configurable in user profile (`/profil`)
+
+**Yearly Summary Email (Jahresabschluss):**
+- Admin endpoint: `POST /api/admin/send-jahresabschluss`
+- Preview: `GET /api/admin/send-jahresabschluss?jahr=2024`
+- Cron script: `scripts/send-jahresabschluss.sh`
+- Schedule: Run on February 1st at 9:00 AM (`0 9 1 2 *`)
 
 ### Database Architecture (Prisma)
 

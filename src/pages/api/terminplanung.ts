@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../utils/auth';
+import { sendNewTerminEmail } from '../../utils/email';
 
 const prisma = new PrismaClient();
 
@@ -167,10 +168,16 @@ export const POST: APIRoute = async (context) => {
       }
     });
 
-    // TODO: In Production: Benachrichtigungen an alle anderen User senden
-    if (process.env.NODE_ENV === 'production') {
-      // await sendNotifications(terminplanung);
-    }
+    // Email-Benachrichtigungen versenden (async, nicht blockierend)
+    sendTerminNotifications(
+      user.id,
+      user.name,
+      terminplanung.titel,
+      terminplanung.id,
+      start,
+      end,
+      beschreibung
+    ).catch(err => console.error('Fehler beim Versenden der Termin-Benachrichtigungen:', err));
 
     return new Response(JSON.stringify(terminplanung), {
       status: 201,
@@ -188,3 +195,49 @@ export const POST: APIRoute = async (context) => {
     });
   }
 };
+
+/**
+ * Sendet Email-Benachrichtigungen an alle User die notifyOnTermine aktiviert haben
+ * (außer dem Ersteller des Termins)
+ */
+async function sendTerminNotifications(
+  authorId: number,
+  authorName: string,
+  terminTitel: string,
+  terminId: number,
+  startDatum: Date,
+  endDatum: Date,
+  beschreibung?: string
+): Promise<void> {
+  // Alle User holen die Benachrichtigungen aktiviert haben (außer dem Autor)
+  const usersToNotify = await prisma.user.findMany({
+    where: {
+      notifyOnTermine: true,
+      id: { not: authorId }
+    },
+    select: {
+      email: true,
+      name: true
+    }
+  });
+
+  // Emails parallel versenden
+  await Promise.all(
+    usersToNotify.map(user =>
+      sendNewTerminEmail(
+        user.email,
+        user.name,
+        authorName,
+        terminTitel,
+        terminId,
+        startDatum,
+        endDatum,
+        beschreibung
+      )
+    )
+  );
+
+  if (usersToNotify.length > 0) {
+    console.log(`📧 Termin-Benachrichtigungen an ${usersToNotify.length} User gesendet`);
+  }
+}
