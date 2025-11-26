@@ -2,10 +2,18 @@
 import Button from '../components/ui/Button.astro';
 import FormInput from '../components/ui/FormInput.astro';
 import '../styles/global.css';
+import { getUser } from '../utils/auth';
+
+// Prüfen ob User bereits eingeloggt ist → Server-Redirect
+const user = await getUser(Astro);
+if (user) {
+  const redirectTo = user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard';
+  return Astro.redirect(redirectTo);
+}
 ---
 
 <!DOCTYPE html>
-<html lang="de" data-theme="wuestenstein">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content="Anmelden - Nutzerkosten-Abrechnung für Wohngemeinschaften" />
@@ -13,6 +21,14 @@ import '../styles/global.css';
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content="Astro" />
     <title>Anmelden - Nutzerkosten</title>
+    <script is:inline>
+      (function() {
+        const stored = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored || (systemPrefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body class="min-h-screen bg-base-200">
     <!-- Toast Container für Notifications -->
@@ -38,6 +54,26 @@ import '../styles/global.css';
         <!-- Login Card -->
         <div class="card bg-base-100 shadow-xl animate-slide-up">
           <div class="card-body">
+            <!-- Token einfügen (nur für PWA sichtbar) -->
+            <div id="pwa-token-section" class="hidden">
+              <div class="bg-base-200 rounded-lg p-4">
+                <p class="text-sm font-medium mb-2">Code aus E-Mail einfügen:</p>
+                <div class="flex gap-2">
+                  <input
+                    type="text"
+                    id="paste-token-input"
+                    class="input input-bordered input-sm flex-1 font-mono"
+                    placeholder="abc123def456..."
+                  />
+                  <button type="button" id="paste-token-btn" class="btn btn-sm btn-primary">
+                    OK
+                  </button>
+                </div>
+                <p id="paste-token-error" class="text-xs text-error mt-2 hidden"></p>
+              </div>
+              <div class="divider text-xs text-base-content/50">oder neuen Code anfordern</div>
+            </div>
+
             <form id="login-form" class="space-y-4">
               <!-- Error Alert -->
               <div id="error-alert" class="alert alert-error hidden">
@@ -98,6 +134,87 @@ import '../styles/global.css';
   const errorAlert = document.getElementById('error-alert') as HTMLDivElement;
   const errorMessage = document.getElementById('error-message') as HTMLSpanElement;
 
+  // PWA-Erkennung - Token-Sektion nur in PWA anzeigen
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches
+             || (window.navigator as any).standalone === true;
+
+  const pwaTokenSection = document.getElementById('pwa-token-section');
+  if (isPWA && pwaTokenSection) {
+    pwaTokenSection.classList.remove('hidden');
+  }
+
+  // Token einfügen Handler
+  const pasteTokenInput = document.getElementById('paste-token-input') as HTMLInputElement;
+  const pasteTokenBtn = document.getElementById('paste-token-btn') as HTMLButtonElement;
+  const pasteTokenError = document.getElementById('paste-token-error') as HTMLParagraphElement;
+
+  if (pasteTokenBtn && pasteTokenInput) {
+    pasteTokenBtn.addEventListener('click', async () => {
+      let token = pasteTokenInput.value.trim();
+
+      if (!token) {
+        pasteTokenError.textContent = 'Bitte füge den Code ein';
+        pasteTokenError.classList.remove('hidden');
+        return;
+      }
+
+      // Falls jemand doch die volle URL einfügt, Token extrahieren
+      if (token.includes('token=')) {
+        token = token.split('token=')[1]?.split('&')[0] || token;
+      }
+
+      // Token sollte nur hex-Zeichen enthalten (a-f, 0-9)
+      if (!/^[a-f0-9]+$/i.test(token)) {
+        pasteTokenError.textContent = 'Ungültiger Code';
+        pasteTokenError.classList.remove('hidden');
+        return;
+      }
+
+      // Button deaktivieren während Verarbeitung
+      pasteTokenBtn.disabled = true;
+      pasteTokenBtn.textContent = '...';
+
+      try {
+        // Direkt API aufrufen statt zu /verify zu navigieren (iOS PWA Fix)
+        const response = await fetch('/api/auth/verify-magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Erfolg - Seite neu laden, Server macht den Redirect
+          window.location.reload();
+        } else {
+          pasteTokenError.textContent = data.error || 'Ungültiger Code';
+          pasteTokenError.classList.remove('hidden');
+          pasteTokenBtn.disabled = false;
+          pasteTokenBtn.textContent = 'OK';
+        }
+      } catch (error) {
+        pasteTokenError.textContent = 'Fehler bei der Anmeldung';
+        pasteTokenError.classList.remove('hidden');
+        pasteTokenBtn.disabled = false;
+        pasteTokenBtn.textContent = 'OK';
+      }
+    });
+
+    // Enter-Taste im Input-Feld
+    pasteTokenInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        pasteTokenBtn.click();
+      }
+    });
+
+    // Fehler ausblenden bei Eingabe
+    pasteTokenInput.addEventListener('input', () => {
+      pasteTokenError.classList.add('hidden');
+    });
+  }
+
   function showError(message: string) {
     errorMessage.textContent = message;
     errorAlert.classList.remove('hidden');
@@ -141,7 +258,7 @@ import '../styles/global.css';
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ identifier: identifier.trim() }),
+          body: JSON.stringify({ identifier: identifier.trim(), isPWA }),
         });
 
         const data = await response.json();
