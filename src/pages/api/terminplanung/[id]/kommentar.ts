@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../../../utils/auth';
 import { sendNewCommentEmail } from '../../../../utils/email';
+import { sendPushForNewComment } from '../../../../utils/pushNotification';
 
 const prisma = new PrismaClient();
 
@@ -110,6 +111,14 @@ export const POST: APIRoute = async (context) => {
       terminplanungId,
       inhalt.trim()
     ).catch(err => console.error('Fehler beim Versenden der Kommentar-Benachrichtigungen:', err));
+
+    // Push-Benachrichtigungen versenden (async, nicht blockierend)
+    sendPushForNewComment(
+      user.id,
+      terminplanung.titel,
+      terminplanungId,
+      inhalt.trim()
+    ).catch(err => console.error('Fehler beim Versenden der Push-Benachrichtigungen:', err));
 
     return new Response(JSON.stringify(kommentar), {
       status: 201,

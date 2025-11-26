@@ -270,11 +270,16 @@ try {
     }
   }
 
+  // Funktionen global verfügbar machen für onclick
+  (window as any).openCreateUserModal = openCreateUserModal;
+  (window as any).closeCreateUserModal = closeCreateUserModal;
+  (window as any).deleteUser = deleteUser;
+
   // Event-Listener
   document.addEventListener('DOMContentLoaded', () => {
     loadUserInfo();
     loadBenutzer();
 
-    document.getElementById('create-user-form').addEventListener('submit', createUser);
+    document.getElementById('create-user-form')?.addEventListener('submit', createUser);
   });
 </script>
