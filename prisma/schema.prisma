@@ -29,6 +29,7 @@ model User {
   terminPlanungen    TerminPlanung[]
   jahresabschluesse  UserJahresabschluss[]
   magicLinkTokens    MagicLinkToken[]
+  pushSubscriptions  PushSubscription[]
 }
 
 model Aufenthalt {
@@ -310,6 +311,19 @@ model MagicLinkToken {
   @@index([token])
   @@index([userId], map: "MagicLinkToken_userId_fkey")
   @@index([expiresAt])
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  endpoint  String   @db.VarChar(500)
+  p256dh    String   @db.Text
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@index([userId])
 }
 
 enum TerminStatus {
