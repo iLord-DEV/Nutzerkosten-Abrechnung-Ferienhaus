@@ -69,7 +69,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 Stunden
+      maxAge: 60 * 60 * 24 * 31, // 31 Tage
     });
 
     return new Response(

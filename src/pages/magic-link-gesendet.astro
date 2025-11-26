@@ -3,11 +3,19 @@ import '../styles/global.css';
 ---
 
 <!DOCTYPE html>
-<html lang="de" data-theme="wuestenstein">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Magic-Link gesendet - Nutzerkosten</title>
+    <script is:inline>
+      (function() {
+        const stored = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored || (systemPrefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body class="min-h-screen bg-base-200">
     <div class="min-h-screen flex items-center justify-center py-12 px-4">
@@ -56,6 +64,25 @@ import '../styles/global.css';
 
             <div class="divider"></div>
 
+            <!-- Token-Eingabe für PWA -->
+            <div class="bg-base-200 rounded-lg p-4 mb-4">
+              <p class="text-sm font-medium text-base-content mb-2">
+                📱 Code aus E-Mail einfügen:
+              </p>
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  id="paste-token-input"
+                  class="input input-bordered input-sm flex-1 font-mono"
+                  placeholder="Code hier einfügen..."
+                />
+                <button type="button" id="paste-token-btn" class="btn btn-sm btn-primary">
+                  OK
+                </button>
+              </div>
+              <p id="paste-token-error" class="text-xs text-error mt-2 hidden"></p>
+            </div>
+
             <div class="text-center">
               <p class="text-sm text-base-content/70 mb-2">
                 E-Mail nicht erhalten?
@@ -88,6 +115,51 @@ import '../styles/global.css';
     </div>
 
     <script>
+      // Token-Eingabe Handler
+      const pasteTokenInput = document.getElementById('paste-token-input') as HTMLInputElement;
+      const pasteTokenBtn = document.getElementById('paste-token-btn') as HTMLButtonElement;
+      const pasteTokenError = document.getElementById('paste-token-error') as HTMLParagraphElement;
+
+      if (pasteTokenBtn && pasteTokenInput) {
+        pasteTokenBtn.addEventListener('click', () => {
+          let token = pasteTokenInput.value.trim();
+
+          if (!token) {
+            pasteTokenError.textContent = 'Bitte füge den Code ein';
+            pasteTokenError.classList.remove('hidden');
+            return;
+          }
+
+          // Falls jemand die volle URL einfügt, Token extrahieren
+          if (token.includes('token=')) {
+            token = token.split('token=')[1]?.split('&')[0] || token;
+          }
+
+          // Token sollte nur hex-Zeichen enthalten
+          if (!/^[a-f0-9]+$/i.test(token)) {
+            pasteTokenError.textContent = 'Ungültiger Code';
+            pasteTokenError.classList.remove('hidden');
+            return;
+          }
+
+          // Zur Verifizierungsseite navigieren
+          window.location.href = `/verify?token=${token}`;
+        });
+
+        // Enter-Taste
+        pasteTokenInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            pasteTokenBtn.click();
+          }
+        });
+
+        // Fehler ausblenden bei Eingabe
+        pasteTokenInput.addEventListener('input', () => {
+          pasteTokenError.classList.add('hidden');
+        });
+      }
+
       // Development-Mode: Magic-Link aus URL-Parameter anzeigen
       const urlParams = new URLSearchParams(window.location.search);
       const magicLink = urlParams.get('link');

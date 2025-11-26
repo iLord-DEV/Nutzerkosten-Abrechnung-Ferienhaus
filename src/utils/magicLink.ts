@@ -18,14 +18,26 @@ const RATE_LIMIT_WINDOW_HOURS = 1;
  * @throws Error wenn Rate-Limit überschritten
  */
 export async function generateMagicLinkToken(userId: number): Promise<{ token: string; expiresAt: Date }> {
-  // Rate-Limiting prüfen
+  // ZUERST: Alte/abgelaufene Tokens aufräumen (wichtig für korrektes Rate-Limiting!)
+  await prisma.magicLinkToken.deleteMany({
+    where: {
+      OR: [
+        { expiresAt: { lt: new Date() } }, // Abgelaufen
+        { used: true }                      // Bereits verwendet
+      ]
+    }
+  });
+
+  // Rate-Limiting prüfen (zählt nur aktive, nicht-verwendete Tokens)
   const rateLimitStart = new Date();
   rateLimitStart.setHours(rateLimitStart.getHours() - RATE_LIMIT_WINDOW_HOURS);
 
   const recentTokens = await prisma.magicLinkToken.count({
     where: {
       userId,
-      createdAt: { gte: rateLimitStart }
+      createdAt: { gte: rateLimitStart },
+      used: false,
+      expiresAt: { gte: new Date() } // Nur nicht-abgelaufene
     }
   });
 
@@ -47,16 +59,6 @@ export async function generateMagicLinkToken(userId: number): Promise<{ token: s
       token,
       expiresAt,
       used: false
-    }
-  });
-
-  // Alte/abgelaufene Tokens aufräumen (Cleanup)
-  await prisma.magicLinkToken.deleteMany({
-    where: {
-      OR: [
-        { expiresAt: { lt: new Date() } }, // Abgelaufen
-        { used: true }                      // Bereits verwendet
-      ]
     }
   });
 

@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { identifier } = body;
+    const { identifier, isPWA } = body;
 
     if (!identifier || typeof identifier !== 'string') {
       return new Response(
@@ -53,7 +53,7 @@ export const POST: APIRoute = async ({ request }) => {
       const magicLink = `${appUrl}/verify?token=${token}`;
 
       // Email senden (oder in Console loggen in Development)
-      await sendMagicLinkEmail(user.email, user.name, magicLink, expiresAt);
+      await sendMagicLinkEmail(user.email, user.name, magicLink, expiresAt, isPWA);
 
       // In Development: Magic-Link auch im Response zurückgeben
       const isDevelopment = process.env.NODE_ENV !== 'production';
