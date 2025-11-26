@@ -27,16 +27,32 @@ const isAdmin = user.role === 'ADMIN';
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Wüstenstein" />
+
     <!-- Load theme and font size immediately to prevent flash -->
     <script is:inline>
       (function() {
         try {
-          const theme = localStorage.getItem('theme') || 'light';
+          const stored = localStorage.getItem('theme');
+          const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+          const theme = stored || (mediaQuery.matches ? 'dark' : 'light');
           document.documentElement.setAttribute('data-theme', theme);
           const fontSize = localStorage.getItem('fontSize') || '100';
           document.documentElement.style.fontSize = fontSize + '%';
+
+          // Auf System-Änderungen reagieren (nur wenn kein manuelles Theme gesetzt)
+          mediaQuery.addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+              document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            }
+          });
         } catch (e) {
-          console.error('[Init] Error:', e);
           document.documentElement.setAttribute('data-theme', 'light');
         }
       })();
@@ -177,14 +193,17 @@ const isAdmin = user.role === 'ADMIN';
           <!-- Settings Row: Theme & Font Size -->
           <div class="flex items-center justify-between px-4 py-3 border-t">
             <!-- Theme Toggle -->
-            <div class="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 opacity-60">
+            <button id="theme-toggle-btn" class="btn btn-ghost btn-sm btn-square" title="Theme wechseln">
+              <!-- Sun Icon (shown in dark mode, click to switch to light) -->
+              <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 hidden">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
               </svg>
-              <button id="theme-toggle-btn" class="text-xs hover:underline">
-                <span id="theme-label">Dunkel</span>
-              </button>
-            </div>
+              <!-- Moon Icon (shown in light mode, click to switch to dark) -->
+              <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 hidden">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+              </svg>
+              <span class="sr-only" id="theme-label">Theme wechseln</span>
+            </button>
 
             <!-- Font Size Controls -->
             <div class="flex items-center gap-1">
@@ -221,38 +240,43 @@ const isAdmin = user.role === 'ADMIN';
   // Theme Switcher Logic
   function initTheme() {
     const toggleBtn = document.getElementById('theme-toggle-btn');
+    const sunIcon = document.getElementById('theme-icon-sun');
+    const moonIcon = document.getElementById('theme-icon-moon');
     const themeLabel = document.getElementById('theme-label');
-    if (!toggleBtn || !themeLabel) {
-      console.warn('[Theme] Toggle elements not found');
-      return;
-    }
+    if (!toggleBtn || !sunIcon || !moonIcon) return;
 
     const html = document.documentElement;
 
-    // Update label to show the OPPOSITE of current theme
-    function updateThemeLabel() {
+    // Update icons based on current theme
+    function updateThemeIcons() {
       const currentTheme = html.getAttribute('data-theme') || 'light';
-      // Show what clicking will switch TO (opposite of current)
-      themeLabel.textContent = currentTheme === 'light' ? 'Dunkel' : 'Hell';
+      if (currentTheme === 'dark') {
+        // Dark mode: show sun (to switch to light)
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+        if (themeLabel) themeLabel.textContent = 'Zu Hell wechseln';
+      } else {
+        // Light mode: show moon (to switch to dark)
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+        if (themeLabel) themeLabel.textContent = 'Zu Dunkel wechseln';
+      }
     }
 
-    // Double-check and force theme from localStorage
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    const currentTheme = html.getAttribute('data-theme');
+    updateThemeIcons();
 
-    if (currentTheme !== savedTheme) {
-      html.setAttribute('data-theme', savedTheme);
-    }
-
-    updateThemeLabel();
-
-    // Theme toggle handler
+    // Theme toggle handler - speichert explizite Wahl in localStorage
     toggleBtn.addEventListener('click', () => {
       const current = html.getAttribute('data-theme') || 'light';
       const newTheme = current === 'light' ? 'dark' : 'light';
       html.setAttribute('data-theme', newTheme);
       localStorage.setItem('theme', newTheme);
-      updateThemeLabel();
+      updateThemeIcons();
+    });
+
+    // Auf System-Änderungen reagieren und Icons aktualisieren
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      updateThemeIcons();
     });
   }
 
@@ -315,11 +339,24 @@ const isAdmin = user.role === 'ADMIN';
     }
   }
 
+  // Service Worker registrieren (für PWA + Push Notifications) - nur in Production
+  async function registerServiceWorker() {
+    if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        console.log('Service Worker registriert:', registration.scope);
+      } catch (error) {
+        console.error('Service Worker Registrierung fehlgeschlagen:', error);
+      }
+    }
+  }
+
   // Initialize on load
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initFontSize();
     loadProfileImage();
+    registerServiceWorker();
 
     // Logout button handler
     const logoutBtn = document.getElementById('logout-btn');

@@ -18,15 +18,29 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Wüstenstein" />
     <!-- Load theme immediately to prevent flash -->
     <script is:inline>
       (function() {
         try {
-          const theme = localStorage.getItem('theme') || 'light';
+          const stored = localStorage.getItem('theme');
+          const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+          const theme = stored || (mediaQuery.matches ? 'dark' : 'light');
           document.documentElement.setAttribute('data-theme', theme);
-          console.log('[Theme Init] Set theme to:', theme);
+
+          // Auf System-Änderungen reagieren (nur wenn kein manuelles Theme gesetzt)
+          mediaQuery.addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+              document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            }
+          });
         } catch (e) {
-          console.error('[Theme Init] Error:', e);
           document.documentElement.setAttribute('data-theme', 'light');
         }
       })();
@@ -127,36 +141,20 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
   // Theme Switcher Logic
   function initTheme() {
     const toggle = document.getElementById('theme-toggle') as HTMLInputElement;
-    if (!toggle) {
-      console.warn('[Theme] Toggle element not found');
-      return;
-    }
+    if (!toggle) return;
 
     const html = document.documentElement;
-
-    // Double-check and force theme from localStorage
-    const savedTheme = localStorage.getItem('theme') || 'light';
     const currentTheme = html.getAttribute('data-theme');
 
-    console.log('[Theme DOMLoaded] localStorage:', savedTheme, 'current attr:', currentTheme);
+    // Toggle-Checkbox entsprechend setzen
+    toggle.checked = (currentTheme === 'dark');
 
-    // If they don't match, force the saved theme
-    if (currentTheme !== savedTheme) {
-      console.warn('[Theme] Mismatch detected! Forcing theme to:', savedTheme);
-      html.setAttribute('data-theme', savedTheme);
-    }
-
-    toggle.checked = (savedTheme === 'dark');
-
-    // Theme toggle handler
-    const handler = () => {
+    // Theme toggle handler - speichert explizite Wahl in localStorage
+    toggle.addEventListener('change', () => {
       const newTheme = toggle.checked ? 'dark' : 'light';
-      console.log('[Theme] User toggled to:', newTheme);
       html.setAttribute('data-theme', newTheme);
       localStorage.setItem('theme', newTheme);
-    };
-
-    toggle.addEventListener('change', handler);
+    });
   }
 
   // Navigation Menu Icons
@@ -265,10 +263,23 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
     }
   }
 
+  // Service Worker registrieren (für PWA + Push Notifications) - nur in Production
+  async function registerServiceWorker() {
+    if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        console.log('Service Worker registriert:', registration.scope);
+      } catch (error) {
+        console.error('Service Worker Registrierung fehlgeschlagen:', error);
+      }
+    }
+  }
+
   // Initialize on load
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     updateNavigation();
+    registerServiceWorker();
 
     // Logout button handlers
     document.addEventListener('click', (e) => {

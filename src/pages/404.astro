@@ -3,11 +3,19 @@ import '../styles/global.css';
 ---
 
 <!DOCTYPE html>
-<html lang="de" data-theme="wuestenstein">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Seite nicht gefunden - Nutzerkosten</title>
+    <script is:inline>
+      (function() {
+        const stored = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored || (systemPrefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body class="min-h-screen bg-base-200">
     <div class="min-h-screen flex items-center justify-center py-12 px-4">

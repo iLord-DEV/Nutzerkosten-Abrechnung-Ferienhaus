@@ -10,11 +10,19 @@ if (!token) {
 ---
 
 <!DOCTYPE html>
-<html lang="de" data-theme="wuestenstein">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Anmeldung wird verarbeitet...</title>
+    <script is:inline>
+      (function() {
+        const stored = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored || (systemPrefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body class="min-h-screen bg-base-200">
     <div class="min-h-screen flex items-center justify-center py-12 px-4">
@@ -56,8 +64,8 @@ if (!token) {
           const data = await response.json();
 
           if (data.success) {
-            // Erfolg - Redirect
-            window.location.href = data.redirectTo;
+            // Erfolg - Redirect (replace um Login aus History zu entfernen)
+            window.location.replace(data.redirectTo);
           } else {
             // Fehler anzeigen
             document.getElementById('error-message').textContent =
