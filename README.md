@@ -33,6 +33,42 @@ Eine moderne Web-Anwendung zur Verwaltung und Abrechnung von Nutzerkosten in Woh
 - **Kostenstatistiken** und Charts
 - **Jahresabschlüsse**
 
+### 🤖 KI-Chatbot (Claude AI)
+
+Ein intelligenter Assistent für das Ferienhaus, erreichbar unter `/chat`.
+
+#### Funktionen für alle User:
+
+| Funktion | Beispiel |
+|----------|----------|
+| **Aufenthalt erstellen** | "Erstelle einen Aufenthalt vom 1.-5. Dezember, Zähler 450-460, 4 Nächte" |
+| **Aufenthalte abfragen** | "Zeig mir meine Aufenthalte" oder "Was waren meine Aufenthalte 2024?" |
+| **Statistiken** | "Wie viele Heizstunden hatte ich?" oder "Was ist der aktuelle Zählerstand?" |
+| **Wissen abfragen** | "Wie ist das WLAN-Passwort?" oder "Wie bediene ich die Heizung?" |
+
+#### Zusätzliche Admin-Funktionen:
+
+| Funktion | Beispiel |
+|----------|----------|
+| **Wissen speichern** | "Speichere unter Küche: Die Spülmaschine ist eine Miele G7000" |
+| **Wissen auflisten** | "Zeig mir alle Einträge in der Wissensdatenbank" |
+| **Wissen löschen** | "Lösche den Eintrag mit ID 5" |
+
+#### Wissensdatenbank verwalten (`/admin/wissensdatenbank`):
+
+- **Manuell**: Einträge über Web-Formular erstellen/bearbeiten
+- **Datei-Upload**: PDF, Markdown oder TXT hochladen (Text wird automatisch extrahiert)
+- **Per Chat**: Als Admin direkt im Chat Wissen speichern lassen
+
+#### Konfiguration:
+
+```env
+# .env
+ANTHROPIC_API_KEY="sk-ant-api03-..."
+```
+
+API-Key von [console.anthropic.com](https://console.anthropic.com/)
+
 ## 🛠️ Technologie-Stack
 
 - **Frontend**: Astro 5, Tailwind CSS 4, Vue 3

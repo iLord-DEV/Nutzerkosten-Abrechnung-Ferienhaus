@@ -1,0 +1,254 @@
+---
+import ProtectedLayout from '../layouts/ProtectedLayout.astro';
+import { getUser } from '../utils/auth';
+
+const user = await getUser(Astro);
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+// User-Details für Admin-Check laden
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+const fullUser = await prisma.user.findUnique({
+  where: { id: user.id },
+  select: { role: true },
+});
+const isAdmin = fullUser?.role === 'ADMIN';
+---
+
+<ProtectedLayout title="Chat-Assistent - Nutzerkosten">
+  <div class="section-container h-[calc(100vh-200px)] flex flex-col">
+    <div class="page-header flex-shrink-0">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="page-title flex items-center gap-2">
+            <span>🤖</span>
+            Chat-Assistent
+          </h1>
+          <p class="page-description">
+            Frag mich nach Infos zum Ferienhaus oder lass mich einen Aufenthalt eintragen.
+          </p>
+        </div>
+        <button onclick="clearChat()" class="btn btn-ghost btn-sm">
+          🗑️ Chat leeren
+        </button>
+      </div>
+    </div>
+
+    {isAdmin && (
+      <div class="alert alert-info mb-4 flex-shrink-0">
+        <span>💡 Als Admin kannst du mit <code class="bg-base-300 px-1 rounded">#</code>-Befehlen die Wissensdatenbank erweitern.</span>
+        <a href="/admin/wissensdatenbank" class="btn btn-sm btn-ghost">Wissensdatenbank →</a>
+      </div>
+    )}
+
+    <!-- Chat-Bereich -->
+    <div class="card-container flex-1 flex flex-col min-h-0">
+      <!-- Nachrichten -->
+      <div id="chat-messages" class="flex-1 overflow-y-auto space-y-4 mb-4">
+        <!-- Willkommensnachricht -->
+        <div class="chat chat-start">
+          <div class="chat-bubble chat-bubble-primary">
+            Hallo! 👋 Ich bin der Assistent für Schloss Wüstenstein. Ich kann dir bei Fragen zum Ferienhaus helfen oder einen Aufenthalt für dich eintragen. Was kann ich für dich tun?
+          </div>
+        </div>
+      </div>
+
+      <!-- Eingabe -->
+      <form id="chat-form" class="flex gap-2 flex-shrink-0">
+        <input
+          type="text"
+          id="chat-input"
+          class="input input-bordered flex-1"
+          placeholder="Schreib eine Nachricht..."
+          autocomplete="off"
+        />
+        <button type="submit" id="send-btn" class="btn btn-primary">
+          <span id="send-text">Senden</span>
+          <span id="send-loading" class="loading loading-spinner hidden"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+</ProtectedLayout>
+
+<script>
+  interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+  }
+
+  let conversationHistory: ChatMessage[] = [];
+  let isLoading = false;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('chat-form') as HTMLFormElement;
+    const input = document.getElementById('chat-input') as HTMLInputElement;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = input.value.trim();
+      if (!message || isLoading) return;
+
+      input.value = '';
+      await sendMessage(message);
+    });
+
+    // Auto-focus
+    input.focus();
+  });
+
+  async function sendMessage(message: string) {
+    isLoading = true;
+    updateSendButton(true);
+
+    // User-Nachricht anzeigen
+    addMessage('user', message);
+    conversationHistory.push({ role: 'user', content: message });
+
+    // Loading-Indicator
+    const loadingId = addLoadingIndicator();
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          conversationHistory: conversationHistory.slice(0, -1), // Ohne die aktuelle Nachricht
+        }),
+      });
+
+      removeLoadingIndicator(loadingId);
+
+      if (!response.ok) {
+        const error = await response.json();
+        addMessage('assistant', `❌ Fehler: ${error.error || 'Unbekannter Fehler'}`);
+        conversationHistory.pop(); // User-Nachricht entfernen
+        return;
+      }
+
+      const data = await response.json();
+
+      // Tool-Ergebnisse anzeigen (falls vorhanden)
+      if (data.toolResults?.length > 0) {
+        for (const result of data.toolResults) {
+          if (result.toolName === 'createAufenthalt' && result.result?.success) {
+            addSystemMessage('✅ Aufenthalt wurde erstellt');
+          }
+        }
+      }
+
+      // Antwort anzeigen
+      addMessage('assistant', data.message);
+      conversationHistory.push({ role: 'assistant', content: data.message });
+
+    } catch (error) {
+      removeLoadingIndicator(loadingId);
+      addMessage('assistant', '❌ Verbindungsfehler. Bitte versuche es erneut.');
+      conversationHistory.pop();
+    } finally {
+      isLoading = false;
+      updateSendButton(false);
+    }
+  }
+
+  function addMessage(role: 'user' | 'assistant', content: string) {
+    const container = document.getElementById('chat-messages')!;
+    const chatDiv = document.createElement('div');
+    chatDiv.className = `chat ${role === 'user' ? 'chat-end' : 'chat-start'}`;
+
+    const bubbleClass = role === 'user' ? 'chat-bubble-secondary' : 'chat-bubble-primary';
+
+    // Markdown-ähnliche Formatierung
+    const formattedContent = formatContent(content);
+
+    chatDiv.innerHTML = `<div class="chat-bubble ${bubbleClass}">${formattedContent}</div>`;
+    container.appendChild(chatDiv);
+    scrollToBottom();
+  }
+
+  function addSystemMessage(content: string) {
+    const container = document.getElementById('chat-messages')!;
+    const div = document.createElement('div');
+    div.className = 'text-center text-sm text-base-content/60 py-2';
+    div.textContent = content;
+    container.appendChild(div);
+    scrollToBottom();
+  }
+
+  function addLoadingIndicator(): string {
+    const id = 'loading-' + Date.now();
+    const container = document.getElementById('chat-messages')!;
+    const div = document.createElement('div');
+    div.id = id;
+    div.className = 'chat chat-start';
+    div.innerHTML = `
+      <div class="chat-bubble chat-bubble-primary">
+        <span class="loading loading-dots loading-sm"></span>
+      </div>
+    `;
+    container.appendChild(div);
+    scrollToBottom();
+    return id;
+  }
+
+  function removeLoadingIndicator(id: string) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  function updateSendButton(loading: boolean) {
+    const textEl = document.getElementById('send-text')!;
+    const loadingEl = document.getElementById('send-loading')!;
+    const btn = document.getElementById('send-btn') as HTMLButtonElement;
+
+    if (loading) {
+      textEl.classList.add('hidden');
+      loadingEl.classList.remove('hidden');
+      btn.disabled = true;
+    } else {
+      textEl.classList.remove('hidden');
+      loadingEl.classList.add('hidden');
+      btn.disabled = false;
+    }
+  }
+
+  function scrollToBottom() {
+    const container = document.getElementById('chat-messages')!;
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function formatContent(content: string): string {
+    // Einfache Markdown-Formatierung
+    return content
+      // Code-Blöcke
+      .replace(/```([\s\S]*?)```/g, '<pre class="bg-base-300 p-2 rounded text-sm overflow-x-auto my-2">$1</pre>')
+      // Inline-Code
+      .replace(/`([^`]+)`/g, '<code class="bg-base-300 px-1 rounded">$1</code>')
+      // Fett
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      // Kursiv
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      // Listen
+      .replace(/^- (.+)$/gm, '• $1')
+      // Zeilenumbrüche
+      .replace(/\n/g, '<br>');
+  }
+
+  function clearChat() {
+    conversationHistory = [];
+    const container = document.getElementById('chat-messages')!;
+    container.innerHTML = `
+      <div class="chat chat-start">
+        <div class="chat-bubble chat-bubble-primary">
+          Hallo! 👋 Ich bin der Assistent für Schloss Wüstenstein. Ich kann dir bei Fragen zum Ferienhaus helfen oder einen Aufenthalt für dich eintragen. Was kann ich für dich tun?
+        </div>
+      </div>
+    `;
+  }
+
+  // Global functions
+  (window as any).clearChat = clearChat;
+</script>

@@ -1,0 +1,555 @@
+---
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
+import { requireAdmin } from '../../utils/auth';
+
+try {
+  await requireAdmin(Astro);
+} catch (error) {
+  return Astro.redirect('/login');
+}
+---
+
+<ProtectedLayout title="Wissensdatenbank - Nutzerkosten">
+  <div class="section-container">
+    <div class="page-header">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 class="page-title">Wissensdatenbank</h1>
+          <p class="page-description">
+            Verwalte Informationen für den KI-Chatbot (Geräte, Anleitungen, FAQ)
+          </p>
+        </div>
+        <div class="flex space-x-3">
+          <a href="/admin/dashboard" class="btn btn-ghost">
+            ← Dashboard
+          </a>
+          <button onclick="openUploadModal()" class="btn btn-secondary">
+            📄 Datei hochladen
+          </button>
+          <button onclick="openCreateModal()" class="btn btn-primary">
+            ➕ Neuer Eintrag
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="card-container mb-6">
+      <div class="flex items-center gap-4 flex-wrap">
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Kategorie</span>
+          </label>
+          <select id="category-filter" class="select select-bordered" onchange="filterByCategory()">
+            <option value="">Alle Kategorien</option>
+          </select>
+        </div>
+        <div class="form-control">
+          <label class="label cursor-pointer gap-2">
+            <input type="checkbox" id="active-filter" class="checkbox" checked onchange="loadEntries()" />
+            <span class="label-text">Nur aktive</span>
+          </label>
+        </div>
+        <div class="ml-auto text-sm text-base-content/60" id="entry-count">
+          0 Einträge
+        </div>
+      </div>
+    </div>
+
+    <!-- Einträge Liste -->
+    <div class="space-y-4" id="entries-list">
+      <div class="text-center py-8 text-base-content/60">Lade Einträge...</div>
+    </div>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <dialog id="entry-modal" class="modal">
+    <div class="modal-box max-w-2xl">
+      <h3 class="font-bold text-lg mb-4" id="modal-title">Neuer Eintrag</h3>
+      <form id="entry-form" class="space-y-4">
+        <input type="hidden" id="entry-id" />
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Kategorie *</span>
+            </label>
+            <input type="text" id="entry-category" list="category-suggestions"
+              class="input input-bordered" required placeholder="z.B. Heizung, WLAN, Küche" />
+            <datalist id="category-suggestions"></datalist>
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Titel *</span>
+            </label>
+            <input type="text" id="entry-title" class="input input-bordered" required
+              placeholder="z.B. Bedienung der Heizung" />
+          </div>
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Inhalt *</span>
+          </label>
+          <textarea id="entry-content" class="textarea textarea-bordered h-48" required
+            placeholder="Beschreibung, Anleitung oder Information..."></textarea>
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Suchbegriffe (optional)</span>
+          </label>
+          <input type="text" id="entry-keywords" class="input input-bordered"
+            placeholder="Komma-getrennt: Thermostat, Temperatur, Warm" />
+        </div>
+
+        <div class="flex items-center gap-4">
+          <label class="label cursor-pointer gap-2">
+            <input type="checkbox" id="entry-active" class="checkbox checkbox-primary" checked />
+            <span class="label-text">Aktiv</span>
+          </label>
+          <span class="text-sm text-base-content/60" id="entry-source"></span>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn" onclick="closeEntryModal()">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">Speichern</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+
+  <!-- Upload Modal -->
+  <dialog id="upload-modal" class="modal">
+    <div class="modal-box max-w-2xl">
+      <h3 class="font-bold text-lg mb-4">Datei hochladen</h3>
+
+      <div id="upload-dropzone"
+        class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors">
+        <div class="text-4xl mb-2">📄</div>
+        <p class="text-base-content/70">PDF, Markdown oder Text-Datei hier ablegen</p>
+        <p class="text-sm text-base-content/50 mt-1">oder klicken zum Auswählen</p>
+        <input type="file" id="file-input" accept=".pdf,.md,.markdown,.txt" class="hidden" />
+      </div>
+
+      <div id="upload-preview" class="hidden mt-4">
+        <div class="alert alert-info mb-4">
+          <span id="upload-filename"></span>
+          <span id="upload-info" class="text-sm"></span>
+        </div>
+
+        <div class="form-control mb-4">
+          <label class="label">
+            <span class="label-text">Vorschau des extrahierten Texts</span>
+          </label>
+          <textarea id="upload-text-preview" class="textarea textarea-bordered h-32" readonly></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Kategorie *</span>
+            </label>
+            <input type="text" id="upload-category" list="category-suggestions"
+              class="input input-bordered" required />
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Titel *</span>
+            </label>
+            <input type="text" id="upload-title" class="input input-bordered" required />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" class="btn" onclick="closeUploadModal()">Abbrechen</button>
+        <button type="button" id="upload-save-btn" class="btn btn-primary hidden" onclick="saveUpload()">
+          Speichern
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+
+  <!-- Delete Confirmation Modal -->
+  <dialog id="delete-modal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">Eintrag löschen?</h3>
+      <p class="py-4">Möchtest du den Eintrag "<span id="delete-title"></span>" wirklich löschen?</p>
+      <input type="hidden" id="delete-id" />
+      <div class="modal-action">
+        <button class="btn" onclick="closeDeleteModal()">Abbrechen</button>
+        <button class="btn btn-error" onclick="confirmDelete()">Löschen</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+</ProtectedLayout>
+
+<script>
+  let entries: any[] = [];
+  let categories: string[] = [];
+  let uploadedText: string = '';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadCategories();
+    loadEntries();
+    setupDropzone();
+    setupForm();
+  });
+
+  async function loadCategories() {
+    try {
+      const response = await fetch('/api/admin/knowledge-base/categories');
+      if (response.ok) {
+        categories = await response.json();
+        updateCategoryFilter();
+        updateCategorySuggestions();
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Kategorien:', error);
+    }
+  }
+
+  function updateCategoryFilter() {
+    const select = document.getElementById('category-filter') as HTMLSelectElement;
+    select.innerHTML = '<option value="">Alle Kategorien</option>';
+    categories.forEach(cat => {
+      select.innerHTML += `<option value="${cat}">${cat}</option>`;
+    });
+  }
+
+  function updateCategorySuggestions() {
+    const datalist = document.getElementById('category-suggestions') as HTMLDataListElement;
+    datalist.innerHTML = categories.map(cat => `<option value="${cat}">`).join('');
+  }
+
+  async function loadEntries() {
+    const categoryFilter = (document.getElementById('category-filter') as HTMLSelectElement).value;
+    const activeOnly = (document.getElementById('active-filter') as HTMLInputElement).checked;
+
+    const params = new URLSearchParams();
+    if (categoryFilter) params.append('category', categoryFilter);
+    if (activeOnly) params.append('activeOnly', 'true');
+
+    try {
+      const response = await fetch(`/api/admin/knowledge-base?${params}`);
+      if (response.ok) {
+        entries = await response.json();
+        renderEntries();
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Einträge:', error);
+    }
+  }
+
+  function filterByCategory() {
+    loadEntries();
+  }
+
+  function renderEntries() {
+    const list = document.getElementById('entries-list')!;
+    const countEl = document.getElementById('entry-count')!;
+
+    countEl.textContent = `${entries.length} Einträge`;
+
+    if (entries.length === 0) {
+      list.innerHTML = `
+        <div class="text-center py-8 text-base-content/60">
+          Keine Einträge gefunden. Erstelle einen neuen Eintrag oder lade eine Datei hoch.
+        </div>
+      `;
+      return;
+    }
+
+    // Nach Kategorie gruppieren
+    const grouped: Record<string, any[]> = {};
+    entries.forEach(entry => {
+      if (!grouped[entry.category]) {
+        grouped[entry.category] = [];
+      }
+      grouped[entry.category].push(entry);
+    });
+
+    list.innerHTML = Object.entries(grouped).map(([category, items]) => `
+      <div class="card-container">
+        <h3 class="font-semibold text-lg mb-3 flex items-center gap-2">
+          <span class="badge badge-primary">${category}</span>
+          <span class="text-sm text-base-content/60">${items.length} Einträge</span>
+        </h3>
+        <div class="space-y-2">
+          ${items.map(entry => `
+            <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg ${!entry.isActive ? 'opacity-50' : ''}">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium truncate">${entry.title}</span>
+                  ${entry.sourceType !== 'manual' ? `
+                    <span class="badge badge-sm badge-ghost">${entry.sourceType === 'upload' ? '📄' : '🌐'}</span>
+                  ` : ''}
+                  ${!entry.isActive ? '<span class="badge badge-sm badge-warning">Inaktiv</span>' : ''}
+                </div>
+                <p class="text-sm text-base-content/60 truncate">${entry.content.substring(0, 100)}...</p>
+              </div>
+              <div class="flex items-center gap-2 ml-4">
+                <button class="btn btn-ghost btn-sm" onclick="editEntry(${entry.id})">
+                  ✏️
+                </button>
+                <button class="btn btn-ghost btn-sm text-error" onclick="deleteEntry(${entry.id}, '${entry.title.replace(/'/g, "\\'")}')">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openCreateModal() {
+    (document.getElementById('modal-title') as HTMLElement).textContent = 'Neuer Eintrag';
+    (document.getElementById('entry-id') as HTMLInputElement).value = '';
+    (document.getElementById('entry-category') as HTMLInputElement).value = '';
+    (document.getElementById('entry-title') as HTMLInputElement).value = '';
+    (document.getElementById('entry-content') as HTMLTextAreaElement).value = '';
+    (document.getElementById('entry-keywords') as HTMLInputElement).value = '';
+    (document.getElementById('entry-active') as HTMLInputElement).checked = true;
+    (document.getElementById('entry-source') as HTMLElement).textContent = '';
+    (document.getElementById('entry-modal') as HTMLDialogElement).showModal();
+  }
+
+  async function editEntry(id: number) {
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return;
+
+    (document.getElementById('modal-title') as HTMLElement).textContent = 'Eintrag bearbeiten';
+    (document.getElementById('entry-id') as HTMLInputElement).value = String(id);
+    (document.getElementById('entry-category') as HTMLInputElement).value = entry.category;
+    (document.getElementById('entry-title') as HTMLInputElement).value = entry.title;
+    (document.getElementById('entry-content') as HTMLTextAreaElement).value = entry.content;
+    (document.getElementById('entry-keywords') as HTMLInputElement).value = entry.keywords || '';
+    (document.getElementById('entry-active') as HTMLInputElement).checked = entry.isActive;
+
+    let sourceInfo = '';
+    if (entry.sourceType === 'upload' && entry.fileName) {
+      sourceInfo = `📄 Hochgeladen: ${entry.fileName}`;
+    } else if (entry.sourceType === 'web' && entry.sourceUrl) {
+      sourceInfo = `🌐 Web: ${entry.sourceUrl}`;
+    }
+    (document.getElementById('entry-source') as HTMLElement).textContent = sourceInfo;
+
+    (document.getElementById('entry-modal') as HTMLDialogElement).showModal();
+  }
+
+  function closeEntryModal() {
+    (document.getElementById('entry-modal') as HTMLDialogElement).close();
+  }
+
+  function setupForm() {
+    document.getElementById('entry-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = (document.getElementById('entry-id') as HTMLInputElement).value;
+      const data = {
+        category: (document.getElementById('entry-category') as HTMLInputElement).value,
+        title: (document.getElementById('entry-title') as HTMLInputElement).value,
+        content: (document.getElementById('entry-content') as HTMLTextAreaElement).value,
+        keywords: (document.getElementById('entry-keywords') as HTMLInputElement).value || null,
+        isActive: (document.getElementById('entry-active') as HTMLInputElement).checked,
+      };
+
+      try {
+        const url = id ? `/api/admin/knowledge-base/${id}` : '/api/admin/knowledge-base';
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        if (response.ok) {
+          closeEntryModal();
+          loadCategories();
+          loadEntries();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Fehler beim Speichern');
+        }
+      } catch (error) {
+        console.error('Fehler:', error);
+        alert('Fehler beim Speichern');
+      }
+    });
+  }
+
+  function deleteEntry(id: number, title: string) {
+    (document.getElementById('delete-id') as HTMLInputElement).value = String(id);
+    (document.getElementById('delete-title') as HTMLElement).textContent = title;
+    (document.getElementById('delete-modal') as HTMLDialogElement).showModal();
+  }
+
+  function closeDeleteModal() {
+    (document.getElementById('delete-modal') as HTMLDialogElement).close();
+  }
+
+  async function confirmDelete() {
+    const id = (document.getElementById('delete-id') as HTMLInputElement).value;
+
+    try {
+      const response = await fetch(`/api/admin/knowledge-base/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        closeDeleteModal();
+        loadCategories();
+        loadEntries();
+      } else {
+        alert('Fehler beim Löschen');
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+      alert('Fehler beim Löschen');
+    }
+  }
+
+  // Upload Functions
+  function openUploadModal() {
+    resetUploadModal();
+    (document.getElementById('upload-modal') as HTMLDialogElement).showModal();
+  }
+
+  function closeUploadModal() {
+    (document.getElementById('upload-modal') as HTMLDialogElement).close();
+    resetUploadModal();
+  }
+
+  function resetUploadModal() {
+    (document.getElementById('upload-preview') as HTMLElement).classList.add('hidden');
+    (document.getElementById('upload-save-btn') as HTMLElement).classList.add('hidden');
+    (document.getElementById('file-input') as HTMLInputElement).value = '';
+    uploadedText = '';
+  }
+
+  function setupDropzone() {
+    const dropzone = document.getElementById('upload-dropzone')!;
+    const fileInput = document.getElementById('file-input') as HTMLInputElement;
+
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('border-primary', 'bg-primary/5');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('border-primary', 'bg-primary/5');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-primary', 'bg-primary/5');
+      const files = (e as DragEvent).dataTransfer?.files;
+      if (files?.length) {
+        handleFile(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files?.length) {
+        handleFile(fileInput.files[0]);
+      }
+    });
+  }
+
+  async function handleFile(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/admin/knowledge-base/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        (document.getElementById('upload-filename') as HTMLElement).textContent = result.fileName;
+        (document.getElementById('upload-info') as HTMLElement).textContent =
+          `${result.pageCount} Seite(n), ${result.textLength} Zeichen`;
+        (document.getElementById('upload-text-preview') as HTMLTextAreaElement).value = result.preview;
+        (document.getElementById('upload-title') as HTMLInputElement).value =
+          result.info?.title || file.name.replace(/\.[^/.]+$/, '');
+
+        uploadedText = result.fullText;
+
+        (document.getElementById('upload-preview') as HTMLElement).classList.remove('hidden');
+        (document.getElementById('upload-save-btn') as HTMLElement).classList.remove('hidden');
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Fehler beim Verarbeiten der Datei');
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+      alert('Fehler beim Hochladen');
+    }
+  }
+
+  async function saveUpload() {
+    const category = (document.getElementById('upload-category') as HTMLInputElement).value;
+    const title = (document.getElementById('upload-title') as HTMLInputElement).value;
+
+    if (!category || !title) {
+      alert('Bitte Kategorie und Titel angeben');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/knowledge-base', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category,
+          title,
+          content: uploadedText,
+          sourceType: 'upload',
+          fileName: (document.getElementById('upload-filename') as HTMLElement).textContent,
+        }),
+      });
+
+      if (response.ok) {
+        closeUploadModal();
+        loadCategories();
+        loadEntries();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Fehler beim Speichern');
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+      alert('Fehler beim Speichern');
+    }
+  }
+
+  // Global functions for onclick handlers
+  (window as any).openCreateModal = openCreateModal;
+  (window as any).openUploadModal = openUploadModal;
+  (window as any).closeEntryModal = closeEntryModal;
+  (window as any).closeUploadModal = closeUploadModal;
+  (window as any).closeDeleteModal = closeDeleteModal;
+  (window as any).editEntry = editEntry;
+  (window as any).deleteEntry = deleteEntry;
+  (window as any).confirmDelete = confirmDelete;
+  (window as any).saveUpload = saveUpload;
+  (window as any).filterByCategory = filterByCategory;
+  (window as any).loadEntries = loadEntries;
+</script>
