@@ -52,6 +52,8 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_EMAIL: ${VAPID_EMAIL}
+      # Claude AI Chatbot
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     depends_on:
       mysql:
         condition: service_healthy
