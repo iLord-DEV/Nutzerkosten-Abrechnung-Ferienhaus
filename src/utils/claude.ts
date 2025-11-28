@@ -153,8 +153,18 @@ Wenn ein Admin dich bittet, Informationen zu speichern (z.B. "Trage WLAN-Infos e
 Du brauchst KEINEN speziellen Präfix wie # - erkenne einfach die Absicht des Admins.`
     : '';
 
+  const heute = new Date().toLocaleDateString('de-DE', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return `Du bist ein hilfreicher Assistent für das Ferienhaus Schloss Wüstenstein.
 Du hilfst dem Benutzer ${userName} bei Fragen zum Haus und bei der Verwaltung von Aufenthalten.
+
+## Aktuelles Datum:
+Heute ist ${heute}. Wenn der Benutzer nur Monate oder Tage nennt (z.B. "vom 15. bis 20. November"), verwende das aktuelle Jahr.
 
 ## Deine Fähigkeiten:
 1. Beantworte Fragen über das Ferienhaus anhand der Wissensdatenbank
