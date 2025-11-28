@@ -10,9 +10,24 @@ export const POST: APIRoute = async (context) => {
     const user = await requireAuth(context);
     const terminplanungId = parseInt(context.params.id!);
     const body = await context.request.json();
-    
+
     const { stimme, kommentar } = body;
-    
+
+    // Kind-User dürfen nicht abstimmen
+    const fullUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { isKind: true }
+    });
+
+    if (fullUser?.isKind) {
+      return new Response(JSON.stringify({ error: 'Kind-User können nicht abstimmen' }), {
+        status: 403,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
     if (!stimme || !['APPROVE', 'NEED_INFO'].includes(stimme)) {
       return new Response(JSON.stringify({ error: 'Ungültige Abstimmung' }), {
         status: 400,
@@ -199,27 +214,28 @@ export const DELETE: APIRoute = async (context) => {
 // Hilfsfunktion: Status der Terminplanung basierend auf Abstimmungen aktualisieren
 async function updateTerminplanungStatus(terminplanungId: number) {
   try {
+    // Erst Terminplanung laden um Version zu bekommen
     const terminplanung = await prisma.terminPlanung.findUnique({
-      where: { id: terminplanungId },
-      include: {
-        abstimmungen: {
-          where: {
-            version: terminplanung.version
-          }
-        }
-      }
+      where: { id: terminplanungId }
     });
 
     if (!terminplanung) return;
 
-    // Alle User abrufen (außer dem Ersteller)
-    const allUsers = await prisma.user.findMany({
+    // Dann Abstimmungen für diese Version laden
+    const currentVersionAbstimmungen = await prisma.terminAbstimmung.findMany({
       where: {
-        id: { not: terminplanung.userId }
+        terminPlanungId: terminplanungId,
+        version: terminplanung.version
       }
     });
 
-    const currentVersionAbstimmungen = terminplanung.abstimmungen;
+    // Alle stimmberechtigten User abrufen (außer dem Ersteller und Kind-User)
+    const allUsers = await prisma.user.findMany({
+      where: {
+        id: { not: terminplanung.userId },
+        isKind: false
+      }
+    });
 
     let newStatus = terminplanung.status;
 

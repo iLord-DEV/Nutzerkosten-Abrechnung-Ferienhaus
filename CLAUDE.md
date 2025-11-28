@@ -476,3 +476,61 @@ if (naechteBerechnen === false) {
 - Members: 5€ per night
 - Guests: 10€ per night
 - Only charged if `sollBerechnen === true` per logic above
+
+### Kind-User System (isKind)
+
+**CRITICAL: Kind-User haben eingeschränkte Rechte bei der Terminplanung!**
+
+**Was ist ein Kind-User?**
+- User mit `isKind = true` im User-Model
+- Typischerweise minderjährige Familienmitglieder
+- Haben eigenen Account, aber eingeschränkte Teilnahme an Abstimmungen
+
+**Einschränkungen für Kind-User:**
+
+1. **Keine Abstimmung bei Terminplanungen**
+   - Können nicht "Zustimmen" oder "Rückfrage" klicken
+   - Abstimmungs-Buttons werden im UI ausgeblendet
+   - API blockiert Abstimmungsversuche mit 403-Fehler
+   - Werden bei Status-Berechnung (alle zugestimmt?) ignoriert
+
+2. **Eingeschränkte Benachrichtigungen**
+   - Bekommen KEINE Emails/Push bei neuen Terminen anderer User
+   - Bekommen KEINE Emails/Push bei Kommentaren (Ausnahme: eigene Termine)
+   - Bekommen Benachrichtigungen NUR für ihre eigenen Terminplanungen
+
+**Admin-UI:**
+- Checkbox "Kind" in Benutzer-Bearbeitung (`/admin/benutzer/[id]/edit`)
+- Kind-User werden in der Benutzer-Liste **blau** hervorgehoben
+- Begünstigte User werden **grün** hervorgehoben
+
+**Implementierung:**
+```javascript
+// API: Kind-User können nicht abstimmen
+if (fullUser?.isKind) {
+  return new Response(JSON.stringify({ error: 'Kind-User können nicht abstimmen' }), {
+    status: 403
+  });
+}
+
+// Email/Push: Kind-User ausschließen (außer eigene Termine)
+const usersToNotify = await prisma.user.findMany({
+  where: {
+    notifyOnTermine: true,
+    id: { not: authorId },
+    OR: [
+      { isKind: false },
+      { id: terminplanung?.userId } // Kind bekommt Notification wenn es ihr Termin ist
+    ]
+  }
+});
+```
+
+**Betroffene Dateien:**
+- `prisma/schema.prisma`: `isKind` Boolean-Feld
+- `src/pages/api/terminplanung/[id]/abstimmung.ts`: Abstimmungs-Sperre
+- `src/pages/api/terminplanung.ts`: Email-Benachrichtigungen
+- `src/pages/api/terminplanung/[id]/kommentar.ts`: Kommentar-Benachrichtigungen
+- `src/utils/pushNotification.ts`: Push-Benachrichtigungen
+- `src/pages/terminplanung.astro`: UI-Buttons ausblenden
+- `src/pages/terminplanung/[id].astro`: canVote-Logik

@@ -206,7 +206,7 @@ export const POST: APIRoute = async (context) => {
 
 /**
  * Sendet Email-Benachrichtigungen an alle User die notifyOnTermine aktiviert haben
- * (außer dem Ersteller des Termins)
+ * (außer dem Ersteller des Termins und Kind-User)
  */
 async function sendTerminNotifications(
   authorId: number,
@@ -217,11 +217,12 @@ async function sendTerminNotifications(
   endDatum: Date,
   beschreibung?: string
 ): Promise<void> {
-  // Alle User holen die Benachrichtigungen aktiviert haben (außer dem Autor)
+  // Alle User holen die Benachrichtigungen aktiviert haben (außer dem Autor und Kind-User)
   const usersToNotify = await prisma.user.findMany({
     where: {
       notifyOnTermine: true,
-      id: { not: authorId }
+      id: { not: authorId },
+      isKind: false
     },
     select: {
       email: true,

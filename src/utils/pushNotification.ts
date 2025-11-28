@@ -89,6 +89,7 @@ export async function sendPushToUsers(userIds: number[], payload: PushPayload): 
 /**
  * Sendet Push-Benachrichtigung an alle User mit aktivierten Kommentar-Notifications
  * (außer dem Autor)
+ * Kind-User werden nur benachrichtigt wenn sie Ersteller der Terminplanung sind
  */
 export async function sendPushForNewComment(
   authorId: number,
@@ -96,10 +97,21 @@ export async function sendPushForNewComment(
   terminId: number,
   kommentarInhalt: string
 ): Promise<void> {
+  // Terminplanung laden um den Ersteller zu ermitteln
+  const terminplanung = await prisma.terminPlanung.findUnique({
+    where: { id: terminId },
+    select: { userId: true }
+  });
+
+  // Kind-User ausschließen, AUSSER sie sind Ersteller der Terminplanung
   const usersToNotify = await prisma.user.findMany({
     where: {
       notifyOnComments: true,
-      id: { not: authorId }
+      id: { not: authorId },
+      OR: [
+        { isKind: false },
+        { id: terminplanung?.userId } // Kind-User bekommt Push wenn es ihre Terminplanung ist
+      ]
     },
     select: { id: true }
   });
@@ -119,7 +131,7 @@ export async function sendPushForNewComment(
 
 /**
  * Sendet Push-Benachrichtigung an alle User mit aktivierten Termin-Notifications
- * (außer dem Ersteller)
+ * (außer dem Ersteller und Kind-User)
  */
 export async function sendPushForNewTermin(
   authorId: number,
@@ -129,7 +141,8 @@ export async function sendPushForNewTermin(
   const usersToNotify = await prisma.user.findMany({
     where: {
       notifyOnTermine: true,
-      id: { not: authorId }
+      id: { not: authorId },
+      isKind: false
     },
     select: { id: true }
   });

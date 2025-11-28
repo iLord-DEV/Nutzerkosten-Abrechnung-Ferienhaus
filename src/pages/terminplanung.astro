@@ -458,7 +458,7 @@ if (!user) {
               </svg>
               Details
             </a>
-            ${termin.userId !== currentUser?.id ? `
+            ${termin.userId !== currentUser?.id && !currentUser?.isKind ? `
               ${termin.abstimmungen.some(a => a.userId === currentUser?.id && a.stimme === 'APPROVE' && a.version === termin.version) ? `
                 <button
                   onclick="zustimmungEntziehen(${termin.id})"
@@ -480,6 +480,8 @@ if (!user) {
                   Zustimmen
                 </button>
               `}
+            ` : ''}
+            ${termin.userId !== currentUser?.id ? `
               <button
                 onclick="kommentieren(${termin.id})"
                 class="btn btn-warning btn-sm"

@@ -75,11 +75,12 @@ export const PUT: APIRoute = async (context) => {
     }
 
     // User aktualisieren
+    // Username nur ändern wenn explizit angegeben (nicht auf null setzen wenn leer)
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         email,
-        username: trimmedUsername,
+        ...(trimmedUsername !== null && { username: trimmedUsername }),
         ...(typeof notifyOnComments === 'boolean' && { notifyOnComments }),
         ...(typeof notifyOnTermine === 'boolean' && { notifyOnTermine }),
       },

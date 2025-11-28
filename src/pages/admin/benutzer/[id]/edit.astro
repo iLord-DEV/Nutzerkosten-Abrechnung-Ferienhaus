@@ -23,6 +23,7 @@ try {
       email: true,
       role: true,
       beguenstigt: true,
+      isKind: true,
       createdAt: true,
     },
   });
@@ -41,6 +42,7 @@ const userName = user.name;
 const userEmail = user.email;
 const userRole = user.role;
 const userBeguenstigt = user.beguenstigt;
+const userIsKind = user.isKind;
 const userIdValue = user.id;
 const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
   year: 'numeric',
@@ -121,7 +123,7 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
           </div>
 
           <div>
-            <div class="flex items-center h-full">
+            <div class="flex items-center h-full gap-6">
               <div class="flex items-center">
                 <input
                   type="checkbox"
@@ -134,7 +136,22 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
                   Begünstigt
                 </label>
               </div>
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isKind"
+                  name="isKind"
+                  checked={userIsKind ? true : undefined}
+                  class="checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <label for="isKind" class="ml-2 block text-sm font-medium text-base-content">
+                  Kind
+                </label>
+              </div>
             </div>
+            <p class="mt-1 text-xs text-base-content/60">
+              Kind: Keine Termin-Emails, kann nicht abstimmen
+            </p>
           </div>
 
           <div>
@@ -318,7 +335,8 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
       name: formData.get('name'),
       email: formData.get('email'),
       role: formData.get('role'),
-      beguenstigt: formData.get('beguenstigt') === 'on'
+      beguenstigt: formData.get('beguenstigt') === 'on',
+      isKind: formData.get('isKind') === 'on'
     };
 
     try {

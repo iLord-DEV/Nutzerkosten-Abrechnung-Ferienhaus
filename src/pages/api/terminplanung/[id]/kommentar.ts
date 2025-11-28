@@ -151,6 +151,7 @@ export const POST: APIRoute = async (context) => {
 /**
  * Sendet Email-Benachrichtigungen an alle User die notifyOnComments aktiviert haben
  * (außer dem Autor des Kommentars)
+ * Kind-User werden nur benachrichtigt wenn sie Ersteller der Terminplanung sind
  */
 async function sendCommentNotifications(
   authorId: number,
@@ -159,11 +160,22 @@ async function sendCommentNotifications(
   terminId: number,
   kommentarInhalt: string
 ): Promise<void> {
+  // Terminplanung laden um den Ersteller zu ermitteln
+  const terminplanung = await prisma.terminPlanung.findUnique({
+    where: { id: terminId },
+    select: { userId: true }
+  });
+
   // Alle User holen die Benachrichtigungen aktiviert haben (außer dem Autor)
+  // Kind-User ausschließen, AUSSER sie sind Ersteller der Terminplanung
   const usersToNotify = await prisma.user.findMany({
     where: {
       notifyOnComments: true,
-      id: { not: authorId }
+      id: { not: authorId },
+      OR: [
+        { isKind: false },
+        { id: terminplanung?.userId } // Kind-User bekommt Email wenn es ihre Terminplanung ist
+      ]
     },
     select: {
       email: true,

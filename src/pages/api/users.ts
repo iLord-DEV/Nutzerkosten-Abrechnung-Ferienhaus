@@ -16,6 +16,7 @@ export const GET: APIRoute = async (context) => {
         email: true,
         role: true,
         beguenstigt: true,
+        isKind: true,
         createdAt: true,
       },
       orderBy: {
@@ -121,7 +122,7 @@ export const PUT: APIRoute = async (context) => {
     const { request } = context;
 
     const body = await request.json();
-    const { id, name, email, role, beguenstigt } = body;
+    const { id, name, email, role, beguenstigt, isKind } = body;
 
     if (!id || !name || !email || !role) {
       return new Response(
@@ -136,7 +137,13 @@ export const PUT: APIRoute = async (context) => {
     // Benutzer aktualisieren
     const user = await prisma.user.update({
       where: { id: parseInt(id) },
-      data: { name, email, role, beguenstigt: beguenstigt === true },
+      data: {
+        name,
+        email,
+        role,
+        beguenstigt: beguenstigt === true,
+        isKind: isKind === true
+      },
     });
 
     return new Response(JSON.stringify(user), {

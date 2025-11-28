@@ -37,6 +37,7 @@ export const GET: APIRoute = async ({ cookies }) => {
         username: true,
         role: true,
         beguenstigt: true,
+        isKind: true,
         profileImage: true,
         notifyOnComments: true,
         notifyOnTermine: true,

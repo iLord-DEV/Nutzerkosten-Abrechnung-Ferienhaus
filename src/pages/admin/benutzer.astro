@@ -159,9 +159,16 @@ try {
         day: '2-digit'
       }) : 'Unbekannt';
       
+      // Farbe basierend auf Status
+      const nameClass = user.isKind
+        ? 'inline-block px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+        : user.beguenstigt
+          ? 'inline-block px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+          : '';
+
       row.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-          <span class="${user.beguenstigt ? 'inline-block px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : ''}">
+          <span class="${nameClass}">
             ${user.name}
           </span>
         </td>

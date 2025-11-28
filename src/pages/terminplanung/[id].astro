@@ -315,7 +315,8 @@ if (!user) {
       'Storniert';
 
     const canEdit = (terminplanung.userId === currentUser?.id || currentUser?.role === 'ADMIN') && terminplanung.status !== 'APPROVED';
-    const canVote = terminplanung.userId !== currentUser?.id && terminplanung.status !== 'CANCELLED';
+    // Kind-User können nicht abstimmen
+    const canVote = terminplanung.userId !== currentUser?.id && terminplanung.status !== 'CANCELLED' && !currentUser?.isKind;
 
     const detailsEl = document.getElementById('terminplanung-details');
     if (!detailsEl) return;
