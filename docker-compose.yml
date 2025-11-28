@@ -54,6 +54,8 @@ services:
       VAPID_EMAIL: ${VAPID_EMAIL}
       # Claude AI Chatbot
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # Brave Search API (Web-Recherche)
+      BRAVE_API_KEY: ${BRAVE_API_KEY}
     depends_on:
       mysql:
         condition: service_healthy

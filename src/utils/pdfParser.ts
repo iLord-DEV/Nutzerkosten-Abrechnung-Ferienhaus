@@ -1,5 +1,3 @@
-import pdf from 'pdf-parse';
-
 export interface ParsedDocument {
   text: string;
   pageCount: number;
@@ -11,10 +9,19 @@ export interface ParsedDocument {
 }
 
 /**
+ * Lädt pdf-parse dynamisch (CommonJS-Modul in ESM-Umgebung)
+ */
+async function getPdfParser() {
+  const pdfParse = await import('pdf-parse');
+  return pdfParse.default;
+}
+
+/**
  * Extrahiert Text aus einem PDF-Buffer
  */
 export async function parsePdf(buffer: Buffer): Promise<ParsedDocument> {
   try {
+    const pdf = await getPdfParser();
     const data = await pdf(buffer);
 
     return {

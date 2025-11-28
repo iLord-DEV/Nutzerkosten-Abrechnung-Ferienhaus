@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
+import { webSearch as braveWebSearch, fetchWebPage as braveFetchWebPage } from './braveSearch';
 
 const prisma = new PrismaClient();
 
@@ -95,6 +96,40 @@ export const adminTools: Tool[] = [
       required: [],
     },
   },
+  {
+    name: 'webSearch',
+    description:
+      'Sucht im Internet nach Informationen. Nur für Admins verfügbar. Nutze dieses Tool um Handbücher, Anleitungen oder andere Informationen zu finden.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Die Suchanfrage (z.B. "Viessmann Vitodens 200 Handbuch PDF")',
+        },
+        count: {
+          type: 'integer',
+          description: 'Anzahl der Ergebnisse (Standard: 5, Max: 10)',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'fetchWebPage',
+    description:
+      'Ruft den Inhalt einer Webseite ab und extrahiert den Text. Nur für Admins verfügbar. Nutze dieses Tool nachdem du mit webSearch eine relevante URL gefunden hast.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        url: {
+          type: 'string',
+          description: 'Die URL der Webseite die abgerufen werden soll',
+        },
+      },
+      required: ['url'],
+    },
+  },
 ];
 
 /**
@@ -113,6 +148,10 @@ export async function handleAdminTool(
       return deleteKnowledgeHandler(tool.input);
     case 'listKnowledge':
       return listKnowledgeHandler(tool.input);
+    case 'webSearch':
+      return webSearchHandler(tool.input);
+    case 'fetchWebPage':
+      return fetchWebPageHandler(tool.input);
     default:
       return { error: `Unbekanntes Admin-Tool: ${tool.name}` };
   }
@@ -255,6 +294,52 @@ async function listKnowledgeHandler(input: { category?: string }): Promise<any> 
     return {
       success: false,
       error: 'Fehler beim Laden der Einträge',
+    };
+  }
+}
+
+/**
+ * Sucht im Web nach Informationen
+ */
+async function webSearchHandler(input: { query: string; count?: number }): Promise<any> {
+  try {
+    const count = Math.min(input.count || 5, 10);
+    const results = await braveWebSearch(input.query, count);
+
+    return {
+      success: true,
+      query: results.query,
+      resultCount: results.results.length,
+      results: results.results,
+    };
+  } catch (error) {
+    console.error('Web-Suche Fehler:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Fehler bei der Web-Suche',
+    };
+  }
+}
+
+/**
+ * Ruft eine Webseite ab
+ */
+async function fetchWebPageHandler(input: { url: string }): Promise<any> {
+  try {
+    const page = await braveFetchWebPage(input.url);
+
+    return {
+      success: true,
+      url: page.url,
+      title: page.title,
+      contentLength: page.content.length,
+      content: page.content,
+    };
+  } catch (error) {
+    console.error('Webseiten-Abruf Fehler:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Fehler beim Abrufen der Webseite',
     };
   }
 }
