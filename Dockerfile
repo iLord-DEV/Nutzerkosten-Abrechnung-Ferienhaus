@@ -31,6 +31,9 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
+# Install ffmpeg for video thumbnail generation
+RUN apk add --no-cache ffmpeg
+
 # Set production environment
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
