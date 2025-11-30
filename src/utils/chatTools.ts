@@ -99,6 +99,21 @@ export const userTools: Tool[] = [
       required: ['query'],
     },
   },
+  {
+    name: 'searchImages',
+    description:
+      'Durchsucht die Medienbibliothek nach passenden Bildern und Videos anhand von Tags, Titel oder Beschreibung. Nutze dieses Tool um Medien zu finden, die du in deiner Antwort einbetten kannst (Bilder als Markdown, Videos als Link).',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Suchbegriff (z.B. "Siebenschläfer", "Heizung", "Alarm")',
+        },
+      },
+      required: ['query'],
+    },
+  },
 ];
 
 /**
@@ -117,6 +132,8 @@ export async function handleUserTool(
       return queryStatistikenHandler(tool.input, userId);
     case 'searchKnowledge':
       return searchKnowledgeHandler(tool.input);
+    case 'searchImages':
+      return searchImagesHandler(tool.input);
     default:
       return { error: `Unbekanntes Tool: ${tool.name}` };
   }
@@ -314,6 +331,11 @@ async function searchKnowledgeHandler(input: { query: string; category?: string 
       isActive: true,
       ...(input.category && { category: input.category }),
     },
+    include: {
+      images: {
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
   });
 
   // Einfache Suche: Einträge die mindestens einen Suchbegriff enthalten
@@ -337,6 +359,49 @@ async function searchKnowledgeHandler(input: { query: string; category?: string 
       category: r.category,
       title: r.title,
       content: r.content,
+      images: r.images.map((img) => ({
+        url: `/uploads/knowledge/${img.fileName}`,
+        alt: img.alt || img.originalName,
+        caption: img.caption,
+      })),
+    })),
+  };
+}
+
+/**
+ * Medienbibliothek durchsuchen (Bilder und Videos)
+ */
+async function searchImagesHandler(input: { query: string }): Promise<any> {
+  const searchTerms = input.query.toLowerCase().split(/\s+/);
+
+  const allMedia = await prisma.imageLibrary.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Suche in title, description und tags
+  const results = allMedia.filter((media) => {
+    const searchableText = `${media.title} ${media.description || ''} ${media.tags}`.toLowerCase();
+    return searchTerms.some((term) => searchableText.includes(term));
+  });
+
+  // Nach Relevanz sortieren (mehr Treffer = höhere Relevanz)
+  results.sort((a, b) => {
+    const aText = `${a.title} ${a.description || ''} ${a.tags}`.toLowerCase();
+    const bText = `${b.title} ${b.description || ''} ${b.tags}`.toLowerCase();
+    const aMatches = searchTerms.filter((term) => aText.includes(term)).length;
+    const bMatches = searchTerms.filter((term) => bText.includes(term)).length;
+    return bMatches - aMatches;
+  });
+
+  return {
+    count: results.length,
+    media: results.slice(0, 5).map((m) => ({
+      url: `/uploads/library/${m.fileName}`,
+      title: m.title,
+      description: m.description,
+      tags: m.tags,
+      mediaType: m.mediaType || 'image',
+      thumbnailUrl: m.thumbnail ? `/uploads/library/${m.thumbnail}` : null,
     })),
   };
 }

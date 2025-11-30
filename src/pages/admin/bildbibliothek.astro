@@ -1,0 +1,538 @@
+---
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
+import { requireAdmin } from '../../utils/auth';
+
+try {
+  await requireAdmin(Astro);
+} catch (error) {
+  return Astro.redirect('/login');
+}
+---
+
+<ProtectedLayout title="Medienbibliothek - Nutzerkosten">
+  <!-- Able Player CSS -->
+  <link rel="stylesheet" href="/vendor/ableplayer/ableplayer.min.css" slot="head" />
+
+  <div class="section-container">
+    <div class="page-header">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 class="page-title">Medienbibliothek</h1>
+          <p class="page-description">
+            Zentrale Bild- und Videosammlung für den Chatbot - Medien werden anhand von Tags gefunden
+          </p>
+        </div>
+        <div class="flex space-x-3">
+          <a href="/admin/wissensdatenbank" class="btn btn-ghost">
+            ← Wissensdatenbank
+          </a>
+          <button onclick="openUploadModal()" class="btn btn-primary">
+            + Medium hochladen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Suche -->
+    <div class="card-container mb-6">
+      <div class="flex items-center gap-4">
+        <div class="form-control flex-1">
+          <input
+            type="text"
+            id="search-input"
+            class="input input-bordered w-full"
+            placeholder="Nach Tags suchen (z.B. Siebenschläfer, Heizung...)"
+            oninput="debounceSearch()"
+          />
+        </div>
+        <span class="text-sm text-base-content/60" id="image-count">0 Medien</span>
+      </div>
+    </div>
+
+    <!-- Galerie -->
+    <div id="image-gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div class="col-span-full text-center py-8 text-base-content/60">Lade Bilder...</div>
+    </div>
+  </div>
+
+  <!-- Upload Modal -->
+  <dialog id="upload-modal" class="modal">
+    <div class="modal-box max-w-lg">
+      <h3 class="font-bold text-lg mb-4">Medium hochladen</h3>
+      <form id="upload-form" class="space-y-4">
+        <div id="upload-dropzone"
+          class="border-2 border-dashed border-base-300 rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
+          <div id="dropzone-content">
+            <div class="text-4xl mb-2">🎬</div>
+            <p class="text-base-content/70">Bild oder Video hier ablegen oder klicken</p>
+            <p class="text-sm text-base-content/50">Bilder: JPEG, PNG, GIF, WebP (max. 5MB)</p>
+            <p class="text-sm text-base-content/50">Videos: MP4, WebM, MOV (max. 50MB)</p>
+          </div>
+          <img id="upload-preview-img" class="hidden max-h-48 mx-auto rounded-lg" />
+          <video id="upload-preview-video" class="hidden max-h-48 mx-auto rounded-lg" controls></video>
+          <input type="file" id="file-input" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" class="hidden" />
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Titel *</span>
+          </label>
+          <input type="text" id="upload-title" class="input input-bordered" required
+            placeholder="z.B. Siebenschläfer im Dachboden" />
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Tags * (komma-getrennt)</span>
+          </label>
+          <input type="text" id="upload-tags" class="input input-bordered" required
+            placeholder="z.B. Siebenschläfer, Tier, Dachboden, Nagetier" />
+          <label class="label">
+            <span class="label-text-alt">Der Bot findet das Bild anhand dieser Tags</span>
+          </label>
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Beschreibung (optional)</span>
+          </label>
+          <textarea id="upload-description" class="textarea textarea-bordered"
+            placeholder="Ausführlichere Beschreibung des Bildes..."></textarea>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn" onclick="closeUploadModal()">Abbrechen</button>
+          <button type="submit" class="btn btn-primary" id="upload-btn">Hochladen</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+
+  <!-- Edit Modal -->
+  <dialog id="edit-modal" class="modal">
+    <div class="modal-box max-w-2xl">
+      <h3 class="font-bold text-lg mb-4">Medium bearbeiten</h3>
+      <form id="edit-form" class="space-y-4">
+        <input type="hidden" id="edit-id" />
+        <input type="hidden" id="edit-media-type" />
+
+        <!-- Bild-Vorschau -->
+        <div id="edit-preview-img-container" class="flex justify-center mb-4">
+          <img id="edit-preview-img" class="max-h-48 rounded-lg" />
+        </div>
+
+        <!-- Video-Vorschau mit Able Player -->
+        <div id="edit-preview-video-container" class="hidden mb-4">
+          <video id="edit-video-player" data-able-player preload="auto" class="w-full">
+            <source id="edit-video-source" type="video/mp4" src="" />
+          </video>
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Titel *</span>
+          </label>
+          <input type="text" id="edit-title" class="input input-bordered" required />
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Tags * (komma-getrennt)</span>
+          </label>
+          <input type="text" id="edit-tags" class="input input-bordered" required />
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Beschreibung</span>
+          </label>
+          <textarea id="edit-description" class="textarea textarea-bordered"></textarea>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn btn-error btn-outline" onclick="deleteMedia()">Löschen</button>
+          <button type="button" class="btn" onclick="closeEditModal()">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">Speichern</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+</ProtectedLayout>
+
+<!-- Able Player JS Dependencies -->
+<script is:inline src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.1/dist/js.cookie.min.js"></script>
+<script is:inline src="/vendor/ableplayer/ableplayer.min.js"></script>
+
+<script>
+  interface LibraryMedia {
+    id: number;
+    fileName: string;
+    originalName: string;
+    title: string;
+    description: string | null;
+    tags: string;
+    url: string;
+    mediaType: 'image' | 'video';
+    mimeType: string | null;
+    thumbnailUrl: string | null;
+  }
+
+  let mediaItems: LibraryMedia[] = [];
+  let selectedFile: File | null = null;
+  let searchTimeout: number;
+  let ablePlayerInstance: any = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadImages();
+    setupDropzone();
+    setupForms();
+  });
+
+  async function loadImages(search?: string) {
+    try {
+      const url = search ? `/api/admin/image-library?search=${encodeURIComponent(search)}` : '/api/admin/image-library';
+      const response = await fetch(url);
+      if (response.ok) {
+        mediaItems = await response.json();
+        renderGallery();
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden:', error);
+    }
+  }
+
+  function renderGallery() {
+    const gallery = document.getElementById('image-gallery')!;
+    const countEl = document.getElementById('image-count')!;
+
+    const imageCount = mediaItems.filter(m => m.mediaType === 'image').length;
+    const videoCount = mediaItems.filter(m => m.mediaType === 'video').length;
+    countEl.textContent = `${imageCount} Bilder, ${videoCount} Videos`;
+
+    if (mediaItems.length === 0) {
+      gallery.innerHTML = `
+        <div class="col-span-full text-center py-8 text-base-content/60">
+          Keine Medien gefunden. Lade ein Bild oder Video hoch!
+        </div>
+      `;
+      return;
+    }
+
+    const cacheBuster = Date.now();
+    gallery.innerHTML = mediaItems.map(media => {
+      const thumbnailSrc = media.mediaType === 'video' && media.thumbnailUrl
+        ? `${media.thumbnailUrl}?t=${cacheBuster}`
+        : `${media.url}?t=${cacheBuster}`;
+
+      const playOverlay = media.mediaType === 'video'
+        ? `<div class="absolute inset-0 flex items-center justify-center bg-black/30">
+             <div class="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+               <svg class="w-6 h-6 text-gray-800 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                 <path d="M8 5v14l11-7z"/>
+               </svg>
+             </div>
+           </div>`
+        : '';
+
+      const mediaTypeLabel = media.mediaType === 'video'
+        ? '<span class="badge badge-xs badge-primary">Video</span>'
+        : '';
+
+      return `
+        <div class="card bg-base-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+             onclick="editMedia(${media.id})">
+          <figure class="aspect-square relative">
+            <img src="${thumbnailSrc}" alt="${media.title}" class="w-full h-full object-cover" loading="lazy" />
+            ${playOverlay}
+          </figure>
+          <div class="p-2">
+            <div class="flex items-center gap-1">
+              <p class="font-medium text-sm truncate flex-1">${media.title}</p>
+              ${mediaTypeLabel}
+            </div>
+            <p class="text-xs text-base-content/60 truncate">${media.tags}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      const search = (document.getElementById('search-input') as HTMLInputElement).value.trim();
+      loadImages(search || undefined);
+    }, 300) as unknown as number;
+  }
+
+  // Upload Modal
+  function openUploadModal() {
+    selectedFile = null;
+    (document.getElementById('upload-preview-img') as HTMLImageElement).classList.add('hidden');
+    (document.getElementById('upload-preview-video') as HTMLVideoElement).classList.add('hidden');
+    (document.getElementById('dropzone-content') as HTMLElement).classList.remove('hidden');
+    (document.getElementById('upload-title') as HTMLInputElement).value = '';
+    (document.getElementById('upload-tags') as HTMLInputElement).value = '';
+    (document.getElementById('upload-description') as HTMLTextAreaElement).value = '';
+    (document.getElementById('file-input') as HTMLInputElement).value = '';
+    (document.getElementById('upload-modal') as HTMLDialogElement).showModal();
+  }
+
+  function closeUploadModal() {
+    (document.getElementById('upload-modal') as HTMLDialogElement).close();
+    // Video zurücksetzen
+    const videoPreview = document.getElementById('upload-preview-video') as HTMLVideoElement;
+    videoPreview.pause();
+    videoPreview.src = '';
+  }
+
+  function setupDropzone() {
+    const dropzone = document.getElementById('upload-dropzone')!;
+    const fileInput = document.getElementById('file-input') as HTMLInputElement;
+
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('border-primary', 'bg-primary/5');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('border-primary', 'bg-primary/5');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-primary', 'bg-primary/5');
+      const files = (e as DragEvent).dataTransfer?.files;
+      if (files?.length) {
+        handleFileSelect(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files?.length) {
+        handleFileSelect(fileInput.files[0]);
+      }
+    });
+  }
+
+  function handleFileSelect(file: File) {
+    selectedFile = file;
+
+    const imgPreview = document.getElementById('upload-preview-img') as HTMLImageElement;
+    const videoPreview = document.getElementById('upload-preview-video') as HTMLVideoElement;
+    const dropzoneContent = document.getElementById('dropzone-content') as HTMLElement;
+
+    const isVideo = file.type.startsWith('video/');
+
+    if (isVideo) {
+      // Video-Vorschau
+      const videoUrl = URL.createObjectURL(file);
+      videoPreview.src = videoUrl;
+      videoPreview.classList.remove('hidden');
+      imgPreview.classList.add('hidden');
+    } else {
+      // Bild-Vorschau
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imgPreview.src = e.target?.result as string;
+        imgPreview.classList.remove('hidden');
+        videoPreview.classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    dropzoneContent.classList.add('hidden');
+
+    // Titel aus Dateinamen vorschlagen
+    const titleInput = document.getElementById('upload-title') as HTMLInputElement;
+    if (!titleInput.value) {
+      titleInput.value = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+    }
+  }
+
+  function setupForms() {
+    // Upload Form
+    document.getElementById('upload-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!selectedFile) {
+        alert('Bitte wähle ein Bild aus');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+      formData.append('title', (document.getElementById('upload-title') as HTMLInputElement).value);
+      formData.append('tags', (document.getElementById('upload-tags') as HTMLInputElement).value);
+      formData.append('description', (document.getElementById('upload-description') as HTMLTextAreaElement).value);
+
+      try {
+        const response = await fetch('/api/admin/image-library', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          closeUploadModal();
+          // Kleine Verzögerung damit Vite die neue Datei erkennt
+          await new Promise(resolve => setTimeout(resolve, 500));
+          loadImages();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Fehler beim Hochladen');
+        }
+      } catch (error) {
+        console.error('Fehler:', error);
+        alert('Fehler beim Hochladen');
+      }
+    });
+
+    // Edit Form
+    document.getElementById('edit-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = (document.getElementById('edit-id') as HTMLInputElement).value;
+
+      try {
+        const response = await fetch(`/api/admin/image-library/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: (document.getElementById('edit-title') as HTMLInputElement).value,
+            tags: (document.getElementById('edit-tags') as HTMLInputElement).value,
+            description: (document.getElementById('edit-description') as HTMLTextAreaElement).value,
+          }),
+        });
+
+        if (response.ok) {
+          closeEditModal();
+          loadImages();
+        } else {
+          alert('Fehler beim Speichern');
+        }
+      } catch (error) {
+        console.error('Fehler:', error);
+        alert('Fehler beim Speichern');
+      }
+    });
+  }
+
+  // Edit Modal
+  function editMedia(id: number) {
+    const media = mediaItems.find(m => m.id === id);
+    if (!media) return;
+
+    // Able Player zerstören falls vorhanden
+    if (ablePlayerInstance) {
+      try {
+        ablePlayerInstance.destroy();
+      } catch (e) {
+        // Ignorieren
+      }
+      ablePlayerInstance = null;
+    }
+
+    (document.getElementById('edit-id') as HTMLInputElement).value = String(id);
+    (document.getElementById('edit-media-type') as HTMLInputElement).value = media.mediaType;
+    (document.getElementById('edit-title') as HTMLInputElement).value = media.title;
+    (document.getElementById('edit-tags') as HTMLInputElement).value = media.tags;
+    (document.getElementById('edit-description') as HTMLTextAreaElement).value = media.description || '';
+
+    const imgContainer = document.getElementById('edit-preview-img-container')!;
+    const videoContainer = document.getElementById('edit-preview-video-container')!;
+    const imgPreview = document.getElementById('edit-preview-img') as HTMLImageElement;
+    const videoSource = document.getElementById('edit-video-source') as HTMLSourceElement;
+    const videoPlayer = document.getElementById('edit-video-player') as HTMLVideoElement;
+
+    if (media.mediaType === 'video') {
+      // Video anzeigen
+      imgContainer.classList.add('hidden');
+      videoContainer.classList.remove('hidden');
+      videoSource.src = media.url;
+      videoSource.type = media.mimeType || 'video/mp4';
+      videoPlayer.load();
+
+      // Able Player initialisieren nach Modal-Öffnung
+      setTimeout(() => {
+        if (typeof (window as any).AblePlayer !== 'undefined') {
+          try {
+            ablePlayerInstance = new (window as any).AblePlayer(
+              (window as any).jQuery('#edit-video-player')
+            );
+          } catch (e) {
+            console.warn('Able Player konnte nicht initialisiert werden:', e);
+          }
+        }
+      }, 100);
+    } else {
+      // Bild anzeigen
+      videoContainer.classList.add('hidden');
+      imgContainer.classList.remove('hidden');
+      imgPreview.src = media.url;
+    }
+
+    (document.getElementById('edit-modal') as HTMLDialogElement).showModal();
+  }
+
+  function closeEditModal() {
+    // Able Player zerstören
+    if (ablePlayerInstance) {
+      try {
+        ablePlayerInstance.destroy();
+      } catch (e) {
+        // Ignorieren
+      }
+      ablePlayerInstance = null;
+    }
+
+    // Video stoppen und zurücksetzen
+    const videoPlayer = document.getElementById('edit-video-player') as HTMLVideoElement;
+    if (videoPlayer) {
+      videoPlayer.pause();
+    }
+
+    (document.getElementById('edit-modal') as HTMLDialogElement).close();
+  }
+
+  async function deleteMedia() {
+    const mediaType = (document.getElementById('edit-media-type') as HTMLInputElement).value;
+    const mediaLabel = mediaType === 'video' ? 'Video' : 'Bild';
+
+    if (!confirm(`${mediaLabel} wirklich löschen?`)) return;
+
+    const id = (document.getElementById('edit-id') as HTMLInputElement).value;
+
+    try {
+      const response = await fetch(`/api/admin/image-library/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        closeEditModal();
+        loadImages();
+      } else {
+        alert('Fehler beim Löschen');
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+      alert('Fehler beim Löschen');
+    }
+  }
+
+  // Global functions
+  (window as any).openUploadModal = openUploadModal;
+  (window as any).closeUploadModal = closeUploadModal;
+  (window as any).closeEditModal = closeEditModal;
+  (window as any).editMedia = editMedia;
+  (window as any).deleteMedia = deleteMedia;
+  (window as any).debounceSearch = debounceSearch;
+</script>

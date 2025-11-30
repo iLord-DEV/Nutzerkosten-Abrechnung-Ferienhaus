@@ -1,8 +1,15 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin } from '../../../../utils/auth';
+import { unlink } from 'fs/promises';
+import { existsSync } from 'fs';
+import path from 'path';
 
 const prisma = new PrismaClient();
+
+// Upload-Verzeichnis
+const IS_PROD = import.meta.env.PROD;
+const UPLOAD_DIR = IS_PROD ? 'dist/client/uploads/knowledge' : 'public/uploads/knowledge';
 
 // GET: Einzelnen Eintrag abrufen
 export const GET: APIRoute = async (context) => {
@@ -19,6 +26,11 @@ export const GET: APIRoute = async (context) => {
 
     const entry = await prisma.knowledgeBase.findUnique({
       where: { id },
+      include: {
+        images: {
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
     });
 
     if (!entry) {
@@ -119,6 +131,26 @@ export const DELETE: APIRoute = async (context) => {
       });
     }
 
+    // Erst Bilder aus Dateisystem löschen
+    const entry = await prisma.knowledgeBase.findUnique({
+      where: { id },
+      include: { images: true },
+    });
+
+    if (entry?.images) {
+      for (const image of entry.images) {
+        const filepath = path.join(UPLOAD_DIR, image.fileName);
+        if (existsSync(filepath)) {
+          try {
+            await unlink(filepath);
+          } catch {
+            // Ignorieren wenn Datei nicht gelöscht werden kann
+          }
+        }
+      }
+    }
+
+    // Dann Datenbank-Eintrag löschen (Bilder werden durch Cascade gelöscht)
     await prisma.knowledgeBase.delete({
       where: { id },
     });

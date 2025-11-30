@@ -141,6 +141,14 @@ docker exec wuestenstein-nutzerkosten-mysql mysqldump ... # Database backup
 - `Poll`: Polls with multiple-choice options and voting
 - `BlogComment`: Threaded comment system
 
+**AI Chatbot & Wissensdatenbank:**
+- `KnowledgeBase`: Knowledge articles with categories, searchable content, and keywords
+- `KnowledgeBaseImage`: Images attached to knowledge articles
+- `ImageLibrary`: Central media library for images and videos (used by chatbot)
+  - Supports `mediaType` (image/video), `mimeType`, and `thumbnail` for videos
+  - Videos use Able Player for accessible playback
+  - Thumbnails are auto-generated via ffmpeg (first frame extraction)
+
 **Key Relationships:**
 - Aufenthalt links to TWO Zaehler: one for arrival (`zaehlerId`), one for departure (`zaehlerAbreiseId`)
 - Most models include versioning for change tracking

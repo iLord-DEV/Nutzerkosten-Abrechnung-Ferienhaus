@@ -1,3 +1,5 @@
+import { PDFParse } from 'pdf-parse';
+
 export interface ParsedDocument {
   text: string;
   pageCount: number;
@@ -9,29 +11,37 @@ export interface ParsedDocument {
 }
 
 /**
- * Lädt pdf-parse dynamisch (CommonJS-Modul in ESM-Umgebung)
- */
-async function getPdfParser() {
-  const pdfParse = await import('pdf-parse');
-  return pdfParse.default;
-}
-
-/**
  * Extrahiert Text aus einem PDF-Buffer
+ * Verwendet pdf-parse v2 API
  */
 export async function parsePdf(buffer: Buffer): Promise<ParsedDocument> {
   try {
-    const pdf = await getPdfParser();
-    const data = await pdf(buffer);
+    const parser = new PDFParse({ data: buffer });
+
+    // Text extrahieren
+    const textResult = await parser.getText();
+
+    // Info extrahieren (falls verfügbar)
+    let info: ParsedDocument['info'] = {};
+    try {
+      const infoResult = await parser.getInfo();
+      info = {
+        title: infoResult.info?.Title,
+        author: infoResult.info?.Author,
+        subject: infoResult.info?.Subject,
+      };
+    } catch {
+      // Info ist optional, Fehler ignorieren
+    }
+
+    // Seitenanzahl aus dem Text extrahieren (Format: "-- X of Y --")
+    const pageMatch = textResult.text.match(/-- \d+ of (\d+) --/);
+    const pageCount = pageMatch ? parseInt(pageMatch[1], 10) : 1;
 
     return {
-      text: data.text.trim(),
-      pageCount: data.numpages,
-      info: {
-        title: data.info?.Title,
-        author: data.info?.Author,
-        subject: data.info?.Subject,
-      },
+      text: textResult.text.trim(),
+      pageCount,
+      info,
     };
   } catch (error) {
     console.error('PDF-Parsing Fehler:', error);

@@ -23,6 +23,9 @@ try {
           <a href="/admin/dashboard" class="btn btn-ghost">
             ← Dashboard
           </a>
+          <a href="/admin/bildbibliothek" class="btn btn-outline">
+            🖼️ Bildbibliothek
+          </a>
           <button onclick="openUploadModal()" class="btn btn-secondary">
             📄 Datei hochladen
           </button>
@@ -101,6 +104,23 @@ try {
           </label>
           <input type="text" id="entry-keywords" class="input input-bordered"
             placeholder="Komma-getrennt: Thermostat, Temperatur, Warm" />
+        </div>
+
+        <!-- Bilder-Sektion (nur bei Bearbeitung sichtbar) -->
+        <div id="images-section" class="hidden">
+          <label class="label">
+            <span class="label-text">Bilder</span>
+          </label>
+          <div id="images-gallery" class="flex flex-wrap gap-3 mb-3">
+            <!-- Bilder werden hier dynamisch eingefügt -->
+          </div>
+          <div class="flex gap-2">
+            <label class="btn btn-outline btn-sm cursor-pointer">
+              <span>+ Bild hinzufügen</span>
+              <input type="file" id="image-upload-input" accept="image/jpeg,image/png,image/gif,image/webp" multiple class="hidden" />
+            </label>
+            <span class="text-xs text-base-content/50 self-center">JPEG, PNG, GIF, WebP (max. 5MB)</span>
+          </div>
         </div>
 
         <div class="flex items-center gap-4">
@@ -198,12 +218,15 @@ try {
   let entries: any[] = [];
   let categories: string[] = [];
   let uploadedText: string = '';
+  let currentEntryImages: any[] = [];
+  let currentEntryId: number | null = null;
 
   document.addEventListener('DOMContentLoaded', () => {
     loadCategories();
     loadEntries();
     setupDropzone();
     setupForm();
+    setupImageUpload();
   });
 
   async function loadCategories() {
@@ -322,30 +345,50 @@ try {
     (document.getElementById('entry-keywords') as HTMLInputElement).value = '';
     (document.getElementById('entry-active') as HTMLInputElement).checked = true;
     (document.getElementById('entry-source') as HTMLElement).textContent = '';
+    // Bilder-Sektion ausblenden für neue Einträge
+    (document.getElementById('images-section') as HTMLElement).classList.add('hidden');
+    currentEntryId = null;
+    currentEntryImages = [];
     (document.getElementById('entry-modal') as HTMLDialogElement).showModal();
   }
 
   async function editEntry(id: number) {
-    const entry = entries.find(e => e.id === id);
-    if (!entry) return;
+    // Vollständigen Eintrag vom Server laden (inkl. Bilder)
+    try {
+      const response = await fetch(`/api/admin/knowledge-base/${id}`);
+      if (!response.ok) {
+        alert('Fehler beim Laden des Eintrags');
+        return;
+      }
+      const entry = await response.json();
 
-    (document.getElementById('modal-title') as HTMLElement).textContent = 'Eintrag bearbeiten';
-    (document.getElementById('entry-id') as HTMLInputElement).value = String(id);
-    (document.getElementById('entry-category') as HTMLInputElement).value = entry.category;
-    (document.getElementById('entry-title') as HTMLInputElement).value = entry.title;
-    (document.getElementById('entry-content') as HTMLTextAreaElement).value = entry.content;
-    (document.getElementById('entry-keywords') as HTMLInputElement).value = entry.keywords || '';
-    (document.getElementById('entry-active') as HTMLInputElement).checked = entry.isActive;
+      (document.getElementById('modal-title') as HTMLElement).textContent = 'Eintrag bearbeiten';
+      (document.getElementById('entry-id') as HTMLInputElement).value = String(id);
+      (document.getElementById('entry-category') as HTMLInputElement).value = entry.category;
+      (document.getElementById('entry-title') as HTMLInputElement).value = entry.title;
+      (document.getElementById('entry-content') as HTMLTextAreaElement).value = entry.content;
+      (document.getElementById('entry-keywords') as HTMLInputElement).value = entry.keywords || '';
+      (document.getElementById('entry-active') as HTMLInputElement).checked = entry.isActive;
 
-    let sourceInfo = '';
-    if (entry.sourceType === 'upload' && entry.fileName) {
-      sourceInfo = `📄 Hochgeladen: ${entry.fileName}`;
-    } else if (entry.sourceType === 'web' && entry.sourceUrl) {
-      sourceInfo = `🌐 Web: ${entry.sourceUrl}`;
+      let sourceInfo = '';
+      if (entry.sourceType === 'upload' && entry.fileName) {
+        sourceInfo = `📄 Hochgeladen: ${entry.fileName}`;
+      } else if (entry.sourceType === 'web' && entry.sourceUrl) {
+        sourceInfo = `🌐 Web: ${entry.sourceUrl}`;
+      }
+      (document.getElementById('entry-source') as HTMLElement).textContent = sourceInfo;
+
+      // Bilder-Sektion anzeigen und laden
+      currentEntryId = id;
+      currentEntryImages = entry.images || [];
+      (document.getElementById('images-section') as HTMLElement).classList.remove('hidden');
+      renderImagesGallery();
+
+      (document.getElementById('entry-modal') as HTMLDialogElement).showModal();
+    } catch (error) {
+      console.error('Fehler:', error);
+      alert('Fehler beim Laden des Eintrags');
     }
-    (document.getElementById('entry-source') as HTMLElement).textContent = sourceInfo;
-
-    (document.getElementById('entry-modal') as HTMLDialogElement).showModal();
   }
 
   function closeEntryModal() {
@@ -540,6 +583,90 @@ try {
     }
   }
 
+  // === Bild-Funktionen ===
+  function setupImageUpload() {
+    const imageInput = document.getElementById('image-upload-input') as HTMLInputElement;
+    imageInput?.addEventListener('change', async () => {
+      if (!currentEntryId || !imageInput.files?.length) return;
+
+      const formData = new FormData();
+      for (const file of imageInput.files) {
+        formData.append('images', file);
+      }
+
+      try {
+        const response = await fetch(`/api/admin/knowledge-base/${currentEntryId}/images`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const newImages = await response.json();
+          currentEntryImages = [...currentEntryImages, ...newImages];
+          renderImagesGallery();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Fehler beim Hochladen');
+        }
+      } catch (error) {
+        console.error('Fehler:', error);
+        alert('Fehler beim Hochladen');
+      }
+
+      imageInput.value = '';
+    });
+  }
+
+  function renderImagesGallery() {
+    const gallery = document.getElementById('images-gallery')!;
+
+    if (currentEntryImages.length === 0) {
+      gallery.innerHTML = '<div class="text-sm text-base-content/50">Keine Bilder vorhanden</div>';
+      return;
+    }
+
+    gallery.innerHTML = currentEntryImages.map((img, index) => `
+      <div class="relative group" data-image-id="${img.id}">
+        <img
+          src="/uploads/knowledge/${img.fileName}"
+          alt="${img.alt || img.originalName}"
+          class="w-24 h-24 object-cover rounded-lg border border-base-300"
+        />
+        <button
+          type="button"
+          onclick="deleteImage(${img.id})"
+          class="absolute -top-2 -right-2 btn btn-circle btn-xs btn-error opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          ✕
+        </button>
+        <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 rounded-b-lg truncate">
+          ${img.alt || img.originalName}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function deleteImage(imageId: number) {
+    if (!currentEntryId) return;
+    if (!confirm('Bild wirklich löschen?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/knowledge-base/${currentEntryId}/images?imageId=${imageId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        currentEntryImages = currentEntryImages.filter(img => img.id !== imageId);
+        renderImagesGallery();
+      } else {
+        alert('Fehler beim Löschen');
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+      alert('Fehler beim Löschen');
+    }
+  }
+
   // Global functions for onclick handlers
   (window as any).openCreateModal = openCreateModal;
   (window as any).openUploadModal = openUploadModal;
@@ -552,4 +679,5 @@ try {
   (window as any).saveUpload = saveUpload;
   (window as any).filterByCategory = filterByCategory;
   (window as any).loadEntries = loadEntries;
+  (window as any).deleteImage = deleteImage;
 </script>

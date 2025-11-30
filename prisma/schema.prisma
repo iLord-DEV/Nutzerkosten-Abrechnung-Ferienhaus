@@ -328,21 +328,51 @@ model PushSubscription {
 }
 
 model KnowledgeBase {
-  id         Int      @id @default(autoincrement())
+  id         Int                   @id @default(autoincrement())
   category   String
   title      String
-  content    String   @db.LongText
-  keywords   String?  @db.Text
-  sourceType String   @default("manual") // "manual" | "upload" | "web"
+  content    String                @db.LongText
+  keywords   String?               @db.Text
+  sourceType String                @default("manual") // "manual" | "upload" | "web"
   sourceUrl  String?
   fileName   String?
-  isActive   Boolean  @default(true)
-  sortOrder  Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  isActive   Boolean               @default(true)
+  sortOrder  Int                   @default(0)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  images     KnowledgeBaseImage[]
 
   @@index([category])
   @@index([isActive])
+}
+
+model KnowledgeBaseImage {
+  id              Int           @id @default(autoincrement())
+  knowledgeBaseId Int
+  fileName        String
+  originalName    String
+  alt             String?
+  caption         String?
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@index([knowledgeBaseId])
+}
+
+model ImageLibrary {
+  id           Int      @id @default(autoincrement())
+  fileName     String
+  originalName String
+  title        String
+  description  String?  @db.Text
+  tags         String   @db.Text
+  mediaType    String   @default("image") // "image" | "video"
+  mimeType     String?
+  thumbnail    String?  // Für Videos: thumb-xxx.jpg
+  createdAt    DateTime @default(now())
+
+  @@fulltext([title, description, tags])
 }
 
 enum TerminStatus {
