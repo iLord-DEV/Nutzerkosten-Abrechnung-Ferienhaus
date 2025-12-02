@@ -1,0 +1,355 @@
+---
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
+import { requireAdmin } from '../../utils/auth';
+
+try {
+  await requireAdmin(Astro);
+} catch (error) {
+  return Astro.redirect('/login');
+}
+---
+
+<ProtectedLayout title="Checklisten verwalten - Nutzerkosten">
+  <div class="section-container">
+    <div class="page-header">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 class="page-title">Checklisten verwalten</h1>
+          <p class="page-description">
+            Erstelle und verwalte Checklisten für Ankunft, Abreise etc.
+          </p>
+        </div>
+        <button onclick="openCreateModal()" class="btn btn-primary">
+          + Neue Checkliste
+        </button>
+      </div>
+    </div>
+
+    <!-- Checklisten-Liste -->
+    <div id="checklists-container" class="space-y-4">
+      <div class="text-center py-8 text-base-content/60">Lade Checklisten...</div>
+    </div>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <dialog id="checklist-modal" class="modal">
+    <div class="modal-box max-w-lg">
+      <h3 class="font-bold text-lg mb-4" id="modal-title">Neue Checkliste</h3>
+      <form id="checklist-form" class="space-y-4">
+        <input type="hidden" id="checklist-id" />
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Titel *</span>
+          </label>
+          <input type="text" id="checklist-title" class="input input-bordered" required
+            placeholder="z.B. Abreise" />
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Beschreibung</span>
+          </label>
+          <textarea id="checklist-description" class="textarea textarea-bordered"
+            placeholder="Optionale Beschreibung..."></textarea>
+        </div>
+
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" id="checklist-active" class="checkbox" checked />
+            <span class="label-text">Aktiv (für User sichtbar)</span>
+          </label>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn" onclick="closeModal()">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">Speichern</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+
+  <!-- Item Modal -->
+  <dialog id="item-modal" class="modal">
+    <div class="modal-box max-w-md">
+      <h3 class="font-bold text-lg mb-4" id="item-modal-title">Neues Item</h3>
+      <form id="item-form" class="space-y-4">
+        <input type="hidden" id="item-id" />
+        <input type="hidden" id="item-checklist-id" />
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Text *</span>
+          </label>
+          <input type="text" id="item-text" class="input input-bordered" required
+            placeholder="z.B. Heizung runterdrehen" />
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn" onclick="closeItemModal()">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">Speichern</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+</ProtectedLayout>
+
+<script>
+  interface ChecklistItem {
+    id: number;
+    checklistId: number;
+    text: string;
+    sortOrder: number;
+  }
+
+  interface Checklist {
+    id: number;
+    title: string;
+    description: string | null;
+    sortOrder: number;
+    isActive: boolean;
+    items: ChecklistItem[];
+  }
+
+  let checklists: Checklist[] = [];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadChecklists();
+    setupForms();
+  });
+
+  async function loadChecklists() {
+    try {
+      const response = await fetch('/api/admin/checklists');
+      if (response.ok) {
+        checklists = await response.json();
+        renderChecklists();
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  }
+
+  function renderChecklists() {
+    const container = document.getElementById('checklists-container')!;
+
+    if (checklists.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-8 text-base-content/60">
+          Keine Checklisten vorhanden. Erstelle eine neue!
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = checklists.map(checklist => `
+      <div class="card bg-base-100 shadow">
+        <div class="card-body">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <h2 class="card-title">${checklist.title}</h2>
+                ${!checklist.isActive ? '<span class="badge badge-ghost">Inaktiv</span>' : ''}
+              </div>
+              ${checklist.description ? `<p class="text-base-content/70 text-sm mt-1">${checklist.description}</p>` : ''}
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-ghost" onclick="editChecklist(${checklist.id})">
+                Bearbeiten
+              </button>
+              <button class="btn btn-sm btn-error btn-outline" onclick="deleteChecklist(${checklist.id})">
+                Löschen
+              </button>
+            </div>
+          </div>
+
+          <!-- Items -->
+          <div class="mt-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium">Punkte (${checklist.items.length})</span>
+              <button class="btn btn-xs btn-ghost" onclick="openItemModal(${checklist.id})">
+                + Punkt hinzufügen
+              </button>
+            </div>
+            <ul class="space-y-1">
+              ${checklist.items.map(item => `
+                <li class="flex items-center justify-between bg-base-200 rounded px-3 py-2">
+                  <span class="text-sm">${item.text}</span>
+                  <div class="flex gap-1">
+                    <button class="btn btn-xs btn-ghost" onclick="editItem(${item.id}, ${checklist.id}, '${item.text.replace(/'/g, "\\'")}')">
+                      ✏️
+                    </button>
+                    <button class="btn btn-xs btn-ghost text-error" onclick="deleteItem(${item.id})">
+                      🗑️
+                    </button>
+                  </div>
+                </li>
+              `).join('')}
+              ${checklist.items.length === 0 ? '<li class="text-sm text-base-content/50 px-3 py-2">Keine Punkte vorhanden</li>' : ''}
+            </ul>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function setupForms() {
+    // Checklist Form
+    document.getElementById('checklist-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = (document.getElementById('checklist-id') as HTMLInputElement).value;
+      const title = (document.getElementById('checklist-title') as HTMLInputElement).value;
+      const description = (document.getElementById('checklist-description') as HTMLTextAreaElement).value;
+      const isActive = (document.getElementById('checklist-active') as HTMLInputElement).checked;
+
+      try {
+        const url = id ? `/api/admin/checklists/${id}` : '/api/admin/checklists';
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, description, isActive }),
+        });
+
+        if (response.ok) {
+          closeModal();
+          loadChecklists();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Fehler beim Speichern');
+        }
+      } catch (error) {
+        console.error('Fehler:', error);
+        alert('Fehler beim Speichern');
+      }
+    });
+
+    // Item Form
+    document.getElementById('item-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = (document.getElementById('item-id') as HTMLInputElement).value;
+      const checklistId = (document.getElementById('item-checklist-id') as HTMLInputElement).value;
+      const text = (document.getElementById('item-text') as HTMLInputElement).value;
+
+      try {
+        const url = id ? `/api/admin/checklists/items/${id}` : `/api/admin/checklists/${checklistId}/items`;
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+
+        if (response.ok) {
+          closeItemModal();
+          loadChecklists();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Fehler beim Speichern');
+        }
+      } catch (error) {
+        console.error('Fehler:', error);
+        alert('Fehler beim Speichern');
+      }
+    });
+  }
+
+  // Checklist Modal
+  function openCreateModal() {
+    (document.getElementById('modal-title') as HTMLElement).textContent = 'Neue Checkliste';
+    (document.getElementById('checklist-id') as HTMLInputElement).value = '';
+    (document.getElementById('checklist-title') as HTMLInputElement).value = '';
+    (document.getElementById('checklist-description') as HTMLTextAreaElement).value = '';
+    (document.getElementById('checklist-active') as HTMLInputElement).checked = true;
+    (document.getElementById('checklist-modal') as HTMLDialogElement).showModal();
+  }
+
+  function editChecklist(id: number) {
+    const checklist = checklists.find(c => c.id === id);
+    if (!checklist) return;
+
+    (document.getElementById('modal-title') as HTMLElement).textContent = 'Checkliste bearbeiten';
+    (document.getElementById('checklist-id') as HTMLInputElement).value = String(id);
+    (document.getElementById('checklist-title') as HTMLInputElement).value = checklist.title;
+    (document.getElementById('checklist-description') as HTMLTextAreaElement).value = checklist.description || '';
+    (document.getElementById('checklist-active') as HTMLInputElement).checked = checklist.isActive;
+    (document.getElementById('checklist-modal') as HTMLDialogElement).showModal();
+  }
+
+  function closeModal() {
+    (document.getElementById('checklist-modal') as HTMLDialogElement).close();
+  }
+
+  async function deleteChecklist(id: number) {
+    if (!confirm('Checkliste wirklich löschen? Alle Punkte und User-Fortschritte werden gelöscht.')) return;
+
+    try {
+      const response = await fetch(`/api/admin/checklists/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        loadChecklists();
+      } else {
+        alert('Fehler beim Löschen');
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+      alert('Fehler beim Löschen');
+    }
+  }
+
+  // Item Modal
+  function openItemModal(checklistId: number) {
+    (document.getElementById('item-modal-title') as HTMLElement).textContent = 'Neuer Punkt';
+    (document.getElementById('item-id') as HTMLInputElement).value = '';
+    (document.getElementById('item-checklist-id') as HTMLInputElement).value = String(checklistId);
+    (document.getElementById('item-text') as HTMLInputElement).value = '';
+    (document.getElementById('item-modal') as HTMLDialogElement).showModal();
+  }
+
+  function editItem(id: number, checklistId: number, text: string) {
+    (document.getElementById('item-modal-title') as HTMLElement).textContent = 'Punkt bearbeiten';
+    (document.getElementById('item-id') as HTMLInputElement).value = String(id);
+    (document.getElementById('item-checklist-id') as HTMLInputElement).value = String(checklistId);
+    (document.getElementById('item-text') as HTMLInputElement).value = text;
+    (document.getElementById('item-modal') as HTMLDialogElement).showModal();
+  }
+
+  function closeItemModal() {
+    (document.getElementById('item-modal') as HTMLDialogElement).close();
+  }
+
+  async function deleteItem(id: number) {
+    if (!confirm('Punkt wirklich löschen?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/checklists/items/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        loadChecklists();
+      } else {
+        alert('Fehler beim Löschen');
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+      alert('Fehler beim Löschen');
+    }
+  }
+
+  // Global functions
+  (window as any).openCreateModal = openCreateModal;
+  (window as any).editChecklist = editChecklist;
+  (window as any).deleteChecklist = deleteChecklist;
+  (window as any).closeModal = closeModal;
+  (window as any).openItemModal = openItemModal;
+  (window as any).editItem = editItem;
+  (window as any).deleteItem = deleteItem;
+  (window as any).closeItemModal = closeItemModal;
+</script>
