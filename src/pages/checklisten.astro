@@ -1,0 +1,237 @@
+---
+import ProtectedLayout from '../layouts/ProtectedLayout.astro';
+import { requireAuth } from '../utils/auth';
+
+try {
+  await requireAuth(Astro);
+} catch (error) {
+  return Astro.redirect('/login');
+}
+---
+
+<ProtectedLayout title="Checklisten - Nutzerkosten">
+  <div class="section-container">
+    <div class="page-header">
+      <h1 class="page-title">Checklisten</h1>
+      <p class="page-description">
+        Hake Punkte ab und behalte den Überblick
+      </p>
+    </div>
+
+    <!-- Tabs -->
+    <div id="tabs-container" class="tabs tabs-boxed mb-6 bg-base-200">
+      <div class="text-center py-2 text-base-content/60">Lade...</div>
+    </div>
+
+    <!-- Checklisten-Inhalt -->
+    <div id="checklist-content" class="card-container">
+      <div class="text-center py-8 text-base-content/60">Lade Checklisten...</div>
+    </div>
+  </div>
+</ProtectedLayout>
+
+<script>
+  interface ChecklistItem {
+    id: number;
+    text: string;
+    sortOrder: number;
+    isChecked: boolean;
+  }
+
+  interface Checklist {
+    id: number;
+    title: string;
+    description: string | null;
+    items: ChecklistItem[];
+    completedCount: number;
+    totalCount: number;
+  }
+
+  let checklists: Checklist[] = [];
+  let activeChecklistId: number | null = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadChecklists();
+  });
+
+  async function loadChecklists() {
+    try {
+      const response = await fetch('/api/checklists');
+      if (response.ok) {
+        checklists = await response.json();
+        renderTabs();
+        if (checklists.length > 0) {
+          activeChecklistId = checklists[0].id;
+          renderContent();
+        } else {
+          renderEmptyState();
+        }
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  }
+
+  function renderTabs() {
+    const container = document.getElementById('tabs-container')!;
+
+    if (checklists.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = checklists.map(checklist => `
+      <button
+        class="tab ${checklist.id === activeChecklistId ? 'tab-active' : ''}"
+        onclick="selectChecklist(${checklist.id})"
+      >
+        ${checklist.title}
+        <span class="badge badge-sm ml-2 ${checklist.completedCount === checklist.totalCount && checklist.totalCount > 0 ? 'badge-success' : 'badge-ghost'}">
+          ${checklist.completedCount}/${checklist.totalCount}
+        </span>
+      </button>
+    `).join('');
+  }
+
+  function renderContent() {
+    const container = document.getElementById('checklist-content')!;
+    const checklist = checklists.find(c => c.id === activeChecklistId);
+
+    if (!checklist) {
+      renderEmptyState();
+      return;
+    }
+
+    const progress = checklist.totalCount > 0
+      ? Math.round((checklist.completedCount / checklist.totalCount) * 100)
+      : 0;
+
+    container.innerHTML = `
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-xl font-bold">${checklist.title}</h2>
+          ${checklist.description ? `<p class="text-base-content/70 text-sm mt-1">${checklist.description}</p>` : ''}
+        </div>
+        <button
+          class="btn btn-sm btn-outline"
+          onclick="resetChecklist(${checklist.id})"
+          ${checklist.completedCount === 0 ? 'disabled' : ''}
+        >
+          Zurücksetzen
+        </button>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="mb-6">
+        <div class="flex justify-between text-sm mb-1">
+          <span>${checklist.completedCount} von ${checklist.totalCount} erledigt</span>
+          <span>${progress}%</span>
+        </div>
+        <progress class="progress progress-success w-full" value="${progress}" max="100"></progress>
+      </div>
+
+      <!-- Items -->
+      <ul class="space-y-2">
+        ${checklist.items.map(item => `
+          <li class="flex items-center gap-3 p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors cursor-pointer"
+              onclick="toggleItem(${item.id})">
+            <input
+              type="checkbox"
+              class="checkbox checkbox-success"
+              ${item.isChecked ? 'checked' : ''}
+              onclick="event.stopPropagation(); toggleItem(${item.id})"
+            />
+            <span class="${item.isChecked ? 'line-through text-base-content/50' : ''}">${item.text}</span>
+          </li>
+        `).join('')}
+        ${checklist.items.length === 0 ? `
+          <li class="text-center py-8 text-base-content/50">
+            Keine Punkte in dieser Liste
+          </li>
+        ` : ''}
+      </ul>
+
+      ${checklist.completedCount === checklist.totalCount && checklist.totalCount > 0 ? `
+        <div class="alert alert-success mt-6">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Alle Punkte erledigt!</span>
+        </div>
+      ` : ''}
+    `;
+  }
+
+  function renderEmptyState() {
+    const container = document.getElementById('checklist-content')!;
+    container.innerHTML = `
+      <div class="text-center py-12 text-base-content/60">
+        <div class="text-4xl mb-4">📋</div>
+        <p>Keine Checklisten verfügbar.</p>
+        <p class="text-sm mt-2">Der Admin muss zuerst Checklisten erstellen.</p>
+      </div>
+    `;
+  }
+
+  function selectChecklist(id: number) {
+    activeChecklistId = id;
+    renderTabs();
+    renderContent();
+  }
+
+  async function toggleItem(itemId: number) {
+    try {
+      const response = await fetch(`/api/checklists/${itemId}/toggle`, {
+        method: 'PUT',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        // Lokalen State aktualisieren
+        const checklist = checklists.find(c => c.id === activeChecklistId);
+        if (checklist) {
+          const item = checklist.items.find(i => i.id === itemId);
+          if (item) {
+            item.isChecked = result.isChecked;
+            checklist.completedCount = checklist.items.filter(i => i.isChecked).length;
+          }
+        }
+
+        renderTabs();
+        renderContent();
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  }
+
+  async function resetChecklist(checklistId: number) {
+    if (!confirm('Checkliste wirklich zurücksetzen?')) return;
+
+    try {
+      const response = await fetch(`/api/checklists/${checklistId}/reset`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        // Lokalen State aktualisieren
+        const checklist = checklists.find(c => c.id === checklistId);
+        if (checklist) {
+          checklist.items.forEach(item => item.isChecked = false);
+          checklist.completedCount = 0;
+        }
+
+        renderTabs();
+        renderContent();
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  }
+
+  // Global functions
+  (window as any).selectChecklist = selectChecklist;
+  (window as any).toggleItem = toggleItem;
+  (window as any).resetChecklist = resetChecklist;
+</script>

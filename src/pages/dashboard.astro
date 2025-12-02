@@ -198,30 +198,6 @@ if (!user) {
         </div>
       </div>
     </div>
-
-    <!-- Meine Aufenthalte -->
-    <div class="card bg-base-100 shadow-xl">
-      <div class="card-body">
-        <h2 class="card-title">Meine Aufenthalte</h2>
-        <div class="overflow-x-auto">
-          <table class="table table-zebra">
-            <thead>
-              <tr>
-                <th>Ankunft</th>
-                <th>Abreise</th>
-                <th>Zählerstand</th>
-                <th>Übernachtungen Mitgl.</th>
-                <th>Übernachtungen Gäste</th>
-                <th>Kosten</th>
-              </tr>
-            </thead>
-            <tbody id="aufenthalte-tabelle">
-              <!-- Wird dynamisch geladen -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
   </div>
 </ProtectedLayout>
 
@@ -242,7 +218,6 @@ if (!user) {
         
         // Dashboard-Daten laden
         loadDashboardData();
-        loadMyAufenthalte();
         loadMyAktivitaeten();
       } else {
         // Nicht eingeloggt, zurück zum Login
@@ -299,62 +274,6 @@ if (!user) {
     } catch (error) {
       console.error('Fehler beim Laden der Dashboard-Daten:', error);
     }
-  }
-
-  // Meine Aufenthalte laden
-  async function loadMyAufenthalte() {
-    try {
-      const response = await fetch('/api/aufenthalte');
-      if (response.ok) {
-        const aufenthalte = await response.json();
-        const myAufenthalte = aufenthalte.filter((a: any) => a.userId === currentUser.id);
-        
-        renderAufenthalteTabelle(myAufenthalte);
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Aufenthalte:', error);
-    }
-  }
-
-  // Aufenthalte-Tabelle rendern
-  function renderAufenthalteTabelle(aufenthalte: any[]) {
-    const tbody = document.getElementById('aufenthalte-tabelle');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-
-    if (aufenthalte.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="6" class="text-center opacity-50">
-            Noch keine Aufenthalte erfasst
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    aufenthalte.forEach((aufenthalt: any) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${new Date(aufenthalt.ankunft).toLocaleDateString('de-DE')}</td>
-        <td>${new Date(aufenthalt.abreise).toLocaleDateString('de-DE')}</td>
-        <td>${aufenthalt.zaehlerAnkunft}h - ${aufenthalt.zaehlerAbreise}h</td>
-        <td>${aufenthalt.uebernachtungenMitglieder}</td>
-        <td>${aufenthalt.uebernachtungenGaeste}</td>
-        <td><span class="font-semibold">€ ${calculateKosten(aufenthalt).toFixed(2)}</span></td>
-      `;
-      tbody.appendChild(row);
-    });
-  }
-
-  // Kosten für einen Aufenthalt berechnen (vereinfacht)
-  function calculateKosten(aufenthalt: any) {
-            const stunden = (aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft);
-            const oelkosten = stunden * 5.5 * 1.01; // 5.5 L/h, 1.01€/L
-    const uebernachtungskosten = (aufenthalt.uebernachtungenMitglieder * 15 + aufenthalt.uebernachtungenGaeste * 25);
-    
-    return oelkosten + uebernachtungskosten;
   }
 
   // Meine Aktivitäten laden

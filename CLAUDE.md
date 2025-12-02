@@ -15,6 +15,7 @@ This is a **vacation home cost tracking and billing application** (Nutzerkosten-
 - Event planning (Terminplanung) with voting and comments
 - Blog system with polls, image galleries, and modular content
 - Email notifications (new comments, new events, yearly summaries)
+- Checklisten-System für An-/Abreise-Aufgaben (pro User individuell)
 
 ## Development Commands
 
@@ -149,6 +150,13 @@ docker exec wuestenstein-nutzerkosten-mysql mysqldump ... # Database backup
   - Videos use Able Player for accessible playback
   - Thumbnails are auto-generated via ffmpeg (first frame extraction)
 
+**Checklisten-System:**
+- `Checklist`: Checklisten mit Titel, Beschreibung und Sortierung
+- `ChecklistItem`: Einzelne Punkte einer Checkliste
+- `UserChecklistProgress`: Fortschritt pro User und ChecklistItem (viele-zu-viele)
+  - Jeder User hat seinen eigenen Fortschritt für jede Checkliste
+  - Ideal für wiederkehrende Aufgaben (An-/Abreise-Checklisten)
+
 **Key Relationships:**
 - Aufenthalt links to TWO Zaehler: one for arrival (`zaehlerId`), one for departure (`zaehlerAbreiseId`)
 - Most models include versioning for change tracking
@@ -173,6 +181,8 @@ src/
 │   │   ├── zaehler/                  # Meter management
 │   │   ├── terminplanung/            # Event planning
 │   │   ├── blog/                     # Blog API
+│   │   ├── checklists/               # Checklisten API (User)
+│   │   ├── admin/checklists/         # Checklisten Admin API
 │   │   ├── preise.ts                 # Price management
 │   │   └── statistiken.ts            # Statistics
 │   ├── admin/                        # Admin-only pages
@@ -180,6 +190,7 @@ src/
 │   ├── tankfuellungen/               # Refill pages
 │   ├── terminplanung/                # Event planning
 │   ├── blog/                         # Blog pages
+│   ├── checklisten.astro             # User-Checklisten Seite
 │   ├── statistiken/                  # Statistics
 │   └── profil/                       # User profile
 ├── utils/

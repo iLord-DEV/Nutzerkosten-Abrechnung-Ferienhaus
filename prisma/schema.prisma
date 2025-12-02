@@ -31,6 +31,7 @@ model User {
   jahresabschluesse  UserJahresabschluss[]
   magicLinkTokens    MagicLinkToken[]
   pushSubscriptions  PushSubscription[]
+  checklistProgress  UserChecklistProgress[]
 }
 
 model Aufenthalt {
@@ -373,6 +374,43 @@ model ImageLibrary {
   createdAt    DateTime @default(now())
 
   @@fulltext([title, description, tags])
+}
+
+model Checklist {
+  id          Int             @id @default(autoincrement())
+  title       String
+  description String?
+  sortOrder   Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  items       ChecklistItem[]
+}
+
+model ChecklistItem {
+  id          Int                     @id @default(autoincrement())
+  checklistId Int
+  text        String
+  sortOrder   Int                     @default(0)
+  createdAt   DateTime                @default(now())
+  checklist   Checklist               @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  progress    UserChecklistProgress[]
+
+  @@index([checklistId])
+}
+
+model UserChecklistProgress {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  checklistItemId Int
+  isChecked       Boolean       @default(false)
+  checkedAt       DateTime?
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checklistItem   ChecklistItem @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, checklistItemId])
+  @@index([userId])
+  @@index([checklistItemId])
 }
 
 enum TerminStatus {
