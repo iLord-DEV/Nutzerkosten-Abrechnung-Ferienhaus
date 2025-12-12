@@ -1,12 +1,10 @@
 import type { APIRoute } from 'astro';
 
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
-const LATITUDE = process.env.OPENWEATHER_LAT;
-const LONGITUDE = process.env.OPENWEATHER_LON;
+// Weather Cache Service Configuration
+const WEATHER_CACHE_URL = process.env.WEATHER_CACHE_URL || 'http://100.102.83.46:3003/api';
+const LOCATION_SLUG = 'wuestenstein';
 
-// OpenWeatherMap One Call API 3.0
-const ONE_CALL_API = 'https://api.openweathermap.org/data/3.0/onecall';
-
+// Types from Weather Cache Service (OpenWeatherMap format)
 interface WeatherDescription {
   id: number;
   main: string;
@@ -14,7 +12,7 @@ interface WeatherDescription {
   icon: string;
 }
 
-interface CurrentWeather {
+interface CurrentWeatherResponse {
   dt: number;
   temp: number;
   feels_like: number;
@@ -29,7 +27,7 @@ interface CurrentWeather {
   weather: WeatherDescription[];
 }
 
-interface HourlyWeather {
+interface HourlyWeatherResponse {
   dt: number;
   temp: number;
   feels_like: number;
@@ -42,23 +40,21 @@ interface HourlyWeather {
   wind_speed: number;
   wind_deg: number;
   weather: WeatherDescription[];
-  pop: number; // Probability of precipitation
+  pop: number;
 }
 
-interface DailyTemp {
-  day: number;
-  min: number;
-  max: number;
-  night: number;
-  eve: number;
-  morn: number;
-}
-
-interface DailyWeather {
+interface DailyWeatherResponse {
   dt: number;
   sunrise: number;
   sunset: number;
-  temp: DailyTemp;
+  temp: {
+    day: number;
+    min: number;
+    max: number;
+    night: number;
+    eve: number;
+    morn: number;
+  };
   feels_like: {
     day: number;
     night: number;
@@ -78,7 +74,7 @@ interface DailyWeather {
   uvi: number;
 }
 
-interface WeatherAlert {
+interface AlertResponse {
   sender_name: string;
   event: string;
   start: number;
@@ -87,65 +83,55 @@ interface WeatherAlert {
   tags: string[];
 }
 
-interface OneCallResponse {
-  lat: number;
-  lon: number;
-  timezone: string;
-  timezone_offset: number;
-  current: CurrentWeather;
-  hourly: HourlyWeather[];
-  daily: DailyWeather[];
-  alerts?: WeatherAlert[];
+interface AlertsResponse {
+  alerts: AlertResponse[];
 }
 
 export const GET: APIRoute = async () => {
   try {
-    if (!OPENWEATHER_API_KEY || !LATITUDE || !LONGITUDE) {
-      return new Response(
-        JSON.stringify({
-          error: 'OpenWeatherMap API ist nicht konfiguriert',
-          current: null,
-          hourly: null,
-          daily: null,
-          alerts: null
-        }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+    // Parallel fetch from Weather Cache Service
+    const [currentRes, hourlyRes, dailyRes, alertsRes] = await Promise.all([
+      fetch(`${WEATHER_CACHE_URL}/weather/${LOCATION_SLUG}/current`),
+      fetch(`${WEATHER_CACHE_URL}/weather/${LOCATION_SLUG}/hourly?hours=24`),
+      fetch(`${WEATHER_CACHE_URL}/weather/${LOCATION_SLUG}/daily?days=7`),
+      fetch(`${WEATHER_CACHE_URL}/weather/${LOCATION_SLUG}/alerts`)
+    ]);
+
+    // Check if any request failed
+    if (!currentRes.ok || !hourlyRes.ok || !dailyRes.ok) {
+      throw new Error(`Weather Cache API Fehler: current=${currentRes.status}, hourly=${hourlyRes.status}, daily=${dailyRes.status}`);
     }
 
-    // One Call API 3.0 - Alles in einem Request
-    const response = await fetch(
-      `${ONE_CALL_API}?lat=${LATITUDE}&lon=${LONGITUDE}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=de`
-    );
+    const currentData: CurrentWeatherResponse = await currentRes.json();
+    const hourlyData: HourlyWeatherResponse[] = await hourlyRes.json();
+    const dailyData: DailyWeatherResponse[] = await dailyRes.json();
 
-    if (!response.ok) {
-      throw new Error(`OpenWeatherMap API Fehler: ${response.status}`);
+    // Alerts are optional (may return 404 if no alerts)
+    let alertsData: AlertResponse[] = [];
+    if (alertsRes.ok) {
+      const alertsJson: AlertsResponse = await alertsRes.json();
+      alertsData = alertsJson.alerts || [];
     }
 
-    const data: OneCallResponse = await response.json();
-
-    // Aktuelles Wetter aufbereiten
+    // Transform current weather (same format as before for dashboard compatibility)
     const current = {
-      temp: Math.round(data.current.temp * 10) / 10,
-      feelsLike: Math.round(data.current.feels_like * 10) / 10,
-      humidity: data.current.humidity,
-      pressure: data.current.pressure,
-      dewPoint: Math.round(data.current.dew_point * 10) / 10,
-      uvIndex: Math.round(data.current.uvi * 10) / 10,
-      clouds: data.current.clouds,
-      visibility: Math.round(data.current.visibility / 1000), // Meter zu Kilometer
-      description: data.current.weather[0]?.description || 'Keine Daten',
-      icon: data.current.weather[0]?.icon || '01d',
-      windSpeed: Math.round(data.current.wind_speed * 3.6), // m/s zu km/h
-      windDirection: data.current.wind_deg,
-      timestamp: new Date(data.current.dt * 1000).toISOString()
+      temp: Math.round(currentData.temp * 10) / 10,
+      feelsLike: Math.round(currentData.feels_like * 10) / 10,
+      humidity: currentData.humidity,
+      pressure: currentData.pressure,
+      dewPoint: Math.round(currentData.dew_point * 10) / 10,
+      uvIndex: Math.round(currentData.uvi * 10) / 10,
+      clouds: currentData.clouds,
+      visibility: Math.round(currentData.visibility / 1000), // Meter zu Kilometer
+      description: currentData.weather[0]?.description || 'Keine Daten',
+      icon: currentData.weather[0]?.icon || '01d',
+      windSpeed: Math.round(currentData.wind_speed * 3.6), // m/s zu km/h
+      windDirection: currentData.wind_deg,
+      timestamp: new Date(currentData.dt * 1000).toISOString()
     };
 
-    // Stündliche Vorhersage - nächste 24 Stunden
-    const hourly = data.hourly.slice(0, 24).map((item) => ({
+    // Transform hourly forecast
+    const hourly = hourlyData.slice(0, 24).map((item) => ({
       time: new Date(item.dt * 1000).toISOString(),
       temp: Math.round(item.temp * 10) / 10,
       feelsLike: Math.round(item.feels_like * 10) / 10,
@@ -157,8 +143,8 @@ export const GET: APIRoute = async () => {
       uvIndex: Math.round(item.uvi * 10) / 10
     }));
 
-    // Tägliche Vorhersage - nächste 7 Tage
-    const daily = data.daily.slice(0, 7).map((item) => ({
+    // Transform daily forecast
+    const daily = dailyData.slice(0, 7).map((item) => ({
       date: new Date(item.dt * 1000).toISOString(),
       sunrise: new Date(item.sunrise * 1000).toISOString(),
       sunset: new Date(item.sunset * 1000).toISOString(),
@@ -176,22 +162,22 @@ export const GET: APIRoute = async () => {
       snow: item.snow || 0
     }));
 
-    // Wetterwarnungen (falls vorhanden)
-    const alerts = data.alerts?.map((alert) => ({
+    // Transform alerts
+    const alerts = alertsData.map((alert) => ({
       sender: alert.sender_name,
       event: alert.event,
       start: new Date(alert.start * 1000).toISOString(),
       end: new Date(alert.end * 1000).toISOString(),
       description: alert.description,
       tags: alert.tags
-    })) || [];
+    }));
 
     const result = {
       current,
       hourly,
       daily,
       alerts,
-      timezone: data.timezone,
+      timezone: 'Europe/Berlin',
       timestamp: new Date().toISOString()
     };
 
@@ -203,7 +189,7 @@ export const GET: APIRoute = async () => {
       }
     });
   } catch (error) {
-    console.error('Fehler beim Abrufen der Wetterdaten:', error);
+    console.error('Fehler beim Abrufen der Wetterdaten vom Weather Cache:', error);
 
     return new Response(
       JSON.stringify({

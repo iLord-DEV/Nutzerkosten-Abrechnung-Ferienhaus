@@ -42,12 +42,8 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
-      # Mobile Alerts API (Temperatur-Sensoren)
-      MOBILE_ALERTS_PHONE_ID: ${MOBILE_ALERTS_PHONE_ID}
-      # OpenWeather API
-      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
-      OPENWEATHER_LAT: ${OPENWEATHER_LAT}
-      OPENWEATHER_LON: ${OPENWEATHER_LON}
+      # Weather Cache Service (Wetter + Indoor-Temperaturen)
+      WEATHER_CACHE_URL: ${WEATHER_CACHE_URL:-http://100.102.83.46:3003/api}
       # Push Notifications (VAPID Keys)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}

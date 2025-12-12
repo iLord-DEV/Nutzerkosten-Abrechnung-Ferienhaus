@@ -1,92 +1,33 @@
 import type { APIRoute } from 'astro';
 
-const MOBILE_ALERTS_API = 'https://www.data199.com/api/pv1/device/lastmeasurement';
-const PHONE_ID = process.env.MOBILE_ALERTS_PHONE_ID;
+// Weather Cache Service Configuration
+const WEATHER_CACHE_URL = process.env.WEATHER_CACHE_URL || 'http://100.102.83.46:3003/api';
 
-// Sensor-IDs
-const SENSORS = {
-  bad: '020113080F22',
-  wohnzimmer: '026337DAADF1'
-};
-
-interface SensorMeasurement {
-  idx: number;
-  ts: number;
-  c: number;
-  t1?: number; // Temperatur in °C
-}
-
-interface SensorDevice {
-  deviceid: string;
-  lastseen: number;
-  lowbat: boolean;
-  measurement: SensorMeasurement;
-}
-
-interface MobileAlertsResponse {
-  success: boolean;
-  phoneid?: string;
-  devices?: SensorDevice[];
-  errorcode?: number;
-  errormessage?: string;
+interface SensorResponse {
+  temp: number | null;
+  humidity: number | null;
+  timestamp: number;
 }
 
 export const GET: APIRoute = async () => {
   try {
-    if (!PHONE_ID) {
-      return new Response(
-        JSON.stringify({
-          error: 'MOBILE_ALERTS_PHONE_ID ist nicht konfiguriert',
-          bad: null,
-          wohnzimmer: null
-        }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    }
+    // Parallel fetch from Weather Cache Service
+    const [badRes, wohnzimmerRes] = await Promise.all([
+      fetch(`${WEATHER_CACHE_URL}/sensors/wuestenstein/bad/current`),
+      fetch(`${WEATHER_CACHE_URL}/sensors/wuestenstein/wohnzimmer/current`)
+    ]);
 
-    // API-Aufruf für beide Sensoren (POST mit x-www-form-urlencoded)
-    const deviceIds = `${SENSORS.bad},${SENSORS.wohnzimmer}`;
-    const body = new URLSearchParams({
-      deviceids: deviceIds,
-      phoneid: PHONE_ID
-    });
-
-    const response = await fetch(MOBILE_ALERTS_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Nutzerkosten-App/1.0'
-      },
-      body: body.toString()
-    });
-
-    if (!response.ok) {
-      throw new Error(`Mobile Alerts API Fehler: ${response.status}`);
-    }
-
-    const data: MobileAlertsResponse = await response.json();
-
-    // API-Fehlerbehandlung
-    if (!data.success) {
-      throw new Error(data.errormessage || 'Unbekannter API-Fehler');
-    }
-
-    // Sensordaten extrahieren
-    const devices = data.devices || [];
-
-    const badSensor = devices.find((d: SensorDevice) => d.deviceid === SENSORS.bad);
-    const wohnzimmerSensor = devices.find((d: SensorDevice) => d.deviceid === SENSORS.wohnzimmer);
+    // Check responses
+    const badData: SensorResponse | null = badRes.ok ? await badRes.json() : null;
+    const wohnzimmerData: SensorResponse | null = wohnzimmerRes.ok ? await wohnzimmerRes.json() : null;
 
     const result = {
-      bad: badSensor?.measurement?.t1 ?? null,
-      wohnzimmer: wohnzimmerSensor?.measurement?.t1 ?? null,
+      bad: badData?.temp ?? null,
+      wohnzimmer: wohnzimmerData?.temp ?? null,
       timestamp: new Date().toISOString(),
       lastUpdate: {
-        bad: badSensor?.lastseen ? new Date(badSensor.lastseen * 1000).toISOString() : null,
-        wohnzimmer: wohnzimmerSensor?.lastseen ? new Date(wohnzimmerSensor.lastseen * 1000).toISOString() : null
+        bad: badData?.timestamp ? new Date(badData.timestamp * 1000).toISOString() : null,
+        wohnzimmer: wohnzimmerData?.timestamp ? new Date(wohnzimmerData.timestamp * 1000).toISOString() : null
       }
     };
 
@@ -102,7 +43,7 @@ export const GET: APIRoute = async () => {
     );
 
   } catch (error) {
-    console.error('Fehler beim Abrufen der Temperaturen:', error);
+    console.error('Fehler beim Abrufen der Temperaturen vom Weather Cache:', error);
 
     return new Response(
       JSON.stringify({
