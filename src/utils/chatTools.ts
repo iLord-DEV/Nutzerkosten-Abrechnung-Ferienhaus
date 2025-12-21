@@ -114,6 +114,21 @@ export const userTools: Tool[] = [
       required: ['query'],
     },
   },
+  {
+    name: 'getChecklists',
+    description:
+      'Zeigt den Fortschritt des Benutzers bei den Checklisten (z.B. Anreise-/Abreise-Aufgaben). Nutze dieses Tool wenn der Benutzer wissen möchte, welche Aufgaben er noch erledigen muss oder wie weit er mit einer Checkliste ist.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        checklistId: {
+          type: 'integer',
+          description: 'ID einer spezifischen Checkliste (optional, ohne = alle Checklisten)',
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 /**
@@ -134,6 +149,8 @@ export async function handleUserTool(
       return searchKnowledgeHandler(tool.input);
     case 'searchImages':
       return searchImagesHandler(tool.input);
+    case 'getChecklists':
+      return getChecklistsHandler(tool.input, userId);
     default:
       return { error: `Unbekanntes Tool: ${tool.name}` };
   }
@@ -403,5 +420,65 @@ async function searchImagesHandler(input: { query: string }): Promise<any> {
       mediaType: m.mediaType || 'image',
       thumbnailUrl: m.thumbnail ? `/uploads/library/${m.thumbnail}` : null,
     })),
+  };
+}
+
+/**
+ * Checklisten mit User-Fortschritt abrufen
+ */
+async function getChecklistsHandler(
+  input: { checklistId?: number },
+  userId: number
+): Promise<any> {
+  const whereClause: { isActive: boolean; id?: number } = { isActive: true };
+  if (input.checklistId) {
+    whereClause.id = input.checklistId;
+  }
+
+  const checklists = await prisma.checklist.findMany({
+    where: whereClause,
+    orderBy: { sortOrder: 'asc' },
+    include: {
+      items: {
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          progress: {
+            where: { userId },
+          },
+        },
+      },
+    },
+  });
+
+  if (checklists.length === 0) {
+    return {
+      message: input.checklistId
+        ? 'Checkliste nicht gefunden'
+        : 'Keine Checklisten vorhanden',
+    };
+  }
+
+  return {
+    checklists: checklists.map((cl) => {
+      const completedCount = cl.items.filter(
+        (item) => item.progress.length > 0 && item.progress[0].isChecked
+      ).length;
+      const totalCount = cl.items.length;
+
+      return {
+        id: cl.id,
+        title: cl.title,
+        description: cl.description,
+        progress: `${completedCount}/${totalCount}`,
+        progressPercent: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+        isComplete: completedCount === totalCount && totalCount > 0,
+        items: cl.items.map((item) => ({
+          id: item.id,
+          text: item.text,
+          isChecked: item.progress.length > 0 && item.progress[0].isChecked,
+        })),
+      };
+    }),
+    hint: 'Die vollständige Checkliste mit Abhak-Funktion findest du unter [/checklisten](/checklisten)',
   };
 }

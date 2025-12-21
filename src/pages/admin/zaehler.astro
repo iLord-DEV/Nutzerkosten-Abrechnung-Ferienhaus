@@ -36,7 +36,7 @@ try {
       <h3 class="text-lg leading-6 font-medium text-base-content mb-2">
         Alle Zähler
       </h3>
-      <p class="text-sm text-base-content mb-4" style="opacity: 0.6">
+      <p class="text-sm text-base-content mb-4" style="opacity: 0.7">
         Das Ausbaudatum wird automatisch auf das Einbaudatum des folgenden Zählers gesetzt.
       </p>
         <div class="overflow-x-auto">
@@ -107,7 +107,7 @@ try {
               class="input w-full rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="z.B. 100.0"
             >
-            <p class="mt-1 text-xs text-base-content" style="opacity: 0.6">
+            <p class="mt-1 text-xs text-base-content" style="opacity: 0.7">
               Der alte Zähler wird automatisch deaktiviert. Das Ausbaudatum wird auf das Einbaudatum des neuen Zählers gesetzt.
             </p>
           </div>
@@ -129,7 +129,7 @@ try {
             <button
               type="button"
               id="modal-cancel"
-              class="px-4 py-2 text-sm font-medium bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md"
+              class="btn btn-ghost btn-sm"
             >
               Abbrechen
             </button>
@@ -199,7 +199,7 @@ try {
         letzterStandHtml = `
           <div class="text-sm">
             <div>Letzter Aufenthalt: ${zaehler.letzterAufenthaltStand.toFixed(1)} h</div>
-            <div class="text-base-content" style="opacity: 0.6">Ausbau: ${zaehler.letzterStand.toFixed(1)} h</div>
+            <div class="text-base-content" style="opacity: 0.7">Ausbau: ${zaehler.letzterStand.toFixed(1)} h</div>
           </div>
         `;
       }

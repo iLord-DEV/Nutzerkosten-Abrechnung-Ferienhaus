@@ -84,6 +84,19 @@
     @apply bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg p-6 shadow-lg;
   }
 
+  /* DaisyUI Button Kontrast-Fix */
+  .btn-primary {
+    @apply text-white;
+  }
+
+  .btn-secondary {
+    @apply text-white;
+  }
+
+  .btn-accent {
+    @apply text-white;
+  }
+
   /* Buttons - Action Buttons mit Icon-Support */
   .btn-action {
     @apply btn btn-primary gap-2;
@@ -144,6 +157,6 @@
 
   .empty-state {
     @apply text-center py-12 text-base-content;
-    opacity: 0.6;
+    opacity: 0.7;
   }
 }

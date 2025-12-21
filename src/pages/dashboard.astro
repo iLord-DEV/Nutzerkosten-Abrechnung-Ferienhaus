@@ -85,26 +85,26 @@ if (!user) {
             <div>
               <div class="text-4xl font-bold" id="weather-temp">--°C</div>
               <div class="text-lg opacity-70" id="weather-description">Lädt...</div>
-              <div class="text-sm opacity-60" id="weather-feels-like">Gefühlt: --°C</div>
+              <div class="text-sm opacity-70" id="weather-feels-like">Gefühlt: --°C</div>
             </div>
           </div>
 
           <!-- Wetter-Details -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <div class="text-sm opacity-60">Wind</div>
+              <div class="text-sm opacity-70">Wind</div>
               <div class="font-semibold" id="weather-wind">-- km/h</div>
             </div>
             <div>
-              <div class="text-sm opacity-60">Luftfeuchtigkeit</div>
+              <div class="text-sm opacity-70">Luftfeuchtigkeit</div>
               <div class="font-semibold" id="weather-humidity">--%</div>
             </div>
             <div>
-              <div class="text-sm opacity-60">UV-Index</div>
+              <div class="text-sm opacity-70">UV-Index</div>
               <div class="font-semibold" id="weather-uv">--</div>
             </div>
             <div>
-              <div class="text-sm opacity-60">Sichtweite</div>
+              <div class="text-sm opacity-70">Sichtweite</div>
               <div class="font-semibold" id="weather-visibility">-- km</div>
             </div>
           </div>
@@ -126,7 +126,7 @@ if (!user) {
           </div>
         </div>
 
-            <div class="text-xs opacity-50 mt-4" id="weather-update">
+            <div class="text-xs opacity-70 mt-4" id="weather-update">
               Lädt...
             </div>
           </div>
@@ -350,7 +350,7 @@ if (!user) {
 
     if (alleAktivitaeten.length === 0) {
       ul.innerHTML = `
-        <li class="text-center opacity-50 py-4">
+        <li class="text-center opacity-70 py-4">
           Noch keine Aktivitäten
         </li>
       `;
@@ -434,7 +434,7 @@ if (!user) {
     return iconMap[owmIcon] || 'wi-na';
   }
 
-  // Temperatur-Farbcodierung (HSL)
+  // Temperatur-Farbcodierung (HSL) - WCAG-konform für Light & Dark Mode
   function getTempColor(temp: number): string {
     // Clamp zwischen -10 und +30
     const t = Math.max(-10, Math.min(30, temp));
@@ -449,30 +449,33 @@ if (!user) {
       // +10°C bis +30°C: Grün (120) bis Rot (0)
       hue = 120 - ((t - 10) / 20) * 120;
     }
-    return `hsl(${Math.round(hue)}, 80%, 45%)`;
+    // Lightness angepasst für besseren Kontrast in beiden Themes
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const lightness = isDark ? 65 : 40;
+    return `hsl(${Math.round(hue)}, 75%, ${lightness}%)`;
   }
 
-  // Farbe basierend auf Wetter-Icon
+  // Farbe basierend auf Wetter-Icon - WCAG-konform
   function getWeatherIconColor(owmIcon: string): string {
     const colorMap: Record<string, string> = {
       '01d': 'bg-gradient-to-br from-yellow-400 to-orange-500 bg-clip-text text-transparent', // Sonne
-      '01n': 'text-slate-300', // Nacht klar
+      '01n': 'text-indigo-400', // Nacht klar (dunkler für Kontrast)
       '02d': 'bg-gradient-to-br from-yellow-400 to-slate-400 bg-clip-text text-transparent', // Sonne + Wolke
-      '02n': 'text-slate-400', // Nacht bewölkt
-      '03d': 'text-slate-400', // Wolken
-      '03n': 'text-slate-500',
-      '04d': 'text-slate-500', // Bedeckt
-      '04n': 'text-slate-600',
-      '09d': 'text-blue-400', // Schauer
-      '09n': 'text-blue-500',
+      '02n': 'text-slate-500', // Nacht bewölkt
+      '03d': 'text-slate-500', // Wolken
+      '03n': 'text-slate-400',
+      '04d': 'text-slate-600', // Bedeckt
+      '04n': 'text-slate-500',
+      '09d': 'text-blue-500', // Schauer
+      '09n': 'text-blue-400',
       '10d': 'bg-gradient-to-b from-slate-400 to-blue-500 bg-clip-text text-transparent', // Regen
-      '10n': 'text-blue-600',
+      '10n': 'text-blue-500',
       '11d': 'bg-gradient-to-b from-slate-500 to-yellow-400 bg-clip-text text-transparent', // Gewitter
-      '11n': 'text-purple-500',
-      '13d': 'text-sky-200', // Schnee
-      '13n': 'text-sky-300',
-      '50d': 'text-slate-400', // Nebel
-      '50n': 'text-slate-500',
+      '11n': 'text-purple-400',
+      '13d': 'text-sky-500', // Schnee (dunkler für Kontrast)
+      '13n': 'text-sky-400',
+      '50d': 'text-slate-500', // Nebel
+      '50n': 'text-slate-400',
     };
     return colorMap[owmIcon] || 'text-primary';
   }
@@ -565,7 +568,7 @@ if (!user) {
             const time = new Date(hour.time);
             return `
               <div class="text-center p-2 bg-base-100 border border-base-300 rounded-lg">
-                <div class="text-xs opacity-60">${time.getHours()}:00</div>
+                <div class="text-xs opacity-70">${time.getHours()}:00</div>
                 <i class="wi ${getWeatherIconClass(hour.icon)} text-3xl" style="color: ${getTempColor(hour.temp)}"></i>
                 <div class="font-semibold" style="color: ${getTempColor(hour.temp)}">${hour.temp}°C</div>
                 ${hour.pop > 0 ? `<div class="text-xs text-info">${hour.pop}%</div>` : ''}

@@ -45,8 +45,19 @@ export const POST: APIRoute = async (context) => {
       select: { category: true, title: true, content: true },
     });
 
+    // Checklisten laden (für System-Prompt)
+    const checklists = await prisma.checklist.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        items: {
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+
     // System-Prompt bauen
-    const systemPrompt = buildSystemPrompt(knowledgeEntries, fullUser.name, isAdmin);
+    const systemPrompt = buildSystemPrompt(knowledgeEntries, checklists, fullUser.name, isAdmin);
 
     // Nachrichten-Verlauf aufbauen
     const messages: ChatMessage[] = conversationHistory || [];

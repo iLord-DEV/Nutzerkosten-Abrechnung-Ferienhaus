@@ -31,7 +31,7 @@ if (!user) {
         <div class="flex flex-wrap gap-4 text-sm">
           <div class="flex items-center gap-2">
             <span class="badge badge-primary badge-sm opacity-80">Aufenthalt</span>
-            <span class="text-xs opacity-60">(eingetragen)</span>
+            <span class="text-xs opacity-70">(eingetragen)</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="badge badge-success">Freigegeben</span>
@@ -367,7 +367,7 @@ if (!user) {
           dayElement.appendChild(aufenthaltElement);
         });
       } else {
-        dayElement.className += ' bg-base-200 opacity-50';
+        dayElement.className += ' bg-base-200 opacity-70';
       }
 
       current.setDate(current.getDate() + 1);
@@ -444,7 +444,7 @@ if (!user) {
             ${new Date(termin.startDatum).toLocaleDateString('de-DE')} -
             ${new Date(termin.endDatum).toLocaleDateString('de-DE')}
           </div>
-          <div class="text-sm opacity-60 mb-3">
+          <div class="text-sm opacity-70 mb-3">
             von ${termin.user.name}
           </div>
           ${termin.beschreibung ? `<p class="text-sm mb-3">${termin.beschreibung}</p>` : ''}
@@ -507,7 +507,7 @@ if (!user) {
                   </span>
                 `).join('')}
               ${termin.abstimmungen.filter(a => a.version === termin.version).length === 0 ?
-                '<span class="text-sm opacity-60">Noch keine Abstimmungen</span>' : ''}
+                '<span class="text-sm opacity-70">Noch keine Abstimmungen</span>' : ''}
             </div>
 
             <!-- Kommentare anzeigen -->
@@ -540,7 +540,7 @@ if (!user) {
                     </div>
                   `).join('')}
                   ${termin.kommentare.length > 2 ? `
-                    <div class="text-xs opacity-60">... und ${termin.kommentare.length - 2} weitere</div>
+                    <div class="text-xs opacity-70">... und ${termin.kommentare.length - 2} weitere</div>
                   ` : ''}
                 </div>
               </div>

@@ -224,11 +224,13 @@ const isAdmin = fullUser?.role === 'ADMIN';
     // Einfache Markdown-Formatierung
     return content
       // Code-Blöcke
-      .replace(/```([\s\S]*?)```/g, '<pre class="bg-base-300 p-2 rounded text-sm overflow-x-auto my-2">$1</pre>')
+      .replace(/```([\s\S]*?)```/g, '<pre class="bg-base-300 text-base-content p-2 rounded text-sm overflow-x-auto my-2">$1</pre>')
       // Inline-Code
-      .replace(/`([^`]+)`/g, '<code class="bg-base-300 px-1 rounded">$1</code>')
-      // Bilder (Markdown-Syntax: ![alt](url))
+      .replace(/`([^`]+)`/g, '<code class="bg-base-300 text-base-content px-1 rounded">$1</code>')
+      // Bilder (Markdown-Syntax: ![alt](url)) - MUSS vor Links kommen!
       .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full rounded-lg my-2 cursor-pointer hover:opacity-90" onclick="openImageModal(\'$2\', \'$1\')" />')
+      // Links (Markdown-Syntax: [text](url))
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="link link-accent underline">$1</a>')
       // Fett
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       // Kursiv

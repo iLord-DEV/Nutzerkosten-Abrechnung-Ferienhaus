@@ -122,7 +122,7 @@ try {
           <h2 class="text-xl font-semibold text-base-content">
             Ölpreise & Verbrauchswerte
           </h2>
-          <p class="text-sm text-base-content" style="opacity: 0.6">
+          <p class="text-sm text-base-content" style="opacity: 0.7">
             Diese werden automatisch aus Tankfüllungen berechnet
           </p>
         </div>
@@ -159,7 +159,7 @@ try {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content font-semibold">
                   € {tf.preisProLiter.toFixed(2)}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
                   {tf.liter.toFixed(0)} Liter getankt
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -167,7 +167,7 @@ try {
                     Tankfüllung
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
                   Datum: {new Date(tf.datum).toLocaleDateString('de-DE')}
                 </td>
               </tr>
@@ -179,10 +179,10 @@ try {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
                   Jahr {preis.jahr}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
                   € {preis.oelpreisProLiter.toFixed(2)}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
                   {preis.verbrauchProStunde.toFixed(1)} L/h
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -190,7 +190,7 @@ try {
                     {preis.istBerechnet ? 'Berechnet' : 'Fallback'}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
                   Übernachtung: 5€/10€
                 </td>
               </tr>
@@ -198,7 +198,7 @@ try {
 
             {tankfuellungen.length === 0 && preise.length === 0 && (
               <tr>
-                <td colspan="5" class="px-6 py-4 text-center text-sm text-base-content" style="opacity: 0.6">
+                <td colspan="5" class="px-6 py-4 text-center text-sm text-base-content" style="opacity: 0.7">
                   Keine Preise vorhanden. Fallback-Werte gelten: 1.01€/L, 5.5 L/h, 5€/10€
                 </td>
               </tr>
@@ -263,7 +263,7 @@ try {
             <button
               type="button"
               onclick="window.closeCreatePriceModal()"
-              class="px-4 py-2 text-sm font-medium bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md transition-colors"
+              class="btn btn-ghost btn-sm"
             >
               Abbrechen
             </button>
@@ -332,7 +332,7 @@ try {
             <button
               type="button"
               onclick="window.closeEditPriceModal()"
-              class="px-4 py-2 text-sm font-medium bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md transition-colors"
+              class="btn btn-ghost btn-sm"
             >
               Abbrechen
             </button>
@@ -404,7 +404,7 @@ try {
     if (allPreise.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="5" class="px-6 py-4 text-center text-sm text-base-content" style="opacity: 0.6">
+          <td colspan="5" class="px-6 py-4 text-center text-sm text-base-content" style="opacity: 0.7">
             Keine Preise konfiguriert. Fallback-Werte gelten: 5€ (Mitglieder), 10€ (Gäste)
           </td>
         </tr>
@@ -417,13 +417,13 @@ try {
         <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
           ${preis.gueltigAb ? new Date(preis.gueltigAb).toLocaleDateString('de-DE') : 'Jährlich'}
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
           € ${preis.uebernachtungMitglied.toFixed(2)}
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
           € ${preis.uebernachtungGast.toFixed(2)}
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.6">
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
           ${preis.createdAt ? new Date(preis.createdAt).toLocaleDateString('de-DE') : 'Unbekannt'}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
