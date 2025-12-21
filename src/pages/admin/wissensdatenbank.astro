@@ -48,8 +48,8 @@ try {
           </select>
         </div>
         <div class="form-control">
-          <label class="label cursor-pointer gap-2">
-            <input type="checkbox" id="active-filter" class="checkbox" checked onchange="loadEntries()" />
+          <label class="label cursor-pointer gap-3">
+            <input type="checkbox" id="active-filter" class="checkbox checkbox-primary checkbox-sm" checked onchange="loadEntries()" />
             <span class="label-text">Nur aktive</span>
           </label>
         </div>
@@ -123,16 +123,34 @@ try {
           </div>
         </div>
 
-        <div class="flex items-center gap-4">
-          <label class="label cursor-pointer gap-2">
-            <input type="checkbox" id="entry-active" class="checkbox checkbox-primary" checked />
-            <span class="label-text">Aktiv</span>
-          </label>
-          <span class="text-sm text-base-content/60" id="entry-source"></span>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Priorität</span>
+            </label>
+            <select id="entry-priority" class="select select-bordered w-full">
+              <option value="0">Normal</option>
+              <option value="1">📌 Wichtig</option>
+              <option value="2">⚠️ Sehr wichtig (hat Vorrang)</option>
+            </select>
+            <label class="label">
+              <span class="label-text-alt text-base-content/60">Höhere Priorität = wird vom Chatbot bevorzugt</span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Status</span>
+            </label>
+            <div class="flex items-center gap-3 h-12 px-3 bg-base-200 rounded-lg">
+              <input type="checkbox" id="entry-active" class="checkbox checkbox-primary" checked />
+              <span class="label-text">Aktiv (für Chatbot sichtbar)</span>
+            </div>
+            <span class="text-sm text-base-content/60 mt-2" id="entry-source"></span>
+          </div>
         </div>
 
-        <div class="modal-action">
-          <button type="button" class="btn" onclick="closeEntryModal()">Abbrechen</button>
+        <div class="modal-action pt-4 border-t border-base-300">
+          <button type="button" class="btn btn-ghost" onclick="closeEntryModal()">Abbrechen</button>
           <button type="submit" class="btn btn-primary">Speichern</button>
         </div>
       </form>
@@ -185,8 +203,8 @@ try {
         </div>
       </div>
 
-      <div class="modal-action">
-        <button type="button" class="btn" onclick="closeUploadModal()">Abbrechen</button>
+      <div class="modal-action pt-4 border-t border-base-300">
+        <button type="button" class="btn btn-ghost" onclick="closeUploadModal()">Abbrechen</button>
         <button type="button" id="upload-save-btn" class="btn btn-primary hidden" onclick="saveUpload()">
           Speichern
         </button>
@@ -203,8 +221,8 @@ try {
       <h3 class="font-bold text-lg">Eintrag löschen?</h3>
       <p class="py-4">Möchtest du den Eintrag "<span id="delete-title"></span>" wirklich löschen?</p>
       <input type="hidden" id="delete-id" />
-      <div class="modal-action">
-        <button class="btn" onclick="closeDeleteModal()">Abbrechen</button>
+      <div class="modal-action pt-4 border-t border-base-300">
+        <button class="btn btn-ghost" onclick="closeDeleteModal()">Abbrechen</button>
         <button class="btn btn-error" onclick="confirmDelete()">Löschen</button>
       </div>
     </div>
@@ -310,9 +328,10 @@ try {
         </h3>
         <div class="space-y-2">
           ${items.map(entry => `
-            <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg ${!entry.isActive ? 'opacity-50' : ''}">
+            <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg ${!entry.isActive ? 'opacity-50' : ''} ${entry.priority >= 2 ? 'border-l-4 border-warning' : entry.priority === 1 ? 'border-l-4 border-info' : ''}">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
+                  ${entry.priority >= 2 ? '<span class="text-warning">⚠️</span>' : entry.priority === 1 ? '<span class="text-info">📌</span>' : ''}
                   <span class="font-medium truncate">${entry.title}</span>
                   ${entry.sourceType !== 'manual' ? `
                     <span class="badge badge-sm badge-ghost">${entry.sourceType === 'upload' ? '📄' : '🌐'}</span>
@@ -343,6 +362,7 @@ try {
     (document.getElementById('entry-title') as HTMLInputElement).value = '';
     (document.getElementById('entry-content') as HTMLTextAreaElement).value = '';
     (document.getElementById('entry-keywords') as HTMLInputElement).value = '';
+    (document.getElementById('entry-priority') as HTMLSelectElement).value = '0';
     (document.getElementById('entry-active') as HTMLInputElement).checked = true;
     (document.getElementById('entry-source') as HTMLElement).textContent = '';
     // Bilder-Sektion ausblenden für neue Einträge
@@ -368,6 +388,7 @@ try {
       (document.getElementById('entry-title') as HTMLInputElement).value = entry.title;
       (document.getElementById('entry-content') as HTMLTextAreaElement).value = entry.content;
       (document.getElementById('entry-keywords') as HTMLInputElement).value = entry.keywords || '';
+      (document.getElementById('entry-priority') as HTMLSelectElement).value = String(entry.priority || 0);
       (document.getElementById('entry-active') as HTMLInputElement).checked = entry.isActive;
 
       let sourceInfo = '';
@@ -405,6 +426,7 @@ try {
         title: (document.getElementById('entry-title') as HTMLInputElement).value,
         content: (document.getElementById('entry-content') as HTMLTextAreaElement).value,
         keywords: (document.getElementById('entry-keywords') as HTMLInputElement).value || null,
+        priority: parseInt((document.getElementById('entry-priority') as HTMLSelectElement).value) || 0,
         isActive: (document.getElementById('entry-active') as HTMLInputElement).checked,
       };
 

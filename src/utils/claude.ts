@@ -125,38 +125,54 @@ export async function chat(
   };
 }
 
-interface ChecklistItem {
-  id: number;
-  text: string;
-  sortOrder: number;
-}
-
-interface Checklist {
-  id: number;
-  title: string;
-  description: string | null;
-  items: ChecklistItem[];
-}
-
 /**
  * Baut den System-Prompt für den Chatbot
  */
 export function buildSystemPrompt(
-  knowledgeEntries: Array<{ category: string; title: string; content: string }>,
-  checklists: Checklist[],
+  knowledgeEntries: Array<{ category: string; title: string; content: string; priority: number }>,
   userName: string,
   isAdmin: boolean
 ): string {
-  const knowledgeSection = knowledgeEntries.length > 0
-    ? knowledgeEntries.map((e) => `### ${e.category}: ${e.title}\n${e.content}`).join('\n\n')
-    : 'Keine Einträge in der Wissensdatenbank vorhanden.';
+  // Prioritäts-Labels
+  const priorityLabel = (p: number) => {
+    if (p >= 2) return '⚠️ WICHTIG: ';
+    if (p === 1) return '📌 ';
+    return '';
+  };
 
-  const checklistSection = checklists.length > 0
-    ? checklists.map((cl) => {
-        const itemsList = cl.items.map((item, idx) => `  ${idx + 1}. ${item.text}`).join('\n');
-        return `### Checkliste: ${cl.title}${cl.description ? `\n${cl.description}` : ''}\n${itemsList}`;
-      }).join('\n\n')
-    : 'Keine Checklisten vorhanden.';
+  // Einträge nach Priorität gruppiert formatieren
+  const highPriority = knowledgeEntries.filter(e => e.priority >= 2);
+  const mediumPriority = knowledgeEntries.filter(e => e.priority === 1);
+  const normalPriority = knowledgeEntries.filter(e => e.priority === 0);
+
+  let knowledgeSection = '';
+
+  if (highPriority.length > 0) {
+    knowledgeSection += '## ⚠️ WICHTIGE INFORMATIONEN (haben Vorrang!):\n\n';
+    knowledgeSection += highPriority.map((e) =>
+      `### ${e.category}: ${e.title}\n${e.content}`
+    ).join('\n\n');
+    knowledgeSection += '\n\n';
+  }
+
+  if (mediumPriority.length > 0) {
+    knowledgeSection += '## 📌 Relevante Informationen:\n\n';
+    knowledgeSection += mediumPriority.map((e) =>
+      `### ${e.category}: ${e.title}\n${e.content}`
+    ).join('\n\n');
+    knowledgeSection += '\n\n';
+  }
+
+  if (normalPriority.length > 0) {
+    knowledgeSection += '## Weitere Informationen:\n\n';
+    knowledgeSection += normalPriority.map((e) =>
+      `### ${e.category}: ${e.title}\n${e.content}`
+    ).join('\n\n');
+  }
+
+  if (knowledgeEntries.length === 0) {
+    knowledgeSection = 'Keine Einträge in der Wissensdatenbank vorhanden.';
+  }
 
   const adminSection = isAdmin
     ? `
@@ -192,17 +208,9 @@ Heute ist ${heute}. Wenn der Benutzer nur Monate oder Tage nennt (z.B. "vom 15. 
 2. Erstelle neue Aufenthalte wenn der Benutzer einen Besuch eintragen möchte
 3. Zeige dem Benutzer seine bisherigen Aufenthalte und Statistiken
 4. Suche passende Bilder in der Bildbibliothek mit searchImages
-5. Zeige dem Benutzer seinen Checklisten-Fortschritt mit getChecklists
 
 ## Wissensdatenbank:
 ${knowledgeSection}
-
-## Checklisten (An-/Abreise-Aufgaben):
-Die folgenden Checklisten helfen den Nutzern bei wiederkehrenden Aufgaben wie Anreise und Abreise.
-Wenn jemand fragt "Wie geht die Heizung?" oder "Was muss ich bei der Anreise beachten?", nutze diese Informationen.
-Du kannst auch auf die Checklisten-Seite verweisen mit einem klickbaren Link: [Checklisten](/checklisten)
-
-${checklistSection}
 
 ## Wichtige Regeln für Aufenthalte:
 - Frage nach allen notwendigen Daten: Ankunft, Abreise, Zählerstände (Ankunft & Abreise), Übernachtungen (Mitglieder & Gäste)

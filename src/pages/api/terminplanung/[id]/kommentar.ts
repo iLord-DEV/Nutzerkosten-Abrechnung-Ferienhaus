@@ -120,6 +120,22 @@ export const POST: APIRoute = async (context) => {
       inhalt.trim()
     ).catch(err => console.error('Fehler beim Versenden der Push-Benachrichtigungen:', err));
 
+    // lastSeenAt aktualisieren (User hat den Termin "gesehen")
+    await prisma.userTerminSeen.upsert({
+      where: {
+        userId_terminPlanungId: {
+          userId: user.id,
+          terminPlanungId: terminplanungId
+        }
+      },
+      update: { lastSeenAt: new Date() },
+      create: {
+        userId: user.id,
+        terminPlanungId: terminplanungId,
+        lastSeenAt: new Date()
+      }
+    });
+
     return new Response(JSON.stringify(kommentar), {
       status: 201,
       headers: {

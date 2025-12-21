@@ -561,6 +561,7 @@ if (!user) {
       if (response.ok) {
         showToast('success', 'Zustimmung abgegeben', 'Deine Zustimmung wurde erfolgreich gespeichert!');
         loadTerminplanung();
+        window.dispatchEvent(new CustomEvent('pending-termine-changed'));
       } else {
         const error = await response.json();
         showToast('error', 'Fehler', error.error);
@@ -580,6 +581,7 @@ if (!user) {
       if (response.ok) {
         showToast('info', 'Zustimmung entzogen', 'Deine Zustimmung wurde erfolgreich zurückgezogen!');
         loadTerminplanung();
+        window.dispatchEvent(new CustomEvent('pending-termine-changed'));
       } else {
         const error = await response.json();
         showToast('error', 'Fehler', error.error);
@@ -676,6 +678,7 @@ if (!user) {
           document.getElementById('abstimmungModal').close();
           showToast('success', 'Abstimmung abgegeben', 'Deine Stimme wurde erfolgreich gespeichert!');
           loadTerminplanung();
+          window.dispatchEvent(new CustomEvent('pending-termine-changed'));
         } else {
           const error = await response.json();
           showToast('error', 'Fehler', error.error);
@@ -705,6 +708,7 @@ if (!user) {
           window.closeKommentarModal();
           showToast('success', 'Kommentar hinzugefügt', 'Dein Kommentar wurde erfolgreich gespeichert!');
           loadTerminplanung();
+          window.dispatchEvent(new CustomEvent('pending-termine-changed'));
         } else {
           const error = await response.json();
           showToast('error', 'Fehler', error.error);

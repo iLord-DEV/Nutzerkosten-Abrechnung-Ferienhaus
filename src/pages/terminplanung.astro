@@ -624,6 +624,7 @@ if (!user) {
       if (response.ok) {
         closeKommentarModal();
         loadTerminplanungen();
+        window.dispatchEvent(new CustomEvent('pending-termine-changed'));
       } else {
         const error = await response.json();
         showToast('error', 'Fehler', error.error);
@@ -651,6 +652,7 @@ if (!user) {
       if (response.ok) {
         showToast('success', 'Zustimmung abgegeben', 'Deine Zustimmung wurde erfolgreich gespeichert!');
         loadTerminplanungen();
+        window.dispatchEvent(new CustomEvent('pending-termine-changed'));
       } else {
         const error = await response.json();
         showToast('error', 'Fehler', error.error);
@@ -669,10 +671,11 @@ if (!user) {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (response.ok) {
         showToast('info', 'Zustimmung entzogen', 'Deine Zustimmung wurde erfolgreich zurückgezogen!');
         loadTerminplanungen();
+        window.dispatchEvent(new CustomEvent('pending-termine-changed'));
       } else {
         const error = await response.json();
         showToast('error', 'Fehler', error.error);

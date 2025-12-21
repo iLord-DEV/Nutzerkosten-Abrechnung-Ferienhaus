@@ -28,6 +28,7 @@ model User {
   terminAenderungen  TerminAenderung[]
   terminKommentare   TerminKommentar[]
   terminPlanungen    TerminPlanung[]
+  termineSeen        UserTerminSeen[]
   jahresabschluesse  UserJahresabschluss[]
   magicLinkTokens    MagicLinkToken[]
   pushSubscriptions  PushSubscription[]
@@ -133,6 +134,7 @@ model TerminPlanung {
   abstimmungen TerminAbstimmung[]
   aenderungen  TerminAenderung[]
   kommentare   TerminKommentar[]
+  seenBy       UserTerminSeen[]
   user         User               @relation(fields: [userId], references: [id])
 
   @@index([userId], map: "TerminPlanung_userId_fkey")
@@ -188,6 +190,20 @@ model TerminAenderung {
 
   @@index([terminPlanungId], map: "TerminAenderung_terminPlanungId_fkey")
   @@index([userId], map: "TerminAenderung_userId_fkey")
+}
+
+// Tracking wann ein User einen Termin zuletzt gesehen/bearbeitet hat
+model UserTerminSeen {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  terminPlanungId Int
+  lastSeenAt      DateTime      @default(now())
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  terminPlanung   TerminPlanung @relation(fields: [terminPlanungId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, terminPlanungId])
+  @@index([userId])
+  @@index([terminPlanungId])
 }
 
 model BlogComment {
@@ -338,6 +354,7 @@ model KnowledgeBase {
   sourceUrl  String?
   fileName   String?
   isActive   Boolean               @default(true)
+  priority   Int                   @default(0) // Wichtigkeit für den Chatbot (höher = wichtiger)
   sortOrder  Int                   @default(0)
   createdAt  DateTime              @default(now())
   updatedAt  DateTime              @updatedAt
@@ -345,6 +362,7 @@ model KnowledgeBase {
 
   @@index([category])
   @@index([isActive])
+  @@index([priority])
 }
 
 model KnowledgeBaseImage {

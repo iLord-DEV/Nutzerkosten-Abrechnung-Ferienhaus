@@ -30,16 +30,8 @@
   }
 }
 
-/* Component-Klassen für wiederkehrende Patterns */
+/* Projekt-spezifische Component-Klassen */
 @layer components {
-  /* Form Controls - Inputs müssen sich vom Hintergrund abheben */
-  input.input,
-  select.select,
-  textarea.textarea {
-    @apply bg-base-200 text-base-content;
-    border-color: color-mix(in srgb, currentColor 20%, transparent);
-  }
-
   /* Card Container - Standard-Card für Content-Bereiche */
   .card-container {
     @apply bg-base-100 shadow-xl rounded-lg p-6;
@@ -82,19 +74,6 @@
 
   .stats-card-yellow {
     @apply bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg p-6 shadow-lg;
-  }
-
-  /* DaisyUI Button Kontrast-Fix */
-  .btn-primary {
-    @apply text-white;
-  }
-
-  .btn-secondary {
-    @apply text-white;
-  }
-
-  .btn-accent {
-    @apply text-white;
   }
 
   /* Buttons - Action Buttons mit Icon-Support */

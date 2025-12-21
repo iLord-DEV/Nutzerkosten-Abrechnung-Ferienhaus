@@ -55,7 +55,7 @@ if (!tankfuellung) {
             Bearbeiten Sie die Details der Tankfüllung
           </p>
         </div>
-        <a href="/tankfuellungen" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+        <a href="/tankfuellungen" class="btn btn-ghost">
           ← Zurück zur Übersicht
         </a>
       </div>
@@ -67,63 +67,63 @@ if (!tankfuellung) {
             <input type="hidden" id="tankfuellung-id" value={tankfuellung.id}>
             
             <!-- Datum -->
-            <div>
-              <label for="datum" class="block text-sm font-medium text-base-content mb-2">
-                Datum
+            <div class="form-control">
+              <label for="datum" class="label">
+                <span class="label-text">Datum</span>
               </label>
               <input type="date" id="datum" required
                      value={new Date(tankfuellung.datum).toISOString().split('T')[0]}
-                     class="input block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                     class="input input-bordered w-full">
             </div>
 
             <!-- Zählerstand -->
-            <div>
-              <label for="zaehlerstand" class="block text-sm font-medium text-base-content mb-2">
-                Zählerstand (Stunden)
+            <div class="form-control">
+              <label for="zaehlerstand" class="label">
+                <span class="label-text">Zählerstand (Stunden)</span>
               </label>
               <input type="number" id="zaehlerstand" step="0.1" required
                      value={tankfuellung.zaehlerstand}
-                     class="input block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-              <p class="mt-1 text-sm text-base-content" style="opacity: 0.6">
-                Aktueller Zähler: #{tankfuellung.zaehler?.id} (eingebaut: {tankfuellung.zaehler ? new Date(tankfuellung.zaehler.einbauDatum).toLocaleDateString('de-DE') : 'Unbekannt'})
-              </p>
+                     class="input input-bordered w-full">
+              <label class="label">
+                <span class="label-text-alt">Aktueller Zähler: #{tankfuellung.zaehler?.id} (eingebaut: {tankfuellung.zaehler ? new Date(tankfuellung.zaehler.einbauDatum).toLocaleDateString('de-DE') : 'Unbekannt'})</span>
+              </label>
             </div>
 
             <!-- Liter -->
-            <div>
-              <label for="liter" class="block text-sm font-medium text-base-content mb-2">
-                Getankte Liter
+            <div class="form-control">
+              <label for="liter" class="label">
+                <span class="label-text">Getankte Liter</span>
               </label>
               <input type="number" id="liter" step="0.1" required
                      value={tankfuellung.liter}
-                     class="input block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                     class="input input-bordered w-full">
             </div>
 
             <!-- Preis pro Liter -->
-            <div>
-              <label for="preisProLiter" class="block text-sm font-medium text-base-content mb-2">
-                Preis pro Liter (€)
+            <div class="form-control">
+              <label for="preisProLiter" class="label">
+                <span class="label-text">Preis pro Liter (€)</span>
               </label>
               <input type="number" id="preisProLiter" step="0.01" required
                      value={tankfuellung.preisProLiter}
-                     class="input block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                     class="input input-bordered w-full">
             </div>
 
             <!-- Notizen -->
-            <div>
-              <label for="notizen" class="block text-sm font-medium text-base-content mb-2">
-                Notizen (optional)
+            <div class="form-control">
+              <label for="notizen" class="label">
+                <span class="label-text">Notizen (optional)</span>
               </label>
               <textarea id="notizen" rows="3"
-                        class="textarea block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        class="textarea textarea-bordered w-full"
                         placeholder="Zusätzliche Informationen...">{tankfuellung.notizen || ''}</textarea>
             </div>
 
             <div class="flex justify-end space-x-3">
-              <a href="/tankfuellungen" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md text-sm font-medium">
+              <a href="/tankfuellungen" class="btn btn-ghost">
                 Abbrechen
               </a>
-              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+              <button type="submit" class="btn btn-primary">
                 Speichern
               </button>
             </div>

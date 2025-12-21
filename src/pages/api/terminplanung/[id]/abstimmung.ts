@@ -121,6 +121,22 @@ export const POST: APIRoute = async (context) => {
       // Status-Update-Fehler ignorieren, Abstimmung war erfolgreich
     }
 
+    // lastSeenAt aktualisieren (User hat den Termin "gesehen")
+    await prisma.userTerminSeen.upsert({
+      where: {
+        userId_terminPlanungId: {
+          userId: user.id,
+          terminPlanungId: terminplanungId
+        }
+      },
+      update: { lastSeenAt: new Date() },
+      create: {
+        userId: user.id,
+        terminPlanungId: terminplanungId,
+        lastSeenAt: new Date()
+      }
+    });
+
     return new Response(JSON.stringify(abstimmung), {
       status: 200,
       headers: {

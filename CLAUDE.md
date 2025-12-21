@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **vacation home cost tracking and billing application** (Nutzerkosten-Abrechnung für Wohngemeinschaften) for managing shared housing costs. Built with Astro 5 (server-side rendering), Vue 3, Tailwind CSS 4, and MySQL/Prisma ORM.
+This is a **vacation home cost tracking and billing application** (Nutzerkosten-Abrechnung für Wohngemeinschaften) for managing shared housing costs. Built with Astro 5 (server-side rendering), Vue 3, Tailwind CSS 3, DaisyUI 4, and MySQL/Prisma ORM.
 
 **Key Features:**
 - User management with role-based authentication (ADMIN/USER)
@@ -227,7 +227,7 @@ API routes use:
 
 - **Astro pages** for server-rendered UI with islands architecture
 - **Vue 3 components** for interactive elements (charts, forms)
-- **Tailwind CSS 4** via Vite plugin (no separate config file needed)
+- **Tailwind CSS 3** + **DaisyUI 4** für UI-Komponenten (Design System)
 - **DaisyUI Design System** for consistent component styling
 - **Chart.js + vue-chartjs** for data visualization
 
@@ -309,7 +309,7 @@ DATABASE_URL="mysql://user:password@localhost:3306/nutzerkosten_db"
 
 ## Important Notes
 
-1. **Tailwind CSS 4**: Requires `--legacy-peer-deps` flag during installation due to peer dependency conflicts
+1. **Tailwind CSS 3 + DaisyUI 4**: Nutze DaisyUI-Klassen (`btn`, `input`, `card`, etc.) - KEINE Custom-Overrides in global.css!
 2. **Server Mode**: App uses `output: 'server'` with Node.js adapter in standalone mode for SSR
 3. **Database Migrations**: Always use `npx prisma migrate deploy` in production (not `migrate dev`)
 4. **Password Security**: Passwords must be 8+ characters with uppercase, lowercase, numbers, and special characters

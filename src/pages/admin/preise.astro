@@ -80,7 +80,7 @@ try {
           </h2>
           <button
             onclick="window.openCreatePriceModal()"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            class="btn btn-primary"
           >
             Neuen Preis hinzufügen
           </button>
@@ -88,27 +88,17 @@ try {
       </div>
       
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-base-300">
-          <thead class="bg-base-200">
+        <table class="table">
+          <thead>
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
-                Gültig ab
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
-                Mitglied (€/Nacht)
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
-                Gast (€/Nacht)
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
-                Erstellt
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
-                Aktionen
-              </th>
+              <th>Gültig ab</th>
+              <th>Mitglied (€/Nacht)</th>
+              <th>Gast (€/Nacht)</th>
+              <th>Erstellt</th>
+              <th>Aktionen</th>
             </tr>
           </thead>
-          <tbody id="preiseTableBody" class="bg-base-100 divide-y divide-base-300">
+          <tbody id="preiseTableBody">
             <!-- Wird durch JavaScript gefüllt -->
           </tbody>
         </table>
@@ -129,76 +119,46 @@ try {
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-base-300">
-          <thead class="bg-base-200">
+        <table class="table">
+          <thead>
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
-                Gültig ab (Zählerstand/Jahr)
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
-                Preis pro Liter (€/L)
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
-                Getankte Menge / Verbrauch
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
-                Quelle
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider" style="opacity: 0.7">
-                Zusatzinfo
-              </th>
+              <th>Gültig ab (Zählerstand/Jahr)</th>
+              <th>Preis pro Liter (€/L)</th>
+              <th>Getankte Menge / Verbrauch</th>
+              <th>Quelle</th>
+              <th>Zusatzinfo</th>
             </tr>
           </thead>
-          <tbody class="bg-base-100 divide-y divide-base-300">
+          <tbody>
             <!-- Tankfüllungen -->
             {tankfuellungen.map(tf => (
               <tr class="bg-info/10">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
-                  Ab Zählerstand {tf.zaehlerstand.toFixed(0)}h
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content font-semibold">
-                  € {tf.preisProLiter.toFixed(2)}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
-                  {tf.liter.toFixed(0)} Liter getankt
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="badge badge-info">
-                    Tankfüllung
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
-                  Datum: {new Date(tf.datum).toLocaleDateString('de-DE')}
-                </td>
+                <td class="font-medium">Ab Zählerstand {tf.zaehlerstand.toFixed(0)}h</td>
+                <td class="font-semibold">€ {tf.preisProLiter.toFixed(2)}</td>
+                <td>{tf.liter.toFixed(0)} Liter getankt</td>
+                <td><span class="badge badge-info">Tankfüllung</span></td>
+                <td>Datum: {new Date(tf.datum).toLocaleDateString('de-DE')}</td>
               </tr>
             ))}
 
             <!-- Berechnete Jahrespreise -->
             {preise.map(preis => (
               <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-                  Jahr {preis.jahr}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
-                  € {preis.oelpreisProLiter.toFixed(2)}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
-                  {preis.verbrauchProStunde.toFixed(1)} L/h
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td>Jahr {preis.jahr}</td>
+                <td>€ {preis.oelpreisProLiter.toFixed(2)}</td>
+                <td>{preis.verbrauchProStunde.toFixed(1)} L/h</td>
+                <td>
                   <span class={preis.istBerechnet ? 'badge badge-success' : 'badge badge-warning'}>
                     {preis.istBerechnet ? 'Berechnet' : 'Fallback'}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
-                  Übernachtung: 5€/10€
-                </td>
+                <td>Übernachtung: 5€/10€</td>
               </tr>
             ))}
 
             {tankfuellungen.length === 0 && preise.length === 0 && (
               <tr>
-                <td colspan="5" class="px-6 py-4 text-center text-sm text-base-content" style="opacity: 0.7">
+                <td colspan="5" class="text-center opacity-70">
                   Keine Preise vorhanden. Fallback-Werte gelten: 1.01€/L, 5.5 L/h, 5€/10€
                 </td>
               </tr>
@@ -210,143 +170,73 @@ try {
   </div>
 
   <!-- Modal für neuen Preis -->
-  <div id="createPriceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md card-container">
-      <div class="mt-3">
-        <h3 class="text-lg font-medium text-base-content mb-4">
-          Neuen Übernachtungspreis hinzufügen
-        </h3>
-        <form id="createPriceForm">
-          <div class="mb-4">
-            <label for="gueltigAb" class="block text-sm font-medium text-base-content mb-2">
-              Gültig ab
-            </label>
-            <input
-              type="date"
-              id="gueltigAb"
-              name="gueltigAb"
-              required
-              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
-            >
-          </div>
-          <div class="mb-4">
-            <label for="uebernachtungMitglied" class="block text-sm font-medium text-base-content mb-2">
-              Preis Mitglied (€/Nacht)
-            </label>
-            <input
-              type="number"
-              id="uebernachtungMitglied"
-              name="uebernachtungMitglied"
-              step="0.01"
-              min="0"
-              value="5"
-              required
-              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
-            >
-          </div>
-          <div class="mb-6">
-            <label for="uebernachtungGast" class="block text-sm font-medium text-base-content mb-2">
-              Preis Gast (€/Nacht)
-            </label>
-            <input
-              type="number"
-              id="uebernachtungGast"
-              name="uebernachtungGast"
-              step="0.01"
-              min="0"
-              value="10"
-              required
-              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
-            >
-          </div>
-          <div class="flex justify-end space-x-3">
-            <button
-              type="button"
-              onclick="window.closeCreatePriceModal()"
-              class="btn btn-ghost btn-sm"
-            >
-              Abbrechen
-            </button>
-            <button
-              type="submit"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Speichern
-            </button>
-          </div>
-        </form>
-      </div>
+  <dialog id="createPriceModal" class="modal">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold mb-4">Neuen Übernachtungspreis hinzufügen</h3>
+      <form id="createPriceForm" class="space-y-4">
+        <div class="form-control">
+          <label for="gueltigAb" class="label">
+            <span class="label-text">Gültig ab</span>
+          </label>
+          <input type="date" id="gueltigAb" name="gueltigAb" required class="input input-bordered w-full">
+        </div>
+        <div class="form-control">
+          <label for="uebernachtungMitglied" class="label">
+            <span class="label-text">Preis Mitglied (€/Nacht)</span>
+          </label>
+          <input type="number" id="uebernachtungMitglied" name="uebernachtungMitglied" step="0.01" min="0" value="5" required class="input input-bordered w-full">
+        </div>
+        <div class="form-control">
+          <label for="uebernachtungGast" class="label">
+            <span class="label-text">Preis Gast (€/Nacht)</span>
+          </label>
+          <input type="number" id="uebernachtungGast" name="uebernachtungGast" step="0.01" min="0" value="10" required class="input input-bordered w-full">
+        </div>
+        <div class="modal-action">
+          <button type="button" onclick="window.closeCreatePriceModal()" class="btn btn-ghost">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">Speichern</button>
+        </div>
+      </form>
     </div>
-  </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 
   <!-- Modal für Preis bearbeiten -->
-  <div id="editPriceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md card-container">
-      <div class="mt-3">
-        <h3 class="text-lg font-medium text-base-content mb-4">
-          Übernachtungspreis bearbeiten
-        </h3>
-        <form id="editPriceForm">
-          <input type="hidden" id="editPriceId" name="id">
-          <div class="mb-4">
-            <label for="editGueltigAb" class="block text-sm font-medium text-base-content mb-2">
-              Gültig ab
-            </label>
-            <input
-              type="date"
-              id="editGueltigAb"
-              name="gueltigAb"
-              required
-              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
-            >
-          </div>
-          <div class="mb-4">
-            <label for="editUebernachtungMitglied" class="block text-sm font-medium text-base-content mb-2">
-              Preis Mitglied (€/Nacht)
-            </label>
-            <input
-              type="number"
-              id="editUebernachtungMitglied"
-              name="uebernachtungMitglied"
-              step="0.01"
-              min="0"
-              required
-              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
-            >
-          </div>
-          <div class="mb-6">
-            <label for="editUebernachtungGast" class="block text-sm font-medium text-base-content mb-2">
-              Preis Gast (€/Nacht)
-            </label>
-            <input
-              type="number"
-              id="editUebernachtungGast"
-              name="uebernachtungGast"
-              step="0.01"
-              min="0"
-              required
-              class="input w-full rounded-md focus:ring-blue-500 focus:border-blue-500"
-            >
-          </div>
-          <div class="flex justify-end space-x-3">
-            <button
-              type="button"
-              onclick="window.closeEditPriceModal()"
-              class="btn btn-ghost btn-sm"
-            >
-              Abbrechen
-            </button>
-            <button
-              type="submit"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Aktualisieren
-            </button>
-          </div>
-        </form>
-      </div>
+  <dialog id="editPriceModal" class="modal">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold mb-4">Übernachtungspreis bearbeiten</h3>
+      <form id="editPriceForm" class="space-y-4">
+        <input type="hidden" id="editPriceId" name="id">
+        <div class="form-control">
+          <label for="editGueltigAb" class="label">
+            <span class="label-text">Gültig ab</span>
+          </label>
+          <input type="date" id="editGueltigAb" name="gueltigAb" required class="input input-bordered w-full">
+        </div>
+        <div class="form-control">
+          <label for="editUebernachtungMitglied" class="label">
+            <span class="label-text">Preis Mitglied (€/Nacht)</span>
+          </label>
+          <input type="number" id="editUebernachtungMitglied" name="uebernachtungMitglied" step="0.01" min="0" required class="input input-bordered w-full">
+        </div>
+        <div class="form-control">
+          <label for="editUebernachtungGast" class="label">
+            <span class="label-text">Preis Gast (€/Nacht)</span>
+          </label>
+          <input type="number" id="editUebernachtungGast" name="uebernachtungGast" step="0.01" min="0" required class="input input-bordered w-full">
+        </div>
+        <div class="modal-action">
+          <button type="button" onclick="window.closeEditPriceModal()" class="btn btn-ghost">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">Aktualisieren</button>
+        </div>
+      </form>
     </div>
-  </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 </ProtectedLayout>
 
 <script>
@@ -363,22 +253,22 @@ try {
 
   // Modal öffnen/schließen
   function openCreatePriceModal() {
-    document.getElementById('createPriceModal').classList.remove('hidden');
     // Heute als Standarddatum setzen
-    document.getElementById('gueltigAb').value = new Date().toISOString().split('T')[0];
+    (document.getElementById('gueltigAb') as HTMLInputElement).value = new Date().toISOString().split('T')[0];
+    (document.getElementById('createPriceModal') as HTMLDialogElement).showModal();
   }
 
   function closeCreatePriceModal() {
-    document.getElementById('createPriceModal').classList.add('hidden');
-    document.getElementById('createPriceForm').reset();
+    (document.getElementById('createPriceModal') as HTMLDialogElement).close();
+    (document.getElementById('createPriceForm') as HTMLFormElement).reset();
   }
 
   function openEditPriceModal() {
-    document.getElementById('editPriceModal').classList.remove('hidden');
+    (document.getElementById('editPriceModal') as HTMLDialogElement).showModal();
   }
 
   function closeEditPriceModal() {
-    document.getElementById('editPriceModal').classList.add('hidden');
+    (document.getElementById('editPriceModal') as HTMLDialogElement).close();
   }
 
   // Preise laden
@@ -404,7 +294,7 @@ try {
     if (allPreise.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="5" class="px-6 py-4 text-center text-sm text-base-content" style="opacity: 0.7">
+          <td colspan="5" class="text-center opacity-70">
             Keine Preise konfiguriert. Fallback-Werte gelten: 5€ (Mitglieder), 10€ (Gäste)
           </td>
         </tr>
@@ -414,31 +304,13 @@ try {
 
     tbody.innerHTML = allPreise.map(preis => `
       <tr>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${preis.gueltigAb ? new Date(preis.gueltigAb).toLocaleDateString('de-DE') : 'Jährlich'}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
-          € ${preis.uebernachtungMitglied.toFixed(2)}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
-          € ${preis.uebernachtungGast.toFixed(2)}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content" style="opacity: 0.7">
-          ${preis.createdAt ? new Date(preis.createdAt).toLocaleDateString('de-DE') : 'Unbekannt'}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-          <button
-            onclick="window.editPrice(${preis.jahr})"
-            class="text-blue-600 hover:text-blue-900 mr-3"
-          >
-            Bearbeiten
-          </button>
-          <button
-            onclick="window.deletePrice(${preis.jahr})"
-            class="text-red-600 hover:text-red-900"
-          >
-            Löschen
-          </button>
+        <td>${preis.gueltigAb ? new Date(preis.gueltigAb).toLocaleDateString('de-DE') : 'Jährlich'}</td>
+        <td>€ ${preis.uebernachtungMitglied.toFixed(2)}</td>
+        <td>€ ${preis.uebernachtungGast.toFixed(2)}</td>
+        <td>${preis.createdAt ? new Date(preis.createdAt).toLocaleDateString('de-DE') : 'Unbekannt'}</td>
+        <td>
+          <button onclick="window.editPrice(${preis.jahr})" class="btn btn-ghost btn-xs">Bearbeiten</button>
+          <button onclick="window.deletePrice(${preis.jahr})" class="btn btn-ghost btn-xs text-error">Löschen</button>
         </td>
       </tr>
     `).join('');

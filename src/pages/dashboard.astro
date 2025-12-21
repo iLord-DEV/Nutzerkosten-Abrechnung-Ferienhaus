@@ -25,6 +25,20 @@ if (!user) {
       </div>
     </div>
 
+    <!-- Pending Termine Alert -->
+    <div id="pending-termine-alert" class="hidden mb-6">
+      <div class="alert bg-warning/10 border-l-4 border-warning shadow">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-warning shrink-0">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+        </svg>
+        <div class="flex-1">
+          <h3 class="font-bold">Termine warten auf deine Abstimmung</h3>
+          <p id="pending-termine-text" class="text-sm opacity-80"></p>
+        </div>
+        <a href="/terminplanung" class="btn btn-warning btn-sm">Jetzt abstimmen</a>
+      </div>
+    </div>
+
     <!-- Temperatur-Anzeige -->
     <div class="card bg-base-100 shadow-xl mb-8">
       <div class="card-body">
@@ -607,17 +621,46 @@ if (!user) {
     }
   }
 
+  // Pending Termine Alert laden
+  async function loadPendingTermineAlert() {
+    try {
+      const response = await fetch('/api/terminplanung/pending');
+      if (response.ok) {
+        const data = await response.json();
+        const alertEl = document.getElementById('pending-termine-alert');
+        const textEl = document.getElementById('pending-termine-text');
+        if (alertEl && textEl) {
+          if (data.count > 0) {
+            const terminTitel = data.termine.map((t: any) => t.titel).join(', ');
+            textEl.textContent = `${data.count} Termin${data.count > 1 ? 'e' : ''}: ${terminTitel}`;
+            alertEl.classList.remove('hidden');
+          } else {
+            alertEl.classList.add('hidden');
+          }
+        }
+      }
+    } catch (error) {
+      // Alert-Fehler ist nicht kritisch
+    }
+  }
+
   // Event-Listener
   document.addEventListener('DOMContentLoaded', () => {
     loadUserInfo();
     loadTemperaturen();
     loadWetter();
+    loadPendingTermineAlert();
 
     // Temperaturen und Wetter alle 10 Minuten aktualisieren
     setInterval(() => {
       loadTemperaturen();
       loadWetter();
     }, 10 * 60 * 1000);
+
+    // Listen for pending termine changes (from Terminplanung page)
+    window.addEventListener('pending-termine-changed', () => {
+      loadPendingTermineAlert();
+    });
   });
 </script>
 </ProtectedLayout>

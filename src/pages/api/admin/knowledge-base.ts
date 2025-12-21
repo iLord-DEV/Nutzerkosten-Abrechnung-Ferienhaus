@@ -56,7 +56,7 @@ export const POST: APIRoute = async (context) => {
     await requireAdmin(context);
 
     const body = await context.request.json();
-    const { category, title, content, keywords, sourceType, sourceUrl, fileName } = body;
+    const { category, title, content, keywords, priority, sourceType, sourceUrl, fileName } = body;
 
     if (!category || !title || !content) {
       return new Response(
@@ -71,6 +71,7 @@ export const POST: APIRoute = async (context) => {
         title: title.trim(),
         content: content.trim(),
         keywords: keywords?.trim() || null,
+        priority: typeof priority === 'number' ? priority : 0,
         sourceType: sourceType || 'manual',
         sourceUrl: sourceUrl || null,
         fileName: fileName || null,

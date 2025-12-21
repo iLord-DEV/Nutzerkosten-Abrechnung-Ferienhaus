@@ -56,7 +56,7 @@ try {
 
         <div class="form-control">
           <label class="label cursor-pointer justify-start gap-3">
-            <input type="checkbox" id="checklist-active" class="checkbox" checked />
+            <input type="checkbox" id="checklist-active" class="checkbox checkbox-bordered border-base-content/30" checked />
             <span class="label-text">Aktiv (für User sichtbar)</span>
           </label>
         </div>
@@ -148,22 +148,27 @@ try {
       return;
     }
 
-    container.innerHTML = checklists.map(checklist => `
-      <div class="card bg-base-100 shadow">
+    container.innerHTML = checklists.map((checklist, index) => `
+      <div class="card bg-base-100 shadow sortable-checklist cursor-grab active:cursor-grabbing"
+           draggable="true"
+           data-checklist-id="${checklist.id}">
         <div class="card-body">
           <div class="flex items-start justify-between gap-4">
-            <div class="flex-1">
-              <div class="flex items-center gap-2">
-                <h2 class="card-title">${checklist.title}</h2>
-                ${!checklist.isActive ? '<span class="badge badge-ghost">Inaktiv</span>' : ''}
+            <div class="flex items-center gap-3 flex-1">
+              <span class="text-base-content/40 select-none text-xl drag-handle">⋮⋮</span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="card-title">${checklist.title}</h2>
+                  ${!checklist.isActive ? '<span class="badge badge-ghost">Inaktiv</span>' : ''}
+                </div>
+                ${checklist.description ? `<p class="text-base-content/70 text-sm mt-1">${checklist.description}</p>` : ''}
               </div>
-              ${checklist.description ? `<p class="text-base-content/70 text-sm mt-1">${checklist.description}</p>` : ''}
             </div>
             <div class="flex gap-2">
-              <button class="btn btn-sm btn-ghost" onclick="editChecklist(${checklist.id})">
+              <button class="btn btn-sm btn-ghost" onclick="editChecklist(${checklist.id}); event.stopPropagation();">
                 Bearbeiten
               </button>
-              <button class="btn btn-sm btn-error btn-outline" onclick="deleteChecklist(${checklist.id})">
+              <button class="btn btn-sm btn-error btn-outline" onclick="deleteChecklist(${checklist.id}); event.stopPropagation();">
                 Löschen
               </button>
             </div>
@@ -177,10 +182,15 @@ try {
                 + Punkt hinzufügen
               </button>
             </div>
-            <ul class="space-y-1">
+            <ul class="space-y-1 sortable-items" data-checklist-id="${checklist.id}">
               ${checklist.items.map(item => `
-                <li class="flex items-center justify-between bg-base-200 rounded px-3 py-2">
-                  <span class="text-sm">${item.text}</span>
+                <li class="flex items-center justify-between bg-base-200 rounded px-3 py-2 cursor-grab active:cursor-grabbing"
+                    draggable="true"
+                    data-item-id="${item.id}">
+                  <div class="flex items-center gap-2">
+                    <span class="text-base-content/40 select-none">⋮⋮</span>
+                    <span class="text-sm">${item.text}</span>
+                  </div>
                   <div class="flex gap-1">
                     <button class="btn btn-xs btn-ghost" onclick="editItem(${item.id}, ${checklist.id}, '${item.text.replace(/'/g, "\\'")}')">
                       ✏️
@@ -342,6 +352,238 @@ try {
       alert('Fehler beim Löschen');
     }
   }
+
+  // Drag and Drop für Items
+  let draggedItem: HTMLElement | null = null;
+  let draggedItemChecklistId: string | null = null;
+
+  // Drag and Drop für Checklisten
+  let draggedChecklist: HTMLElement | null = null;
+
+  function setupDragAndDrop() {
+    // Items innerhalb von Checklisten
+    document.querySelectorAll('.sortable-items').forEach(list => {
+      const items = list.querySelectorAll('li[draggable="true"]');
+
+      items.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+      });
+    });
+
+    // Checklisten selbst
+    document.querySelectorAll('.sortable-checklist').forEach(checklist => {
+      checklist.addEventListener('dragstart', handleChecklistDragStart);
+      checklist.addEventListener('dragend', handleChecklistDragEnd);
+      checklist.addEventListener('dragover', handleChecklistDragOver);
+      checklist.addEventListener('drop', handleChecklistDrop);
+      checklist.addEventListener('dragenter', handleChecklistDragEnter);
+      checklist.addEventListener('dragleave', handleChecklistDragLeave);
+    });
+  }
+
+  // Checklist Drag Handlers
+  function handleChecklistDragStart(e: DragEvent) {
+    // Nur wenn das Drag vom Handle oder Card startet, nicht von Items
+    const target = e.target as HTMLElement;
+    if (target.closest('.sortable-items')) {
+      return; // Items haben ihre eigene Logik
+    }
+
+    draggedChecklist = target.closest('.sortable-checklist') as HTMLElement;
+    if (draggedChecklist) {
+      draggedChecklist.classList.add('opacity-50');
+      e.dataTransfer!.effectAllowed = 'move';
+    }
+  }
+
+  function handleChecklistDragEnd(e: DragEvent) {
+    if (draggedChecklist) {
+      draggedChecklist.classList.remove('opacity-50');
+    }
+    document.querySelectorAll('.sortable-checklist').forEach(item => {
+      item.classList.remove('border-t-4', 'border-primary');
+    });
+    draggedChecklist = null;
+  }
+
+  function handleChecklistDragOver(e: DragEvent) {
+    if (!draggedChecklist) return;
+    e.preventDefault();
+    e.dataTransfer!.dropEffect = 'move';
+  }
+
+  function handleChecklistDragEnter(e: DragEvent) {
+    if (!draggedChecklist) return;
+    const target = (e.target as HTMLElement).closest('.sortable-checklist');
+    if (target && target !== draggedChecklist) {
+      target.classList.add('border-t-4', 'border-primary');
+    }
+  }
+
+  function handleChecklistDragLeave(e: DragEvent) {
+    if (!draggedChecklist) return;
+    const target = (e.target as HTMLElement).closest('.sortable-checklist');
+    if (target) {
+      target.classList.remove('border-t-4', 'border-primary');
+    }
+  }
+
+  function handleChecklistDrop(e: DragEvent) {
+    if (!draggedChecklist) return;
+    e.preventDefault();
+
+    const target = (e.target as HTMLElement).closest('.sortable-checklist');
+    if (!target || target === draggedChecklist) return;
+
+    const container = document.getElementById('checklists-container');
+    if (!container) return;
+
+    // Checklisten neu anordnen
+    const allChecklists = Array.from(container.querySelectorAll('.sortable-checklist'));
+    const draggedIndex = allChecklists.indexOf(draggedChecklist);
+    const targetIndex = allChecklists.indexOf(target);
+
+    if (draggedIndex < targetIndex) {
+      target.after(draggedChecklist);
+    } else {
+      target.before(draggedChecklist);
+    }
+
+    // Neue Reihenfolge speichern
+    saveChecklistOrder();
+  }
+
+  async function saveChecklistOrder() {
+    const container = document.getElementById('checklists-container');
+    if (!container) return;
+
+    const allChecklists = Array.from(container.querySelectorAll('.sortable-checklist'));
+    const orderedChecklists = allChecklists.map((item, index) => ({
+      id: parseInt(item.getAttribute('data-checklist-id') || '0'),
+      sortOrder: index + 1,
+    }));
+
+    try {
+      const response = await fetch('/api/admin/checklists/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'checklists', items: orderedChecklists }),
+      });
+
+      if (!response.ok) {
+        console.error('Fehler beim Speichern der Reihenfolge');
+        loadChecklists();
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+      loadChecklists();
+    }
+  }
+
+  function handleDragStart(e: DragEvent) {
+    draggedItem = e.target as HTMLElement;
+    draggedItemChecklistId = draggedItem.closest('.sortable-items')?.getAttribute('data-checklist-id') || null;
+    draggedItem.classList.add('opacity-50');
+    e.dataTransfer!.effectAllowed = 'move';
+  }
+
+  function handleDragEnd(e: DragEvent) {
+    if (draggedItem) {
+      draggedItem.classList.remove('opacity-50');
+    }
+    document.querySelectorAll('.sortable-items li').forEach(item => {
+      item.classList.remove('border-t-2', 'border-primary');
+    });
+    draggedItem = null;
+    draggedItemChecklistId = null;
+  }
+
+  function handleDragOver(e: DragEvent) {
+    e.preventDefault();
+    e.dataTransfer!.dropEffect = 'move';
+  }
+
+  function handleDragEnter(e: DragEvent) {
+    const target = (e.target as HTMLElement).closest('li[draggable="true"]');
+    if (target && target !== draggedItem) {
+      // Nur innerhalb derselben Checkliste erlauben
+      const targetChecklistId = target.closest('.sortable-items')?.getAttribute('data-checklist-id');
+      if (targetChecklistId === draggedItemChecklistId) {
+        target.classList.add('border-t-2', 'border-primary');
+      }
+    }
+  }
+
+  function handleDragLeave(e: DragEvent) {
+    const target = (e.target as HTMLElement).closest('li[draggable="true"]');
+    if (target) {
+      target.classList.remove('border-t-2', 'border-primary');
+    }
+  }
+
+  function handleDrop(e: DragEvent) {
+    e.preventDefault();
+    const target = (e.target as HTMLElement).closest('li[draggable="true"]');
+
+    if (!target || !draggedItem || target === draggedItem) return;
+
+    // Nur innerhalb derselben Checkliste erlauben
+    const targetChecklistId = target.closest('.sortable-items')?.getAttribute('data-checklist-id');
+    if (targetChecklistId !== draggedItemChecklistId) return;
+
+    const list = target.closest('.sortable-items');
+    if (!list) return;
+
+    // Items neu anordnen
+    const items = Array.from(list.querySelectorAll('li[draggable="true"]'));
+    const draggedIndex = items.indexOf(draggedItem);
+    const targetIndex = items.indexOf(target);
+
+    if (draggedIndex < targetIndex) {
+      target.after(draggedItem);
+    } else {
+      target.before(draggedItem);
+    }
+
+    // Neue Reihenfolge speichern
+    saveItemOrder(list as HTMLElement);
+  }
+
+  async function saveItemOrder(list: HTMLElement) {
+    const items = Array.from(list.querySelectorAll('li[draggable="true"]'));
+    const orderedItems = items.map((item, index) => ({
+      id: parseInt(item.getAttribute('data-item-id') || '0'),
+      sortOrder: index + 1,
+    }));
+
+    try {
+      const response = await fetch('/api/admin/checklists/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'items', items: orderedItems }),
+      });
+
+      if (!response.ok) {
+        console.error('Fehler beim Speichern der Reihenfolge');
+        loadChecklists(); // Bei Fehler neu laden
+      }
+    } catch (error) {
+      console.error('Fehler:', error);
+      loadChecklists();
+    }
+  }
+
+  // Nach dem Rendern Drag-and-Drop aktivieren
+  const originalRenderChecklists = renderChecklists;
+  renderChecklists = function() {
+    originalRenderChecklists();
+    setTimeout(setupDragAndDrop, 0);
+  };
 
   // Global functions
   (window as any).openCreateModal = openCreateModal;

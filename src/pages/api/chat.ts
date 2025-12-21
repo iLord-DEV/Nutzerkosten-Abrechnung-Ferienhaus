@@ -39,25 +39,15 @@ export const POST: APIRoute = async (context) => {
 
     const isAdmin = fullUser.role === 'ADMIN';
 
-    // Wissensdatenbank laden
+    // Wissensdatenbank laden (nach Priorität sortiert: höchste zuerst)
     const knowledgeEntries = await prisma.knowledgeBase.findMany({
       where: { isActive: true },
-      select: { category: true, title: true, content: true },
-    });
-
-    // Checklisten laden (für System-Prompt)
-    const checklists = await prisma.checklist.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        items: {
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
+      select: { category: true, title: true, content: true, priority: true },
+      orderBy: [{ priority: 'desc' }, { sortOrder: 'asc' }],
     });
 
     // System-Prompt bauen
-    const systemPrompt = buildSystemPrompt(knowledgeEntries, checklists, fullUser.name, isAdmin);
+    const systemPrompt = buildSystemPrompt(knowledgeEntries, fullUser.name, isAdmin);
 
     // Nachrichten-Verlauf aufbauen
     const messages: ChatMessage[] = conversationHistory || [];

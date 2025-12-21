@@ -79,7 +79,7 @@ export const PUT: APIRoute = async (context) => {
     }
 
     const body = await context.request.json();
-    const { category, title, content, keywords, isActive, sortOrder } = body;
+    const { category, title, content, keywords, priority, isActive, sortOrder } = body;
 
     const entry = await prisma.knowledgeBase.update({
       where: { id },
@@ -88,6 +88,7 @@ export const PUT: APIRoute = async (context) => {
         ...(title !== undefined && { title: title.trim() }),
         ...(content !== undefined && { content: content.trim() }),
         ...(keywords !== undefined && { keywords: keywords?.trim() || null }),
+        ...(priority !== undefined && { priority }),
         ...(isActive !== undefined && { isActive }),
         ...(sortOrder !== undefined && { sortOrder }),
       },
