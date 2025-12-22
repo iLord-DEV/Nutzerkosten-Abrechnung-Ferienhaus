@@ -175,36 +175,20 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
           Deine Aufenthalte im Detail
         </h3>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-base-300">
-            <thead class="bg-base-200">
+          <table class="table table-zebra table-responsive w-full">
+            <thead>
               <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Zeitraum
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Tage
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Brennerstunden gesamt
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Liter gesamt
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Liter/Tag
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Heizkosten gesamt
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Übernachtung
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Gesamt
-                </th>
+                <th>Zeitraum</th>
+                <th>Tage</th>
+                <th>Stunden</th>
+                <th>Liter</th>
+                <th>L/Tag</th>
+                <th>Heizkosten</th>
+                <th>Nächte</th>
+                <th>Gesamt</th>
               </tr>
             </thead>
-            <tbody id="aufenthalte-tbody" class="bg-base-100 divide-y divide-base-300">
+            <tbody id="aufenthalte-tbody">
               <!-- Wird dynamisch gefüllt -->
             </tbody>
           </table>
@@ -326,36 +310,20 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
 
         <!-- Detaillierte Tabelle -->
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-base-300">
-            <thead class="bg-base-200">
+          <table class="table table-zebra table-responsive w-full">
+            <thead>
               <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Zeitraum
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Monat
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Tage
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Brennerstunden
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Liter gesamt
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Liter/Tag
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Kosten
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
-                  Übergang
-                </th>
+                <th>Zeitraum</th>
+                <th>Monat</th>
+                <th>Tage</th>
+                <th>Stunden</th>
+                <th>Liter</th>
+                <th>L/Tag</th>
+                <th>Kosten</th>
+                <th>Übergang</th>
               </tr>
             </thead>
-            <tbody id="abwesenheit-tbody" class="bg-base-100 divide-y divide-base-300">
+            <tbody id="abwesenheit-tbody">
               <!-- Wird dynamisch gefüllt -->
             </tbody>
           </table>
@@ -582,30 +550,14 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
       
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${new Date(aufenthalt.ankunft).toLocaleDateString('de-DE')} - ${new Date(aufenthalt.abreise).toLocaleDateString('de-DE')}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${aufenthalt.tage}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${aufenthalt.brennerstunden.toFixed(1)} h
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${aufenthalt.verbrauchteLiter.toFixed(1)} L
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${literProTag.toFixed(1)} L
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          € ${aufenthalt.oelKosten.toFixed(2)}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          € ${aufenthalt.uebernachtungKosten.toFixed(2)}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
-          € ${aufenthalt.gesamtKosten.toFixed(2)}
-        </td>
+        <td data-label="Zeitraum">${new Date(aufenthalt.ankunft).toLocaleDateString('de-DE')} - ${new Date(aufenthalt.abreise).toLocaleDateString('de-DE')}</td>
+        <td data-label="Tage">${aufenthalt.tage}</td>
+        <td data-label="Stunden">${aufenthalt.brennerstunden.toFixed(1)} h</td>
+        <td data-label="Liter">${aufenthalt.verbrauchteLiter.toFixed(1)} L</td>
+        <td data-label="L/Tag">${literProTag.toFixed(1)} L</td>
+        <td data-label="Heizkosten">€ ${aufenthalt.oelKosten.toFixed(2)}</td>
+        <td data-label="Nächte">€ ${aufenthalt.uebernachtungKosten.toFixed(2)}</td>
+        <td data-label="Gesamt" class="font-medium">€ ${aufenthalt.gesamtKosten.toFixed(2)}</td>
       `;
       tbody.appendChild(row);
     });
@@ -614,32 +566,16 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
     const durchschnittLiterProTag = gesamtTage > 0 ? gesamtLiter / gesamtTage : 0;
     
     const summenRow = document.createElement('tr');
-    summenRow.className = 'bg-base-200 font-semibold';
+    summenRow.className = 'bg-base-200 font-semibold sum-row';
     summenRow.innerHTML = `
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-base-content">
-        GESAMT
-      </td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-base-content">
-        ${gesamtTage}
-      </td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-base-content">
-        ${gesamtBrennerstunden.toFixed(1)} h
-      </td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-base-content">
-        ${gesamtLiter.toFixed(1)} L
-      </td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-base-content">
-        ${durchschnittLiterProTag.toFixed(1)} L
-      </td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-base-content">
-        € ${gesamtHeizkosten.toFixed(2)}
-      </td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-base-content">
-        € ${gesamtUebernachtung.toFixed(2)}
-      </td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600 dark:text-blue-400">
-        € ${gesamtKosten.toFixed(2)}
-      </td>
+      <td data-label="" class="font-bold">GESAMT</td>
+      <td data-label="Tage" class="font-bold">${gesamtTage}</td>
+      <td data-label="Stunden" class="font-bold">${gesamtBrennerstunden.toFixed(1)} h</td>
+      <td data-label="Liter" class="font-bold">${gesamtLiter.toFixed(1)} L</td>
+      <td data-label="L/Tag" class="font-bold">${durchschnittLiterProTag.toFixed(1)} L</td>
+      <td data-label="Heizkosten" class="font-bold">€ ${gesamtHeizkosten.toFixed(2)}</td>
+      <td data-label="Nächte" class="font-bold">€ ${gesamtUebernachtung.toFixed(2)}</td>
+      <td data-label="Gesamt" class="font-bold text-primary">€ ${gesamtKosten.toFixed(2)}</td>
     `;
     tbody.appendChild(summenRow);
   }
@@ -687,30 +623,14 @@ import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
     data.absenceConsumption.forEach((periode: any) => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${periode.periode}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${periode.monat}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${periode.tage}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${periode.brennerstunden.toFixed(1)} h
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${periode.liter.toFixed(1)} L
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          ${periode.literProTag.toFixed(1)} L/Tag
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content">
-          € ${periode.kosten.toFixed(2)}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-          ${periode.letzterNutzer} → ${periode.naechsterNutzer}
-        </td>
+        <td data-label="Zeitraum">${periode.periode}</td>
+        <td data-label="Monat">${periode.monat}</td>
+        <td data-label="Tage">${periode.tage}</td>
+        <td data-label="Stunden">${periode.brennerstunden.toFixed(1)} h</td>
+        <td data-label="Liter">${periode.liter.toFixed(1)} L</td>
+        <td data-label="L/Tag">${periode.literProTag.toFixed(1)} L/Tag</td>
+        <td data-label="Kosten">€ ${periode.kosten.toFixed(2)}</td>
+        <td data-label="Übergang" class="text-base-content/60">${periode.letzterNutzer} → ${periode.naechsterNutzer}</td>
       `;
       tbody.appendChild(row);
     });

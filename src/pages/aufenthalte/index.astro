@@ -94,7 +94,7 @@ const session = JSON.parse(sessionCookie.value);
     <!-- Aufenthalte-Tabelle -->
     <Card className="w-full overflow-x-auto">
       <div class="w-full">
-        <table class="table table-zebra w-full">
+        <table class="table table-zebra table-responsive w-full">
           <thead>
             <tr>
               {session.role === 'ADMIN' && <th>Benutzer</th>}
@@ -768,7 +768,7 @@ const session = JSON.parse(sessionCookie.value);
 
       row.innerHTML = `
         ${isAdminUser ? `
-          <td>
+          <td data-label="Benutzer">
             <div class="flex items-center gap-3">
               <div class="avatar ${aufenthalt.user.profileImage ? '' : 'placeholder'}">
                 ${aufenthalt.user.profileImage
@@ -787,26 +787,26 @@ const session = JSON.parse(sessionCookie.value);
             </div>
           </td>
         ` : ''}
-        <td>
+        <td data-label="Zeitraum">
           <div class="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-base-content/70">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-base-content/70 hidden md:block">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
             </svg>
             <span>${ankunft} → ${abreise}</span>
           </div>
         </td>
-        <td>
+        <td data-label="Zählerstand">
           <div class="font-mono text-sm">
             ${zaehlerStart}h → ${zaehlerEnde}h
             <div class="text-xs text-base-content/70">${verbrauchteStunden}h verbraucht</div>
           </div>
         </td>
-        <td>
+        <td data-label="Kosten">
           <div class="text-lg font-bold text-primary" id="total-costs-${aufenthalt.id}">
             €${aufenthaltKosten.toFixed(2)}
           </div>
         </td>
-        <td class="text-center">
+        <td data-label="" class="text-center">
           <svg id="chevron-${aufenthalt.id}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 transition-transform inline-block text-base-content/70">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
           </svg>
@@ -818,7 +818,7 @@ const session = JSON.parse(sessionCookie.value);
       // Details-Zeile (aufklappbar)
       const detailsRow = document.createElement('tr');
       detailsRow.id = `details-${aufenthalt.id}`;
-      detailsRow.className = 'hidden';
+      detailsRow.className = 'hidden details-row';
 
       detailsRow.innerHTML = `
         <td colspan="${isAdminUser ? '5' : '4'}" class="bg-base-200/50">
@@ -978,10 +978,10 @@ const session = JSON.parse(sessionCookie.value);
 
     // Summenzeile
     const summenRow = document.createElement('tr');
-    summenRow.className = 'font-bold bg-base-300';
+    summenRow.className = 'font-bold bg-base-300 sum-row';
     summenRow.innerHTML = `
-      ${isAdminUser ? '<td></td>' : ''}
-      <td colspan="2" class="text-right">
+      ${isAdminUser ? '<td data-label="" class="hidden md:table-cell"></td>' : ''}
+      <td data-label="" colspan="2" class="text-right">
         <div class="flex items-center justify-end gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
@@ -989,8 +989,8 @@ const session = JSON.parse(sessionCookie.value);
           GESAMT
         </div>
       </td>
-      <td class="text-xl text-primary">€${gesamtKosten.toFixed(2)}</td>
-      <td></td>
+      <td data-label="Gesamt" class="text-xl text-primary">€${gesamtKosten.toFixed(2)}</td>
+      <td data-label="" class="hidden md:table-cell"></td>
     `;
     tbody.appendChild(summenRow);
 
