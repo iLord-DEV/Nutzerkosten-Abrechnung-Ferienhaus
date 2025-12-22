@@ -131,5 +131,6 @@ export function berechneOelkostenNachZaehlerstand(
     return sum + kosten;
   }, 0);
 
-  return gesamtKosten;
+  // Auf 2 Dezimalstellen runden, um Rundungsfehler bei Summenbildung zu vermeiden
+  return Math.round(gesamtKosten * 100) / 100;
 }

@@ -1,19 +1,9 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../utils/auth';
+import { berechneOelkostenNachZaehlerstand, type Tankfuellung } from '../../utils/kostenberechnung';
 
 const prisma = new PrismaClient();
-
-// Hilfsfunktion: Verbrauch zwischen zwei Zählerständen berechnen
-function calculateConsumptionBetweenReadings(startReading: number, endReading: number, zaehlerId: number, zaehlerAbreiseId: number | null, verbrauchProStunde: number = 5.5): number {
-  const brennerstunden = endReading - startReading;
-  if (zaehlerId !== zaehlerAbreiseId) {
-    // Zählerwechsel - vereinfachte Berechnung
-    // In der Praxis sollte hier der letzte Stand des alten Zählers ermittelt werden
-    return brennerstunden * verbrauchProStunde;
-  }
-  return brennerstunden * verbrauchProStunde;
-}
 
 // Hilfsfunktion: Alle Abwesenheitsverbräuche berechnen (alle Nutzer)
 async function calculateAllAbsenceConsumption(jahr: number, tankfuellungen: any[], preise: any, prismaClient: PrismaClient) {
@@ -121,21 +111,21 @@ async function calculateAllAbsenceConsumption(jahr: number, tankfuellungen: any[
 }
 
 // Hilfsfunktion: Durchschnittswerte aller anderen User berechnen
-async function calculateReferenceValues(userId: number, jahr: number) {
+async function calculateReferenceValues(userId: number, jahr: number, tankfuellungen: Tankfuellung[]) {
   const otherUsersAufenthalte = await prisma.aufenthalt.findMany({
     where: {
       jahr: jahr,
       userId: { not: userId }
     },
     include: {
-      user: { select: { name: true } }
+      user: { select: { name: true, beguenstigt: true } }
     }
   });
-  
+
   const preise = await prisma.preise.findUnique({
     where: { jahr: jahr }
   });
-  
+
   if (otherUsersAufenthalte.length === 0) {
     return {
       durchschnittVerbrauchProTag: 0,
@@ -144,35 +134,38 @@ async function calculateReferenceValues(userId: number, jahr: number) {
       anzahlAndereUser: 0
     };
   }
-  
+
   let totalVerbrauch = 0;
   let totalKosten = 0;
   let totalTage = 0;
-  
+
   otherUsersAufenthalte.forEach(aufenthalt => {
-    const verbrauchteLiter = calculateConsumptionBetweenReadings(
+    const brennerstunden = aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft;
+    const verbrauchProStunde = preise?.verbrauchProStunde || 5.5;
+    const verbrauchteLiter = brennerstunden * verbrauchProStunde;
+
+    const tage = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
+
+    // Ölkosten mit korrekter segment-basierter Berechnung
+    const oelKosten = berechneOelkostenNachZaehlerstand(
       aufenthalt.zaehlerAnkunft,
       aufenthalt.zaehlerAbreise,
-      aufenthalt.zaehlerId || 0,
-      aufenthalt.zaehlerAbreiseId,
-      preise?.verbrauchProStunde || 5.5
+      tankfuellungen
     );
-    
-    const tage = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
-    
-    const oelKosten = verbrauchteLiter * (preise?.oelpreisProLiter || 1.01);
-    const uebernachtungKosten = (
+
+    const naechteBerechnen = aufenthalt.naechteBerechnen ?? !aufenthalt.user.beguenstigt;
+    const uebernachtungKosten = naechteBerechnen ? (
       aufenthalt.uebernachtungenMitglieder * (preise?.uebernachtungMitglied || 5) +
       aufenthalt.uebernachtungenGaeste * (preise?.uebernachtungGast || 10)
-    );
-    
+    ) : 0;
+
     totalVerbrauch += verbrauchteLiter;
     totalKosten += oelKosten + uebernachtungKosten;
     totalTage += tage;
   });
-  
+
   const uniqueUsers = new Set(otherUsersAufenthalte.map(a => a.userId)).size;
-  
+
   return {
     durchschnittVerbrauchProTag: totalTage > 0 ? totalVerbrauch / totalTage : 0,
     durchschnittVerbrauchProAufenthalt: otherUsersAufenthalte.length > 0 ? totalVerbrauch / otherUsersAufenthalte.length : 0,
@@ -275,13 +268,22 @@ export const GET: APIRoute = async (context) => {
       where: { jahr: parseInt(jahr) },
     });
 
+    // Tankfüllungen für berechneOelkostenNachZaehlerstand vorbereiten
+    const tfForCalc: Tankfuellung[] = tankfuellungen.map(tf => ({
+      id: tf.id,
+      zaehlerstand: tf.zaehlerstand,
+      liter: tf.liter,
+      preisProLiter: tf.preisProLiter,
+      datum: tf.datum
+    }));
+
     // Referenzwerte berechnen (nur wenn User seine eigenen Daten sieht)
     const referenceValues = showAlleUser ? {
       durchschnittVerbrauchProTag: 0,
       durchschnittVerbrauchProAufenthalt: 0,
       durchschnittKostenProAufenthalt: 0,
       anzahlAndereUser: 0
-    } : await calculateReferenceValues(user.id, parseInt(jahr));
+    } : await calculateReferenceValues(user.id, parseInt(jahr), tfForCalc);
 
     // Abwesenheitsverbrauch berechnen (alle Nutzer)
     // console.log('🚀 Starte Abwesenheitsberechnung für Jahr:', jahr);
@@ -289,22 +291,24 @@ export const GET: APIRoute = async (context) => {
     // console.log('✅ Abwesenheitsberechnung abgeschlossen:', absenceData);
 
     // Detaillierte Aufenthaltsstatistiken berechnen
+
     const aufenthaltsDetails = aufenthalte.map(aufenthalt => {
-      const verbrauchteLiter = calculateConsumptionBetweenReadings(
-        aufenthalt.zaehlerAnkunft,
-        aufenthalt.zaehlerAbreise,
-        aufenthalt.zaehlerId || 0,
-        aufenthalt.zaehlerAbreiseId,
-        preise?.verbrauchProStunde || 5.5
-      );
-      
-      const tage = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
-      const verbrauchProTag = tage > 0 ? verbrauchteLiter / tage : 0;
-      
       // Brennerstunden berechnen (Zählerstand Ende - Zählerstand Anfang)
       const brennerstunden = aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft;
-      
-      const oelKosten = verbrauchteLiter * (preise?.oelpreisProLiter || 1.01);
+
+      // Ölkosten mit korrekter segment-basierter Berechnung (wie auf Aufenthalte-Seite)
+      const oelKosten = berechneOelkostenNachZaehlerstand(
+        aufenthalt.zaehlerAnkunft,
+        aufenthalt.zaehlerAbreise,
+        tfForCalc
+      );
+
+      // Verbrauchte Liter rückrechnen für Statistik (Näherung basierend auf Durchschnitt)
+      const verbrauchProStunde = preise?.verbrauchProStunde || 5.5;
+      const verbrauchteLiter = brennerstunden * verbrauchProStunde;
+
+      const tage = Math.ceil((new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) / (1000 * 60 * 60 * 24));
+      const verbrauchProTag = tage > 0 ? verbrauchteLiter / tage : 0;
 
       // Übernachtungskosten nur berechnen wenn naechteBerechnen true ist
       // null = User-Status entscheidet (begünstigt=false, normal=true)
