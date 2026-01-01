@@ -1304,9 +1304,12 @@ const session = JSON.parse(sessionCookie.value);
         alleTankfuellungen
       );
 
-      // Übernachtungskosten berechnen (nur wenn naechteBerechnen nicht explizit false ist)
-      const sollBerechnen = (aufenthalt as any).naechteBerechnen !== false;
-      const uebernachtungKosten = sollBerechnen ? (
+      // Übernachtungskosten berechnen (identische Logik wie in renderAufenthalte)
+      // naechteBerechnen === true → IMMER berechnen (auch wenn begünstigt)
+      // naechteBerechnen === false → NIEMALS berechnen
+      // naechteBerechnen === null/undefined → User-Status entscheidet (!beguenstigt)
+      const naechteBerechnen = (aufenthalt as any).naechteBerechnen ?? !(aufenthalt as any).user?.beguenstigt;
+      const uebernachtungKosten = naechteBerechnen ? (
         ((aufenthalt as any).uebernachtungenMitglieder || 0) * (currentPreise.uebernachtungMitglied || 5) +
         ((aufenthalt as any).uebernachtungenGaeste || 0) * (currentPreise.uebernachtungGast || 10)
       ) : 0;
