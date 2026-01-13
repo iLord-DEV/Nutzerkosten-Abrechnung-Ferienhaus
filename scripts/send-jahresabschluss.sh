@@ -5,16 +5,26 @@
 # Sendet am 1. Februar automatisch die Jahresabschluss-Emails
 # für das vergangene Jahr an alle User.
 #
+# VORAUSSETZUNG:
+# - CRON_ADMIN_TOKEN muss in .env.docker auf dem Pi gesetzt sein
+# - Das gleiche Token wird hier als Umgebungsvariable verwendet
+#
 # Installation (auf dem Pi):
-# 1. Dieses Script ausführbar machen: chmod +x scripts/send-jahresabschluss.sh
-# 2. Crontab editieren: crontab -e
-# 3. Folgende Zeile hinzufügen:
-#    0 9 1 2 * /path/to/astro-app/scripts/send-jahresabschluss.sh >> /var/log/jahresabschluss.log 2>&1
+# 1. Token in .env.docker setzen (falls noch nicht vorhanden):
+#    openssl rand -hex 32
+#    → In .env.docker als CRON_ADMIN_TOKEN eintragen
+#
+# 2. Dieses Script ausführbar machen:
+#    chmod +x scripts/send-jahresabschluss.sh
+#
+# 3. Crontab editieren: crontab -e
+#    Folgende Zeile hinzufügen:
+#    0 9 1 2 * CRON_ADMIN_TOKEN="dein-token" /home/nutzerkosten/astro-app/scripts/send-jahresabschluss.sh >> /var/log/jahresabschluss.log 2>&1
 #    (Sendet am 1. Februar um 9:00 Uhr)
 #
 # Manueller Test:
-#   ./scripts/send-jahresabschluss.sh --test user@example.com
-#   ./scripts/send-jahresabschluss.sh --preview
+#   CRON_ADMIN_TOKEN="dein-token" ./scripts/send-jahresabschluss.sh --preview
+#   CRON_ADMIN_TOKEN="dein-token" ./scripts/send-jahresabschluss.sh --test user@example.com
 #
 
 set -e
@@ -23,7 +33,12 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(dirname "$SCRIPT_DIR")"
 APP_URL="${APP_URL:-http://localhost:3002}"
-ADMIN_TOKEN="${JAHRESABSCHLUSS_ADMIN_TOKEN:-}"
+CRON_TOKEN="${CRON_ADMIN_TOKEN:-}"
+
+# Token prüfen
+if [ -z "$CRON_TOKEN" ]; then
+    error_exit "CRON_ADMIN_TOKEN Umgebungsvariable nicht gesetzt!"
+fi
 
 # Jahr für den Abschluss (vergangenes Jahr)
 YEAR=$(($(date +%Y) - 1))
@@ -101,7 +116,7 @@ if [ "$PREVIEW_MODE" = true ]; then
 
     response=$(curl -s -X GET "${APP_URL}/api/admin/send-jahresabschluss?jahr=${YEAR}" \
         -H "Content-Type: application/json" \
-        -H "Cookie: session=${ADMIN_SESSION_COOKIE:-}")
+        -H "X-Cron-Token: ${CRON_TOKEN}")
 
     echo "$response" | jq '.' 2>/dev/null || echo "$response"
     exit 0
@@ -117,7 +132,7 @@ if [ "$TEST_MODE" = true ]; then
 
     response=$(curl -s -X POST "${APP_URL}/api/admin/send-jahresabschluss" \
         -H "Content-Type: application/json" \
-        -H "Cookie: session=${ADMIN_SESSION_COOKIE:-}" \
+        -H "X-Cron-Token: ${CRON_TOKEN}" \
         -d "{\"jahr\": ${YEAR}, \"testMode\": true, \"testEmail\": \"${TEST_EMAIL}\"}")
 
     echo "$response" | jq '.' 2>/dev/null || echo "$response"
@@ -129,7 +144,7 @@ log "Modus: Produktion - Emails werden versendet!"
 
 response=$(curl -s -X POST "${APP_URL}/api/admin/send-jahresabschluss" \
     -H "Content-Type: application/json" \
-    -H "Cookie: session=${ADMIN_SESSION_COOKIE:-}" \
+    -H "X-Cron-Token: ${CRON_TOKEN}" \
     -d "{\"jahr\": ${YEAR}}")
 
 echo "$response" | jq '.' 2>/dev/null || echo "$response"

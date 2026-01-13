@@ -1,10 +1,28 @@
-import type { APIRoute } from 'astro';
+import type { APIRoute, APIContext } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin } from '../../../utils/auth';
 import { sendJahresabschlussEmail } from '../../../utils/email';
 import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
 
 const prisma = new PrismaClient();
+
+/**
+ * Validates admin access via session OR cron token
+ * Returns true if authenticated via token (skip CSRF), false if via session
+ */
+async function validateAdminOrToken(context: APIContext): Promise<boolean> {
+  const cronToken = context.request.headers.get('X-Cron-Token');
+  const expectedToken = import.meta.env.CRON_ADMIN_TOKEN;
+
+  // Token auth for cron jobs
+  if (cronToken && expectedToken && cronToken === expectedToken) {
+    return true; // Authenticated via token
+  }
+
+  // Fallback to session auth
+  await requireAdmin(context);
+  return false; // Authenticated via session
+}
 
 interface UserStatistik {
   userId: number;
@@ -98,8 +116,11 @@ async function calculateUserStatistik(userId: number, jahr: number): Promise<Use
  */
 export const POST: APIRoute = async (context) => {
   try {
-    await validateCsrf(context);
-    await requireAdmin(context);
+    // Token auth skips CSRF (cron jobs don't have CSRF tokens)
+    const isTokenAuth = await validateAdminOrToken(context);
+    if (!isTokenAuth) {
+      await validateCsrf(context);
+    }
 
     const body = await context.request.json();
     const { jahr, testMode, testEmail } = body;
@@ -216,7 +237,7 @@ export const POST: APIRoute = async (context) => {
  */
 export const GET: APIRoute = async (context) => {
   try {
-    await requireAdmin(context);
+    await validateAdminOrToken(context);
 
     const url = new URL(context.request.url);
     const jahr = url.searchParams.get('jahr') || String(new Date().getFullYear() - 1);
