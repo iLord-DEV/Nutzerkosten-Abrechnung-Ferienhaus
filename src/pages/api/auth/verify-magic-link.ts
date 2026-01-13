@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { verifyMagicLinkToken } from '../../../utils/magicLink';
+import { createSession } from '../../../utils/session';
 
 const prisma = new PrismaClient();
 
@@ -41,6 +42,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         email: true,
         role: true,
         beguenstigt: true,
+        isKind: true,
+        profileImage: true,
       },
     });
 
@@ -54,23 +57,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Session-Cookie setzen (gleiche Logik wie bei altem Password-Login)
-    const sessionData = {
-      userId: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      beguenstigt: user.beguenstigt,
-      loggedIn: true,
-    };
-
-    cookies.set('session', JSON.stringify(sessionData), {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 31, // 31 Tage
-    });
+    // Sichere DB-Session erstellen (Cookie enthält nur Session-ID!)
+    const session = await createSession(user.id, cookies);
 
     return new Response(
       JSON.stringify({
@@ -82,6 +70,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           role: user.role,
           beguenstigt: user.beguenstigt,
         },
+        // CSRF token for frontend to use in requests
+        csrfToken: session.csrfToken,
         redirectTo: user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard',
       }),
       {

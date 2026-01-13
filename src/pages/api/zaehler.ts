@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin } from '../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../utils/csrf';
 
 const prisma = new PrismaClient();
 
@@ -66,6 +67,8 @@ export const GET: APIRoute = async (context) => {
 // Neuen Zähler erstellen
 export const POST: APIRoute = async (context) => {
   try {
+    // CSRF-Validierung
+    await validateCsrf(context);
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
@@ -130,8 +133,11 @@ export const POST: APIRoute = async (context) => {
       },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Erstellen des Zählers:', error);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: 'Fehler beim Erstellen des Zählers',
       details: error instanceof Error ? error.message : String(error)
     }), {

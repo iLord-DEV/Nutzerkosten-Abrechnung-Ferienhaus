@@ -271,11 +271,8 @@ try {
     };
 
     try {
-      const response = await fetch('/api/profil', {
+      const response = await (window as any).csrfFetch('/api/profil', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(userData),
       });
 
@@ -300,7 +297,7 @@ try {
     formData.append('image', file);
 
     try {
-      const response = await fetch('/api/profil/image', {
+      const response = await (window as any).csrfFetch('/api/profil/image', {
         method: 'POST',
         body: formData,
       });
@@ -332,7 +329,7 @@ try {
   // Profilbild entfernen
   async function removeProfileImage() {
     try {
-      const response = await fetch('/api/profil/image', {
+      const response = await (window as any).csrfFetch('/api/profil/image', {
         method: 'DELETE',
       });
 
@@ -374,11 +371,8 @@ try {
     const notifyTermine = (document.getElementById('notify-termine') as HTMLInputElement)?.checked;
 
     try {
-      const response = await fetch('/api/profil', {
+      const response = await (window as any).csrfFetch('/api/profil', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           email: currentUser?.email,
           username: currentUser?.username,
@@ -542,9 +536,8 @@ try {
       });
 
       // Subscription an Backend senden
-      const response = await fetch('/api/push/subscribe', {
+      const response = await (window as any).csrfFetch('/api/push/subscribe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           endpoint: pushSubscription.endpoint,
           keys: {
@@ -599,9 +592,8 @@ try {
     try {
       if (pushSubscription) {
         // Vom Backend abmelden
-        await fetch('/api/push/subscribe', {
+        await (window as any).csrfFetch('/api/push/subscribe', {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ endpoint: pushSubscription.endpoint })
         });
 

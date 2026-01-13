@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin, requireAuth } from '../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../utils/csrf';
 
 const prisma = new PrismaClient();
 
@@ -48,8 +49,14 @@ export const GET: APIRoute = async (context) => {
       });
     }
 
-    // Admin-Seite: Alle Preise mit gueltigAb abrufen
+    // Admin-Seite: Alle Preise mit gueltigAb abrufen (NUR für Admins!)
     if (alle === 'true') {
+      if (user.role !== 'ADMIN') {
+        return new Response(JSON.stringify({ error: 'Keine Berechtigung' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       const allePreise = await prisma.preise.findMany({
         where: {
           gueltigAb: {
@@ -127,6 +134,8 @@ export const GET: APIRoute = async (context) => {
 // POST: Neuen Preis erstellen
 export const POST: APIRoute = async (context) => {
   try {
+    // CSRF-Validierung
+    await validateCsrf(context);
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
@@ -168,6 +177,9 @@ export const POST: APIRoute = async (context) => {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Erstellen des Preises:', error);
     return new Response(JSON.stringify({ error: 'Fehler beim Erstellen des Preises' }), {
       status: 500,
@@ -179,6 +191,8 @@ export const POST: APIRoute = async (context) => {
 // PUT: Preis aktualisieren
 export const PUT: APIRoute = async (context) => {
   try {
+    // CSRF-Validierung
+    await validateCsrf(context);
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request, url } = context;
@@ -214,6 +228,9 @@ export const PUT: APIRoute = async (context) => {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Aktualisieren des Preises:', error);
     return new Response(JSON.stringify({ error: 'Fehler beim Aktualisieren des Preises' }), {
       status: 500,
@@ -225,6 +242,8 @@ export const PUT: APIRoute = async (context) => {
 // DELETE: Preis löschen
 export const DELETE: APIRoute = async (context) => {
   try {
+    // CSRF-Validierung
+    await validateCsrf(context);
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request, url } = context;
@@ -257,9 +276,12 @@ export const DELETE: APIRoute = async (context) => {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Löschen des Preises:', error);
-    
-    if (error.code === 'P2025') {
+
+    if ((error as any).code === 'P2025') {
       return new Response(JSON.stringify({ error: 'Preis nicht gefunden' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' }

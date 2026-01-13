@@ -1,12 +1,14 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin } from '../../../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../../../utils/csrf';
 
 const prisma = new PrismaClient();
 
 // POST: Item zu Checkliste hinzufügen
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     await requireAdmin(context);
 
     const checklistId = parseInt(context.params.id || '');
@@ -58,6 +60,9 @@ export const POST: APIRoute = async (context) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler:', error);
     return new Response(JSON.stringify({ error: 'Interner Serverfehler' }), {
       status: 500,

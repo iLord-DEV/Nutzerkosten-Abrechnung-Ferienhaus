@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { PrismaClient } from "@prisma/client";
 import { requireAdmin } from "../../utils/auth";
+import { validateCsrf, CsrfError, csrfErrorResponse } from "../../utils/csrf";
 
 const prisma = new PrismaClient();
 
@@ -43,6 +44,7 @@ export const GET: APIRoute = async (context) => {
 
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
@@ -108,6 +110,11 @@ export const POST: APIRoute = async (context) => {
     });
   } catch (error) {
     console.error("Fehler beim Erstellen des Benutzers:", error);
+
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
+
     return new Response(JSON.stringify({ error: "Interner Server-Fehler" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -117,6 +124,7 @@ export const POST: APIRoute = async (context) => {
 
 export const PUT: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
@@ -152,6 +160,11 @@ export const PUT: APIRoute = async (context) => {
     });
   } catch (error) {
     console.error("Fehler beim Aktualisieren des Benutzers:", error);
+
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
+
     return new Response(JSON.stringify({ error: "Interner Server-Fehler" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -161,6 +174,7 @@ export const PUT: APIRoute = async (context) => {
 
 export const DELETE: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { request } = context;
@@ -186,6 +200,11 @@ export const DELETE: APIRoute = async (context) => {
     });
   } catch (error) {
     console.error("Fehler beim Löschen des Benutzers:", error);
+
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
+
     return new Response(JSON.stringify({ error: "Interner Server-Fehler" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

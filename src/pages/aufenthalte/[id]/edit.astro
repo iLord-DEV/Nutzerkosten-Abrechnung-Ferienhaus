@@ -1,13 +1,12 @@
 ---
 import ProtectedLayout from '../../../layouts/ProtectedLayout.astro';
+import { getUser } from '../../../utils/auth';
 
 // Zugriffskontrolle
-const sessionCookie = Astro.cookies.get('session');
-if (!sessionCookie) {
+const user = await getUser(Astro);
+if (!user) {
   return Astro.redirect('/login');
 }
-
-const session = JSON.parse(sessionCookie.value);
 const { id } = Astro.params;
 
 // Aufenthalt laden
@@ -35,7 +34,7 @@ try {
   await prisma.$disconnect();
   
   // Normale Benutzer können nur ihre eigenen Aufenthalte bearbeiten
-  if (session.role !== 'ADMIN' && aufenthalt?.userId !== session.userId) {
+  if (user.role !== 'ADMIN' && aufenthalt?.userId !== user.id) {
     return Astro.redirect('/aufenthalte');
   }
 } catch (error) {
@@ -73,7 +72,7 @@ if (!aufenthalt) {
           <input type="hidden" id="aufenthalt-user-beguenstigt" value={aufenthalt.user.beguenstigt ? 'true' : 'false'}>
 
           <!-- Benutzer-Auswahl (nur für Admins) -->
-          {session.role === 'ADMIN' && (
+          {user.role === 'ADMIN' && (
             <div class="form-control w-full">
               <label class="label" for="userId">
                 <span class="label-text">Benutzer *</span>

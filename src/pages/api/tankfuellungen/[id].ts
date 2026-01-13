@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin } from '../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
 
 const prisma = new PrismaClient();
 
@@ -8,6 +9,8 @@ export const PUT: APIRoute = async (context) => {
   try {
     console.log('🔍 PUT /api/tankfuellungen/[id] - Start');
 
+    // CSRF-Validierung
+    await validateCsrf(context);
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { params, request } = context;
@@ -107,8 +110,11 @@ export const PUT: APIRoute = async (context) => {
       },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Aktualisieren der Tankfüllung:', error);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: 'Fehler beim Aktualisieren der Tankfüllung',
       details: error instanceof Error ? error.message : String(error)
     }), {
@@ -122,6 +128,8 @@ export const PUT: APIRoute = async (context) => {
 
 export const DELETE: APIRoute = async (context) => {
   try {
+    // CSRF-Validierung
+    await validateCsrf(context);
     // Admin-Berechtigung prüfen
     await requireAdmin(context);
     const { params } = context;
@@ -151,6 +159,9 @@ export const DELETE: APIRoute = async (context) => {
       },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Löschen der Tankfüllung:', error);
     return new Response(JSON.stringify({ error: 'Interner Server-Fehler' }), {
       status: 500,

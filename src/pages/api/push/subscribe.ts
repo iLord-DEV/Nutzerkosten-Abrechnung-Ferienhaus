@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,7 @@ const prisma = new PrismaClient();
  */
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await requireAuth(context);
     const body = await context.request.json();
 
@@ -59,6 +61,10 @@ export const POST: APIRoute = async (context) => {
       );
     }
 
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
+
     return new Response(
       JSON.stringify({ error: 'Interner Serverfehler' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -72,6 +78,7 @@ export const POST: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await requireAuth(context);
     const body = await context.request.json();
 
@@ -100,6 +107,10 @@ export const DELETE: APIRoute = async (context) => {
 
   } catch (error) {
     console.error('Fehler beim Entfernen der Push-Subscription:', error);
+
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
 
     return new Response(
       JSON.stringify({ error: 'Interner Serverfehler' }),

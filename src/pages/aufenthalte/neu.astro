@@ -1,13 +1,12 @@
 ---
 import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
+import { getUser } from '../../utils/auth';
 
 // Zugriffskontrolle
-const sessionCookie = Astro.cookies.get('session');
-if (!sessionCookie) {
+const user = await getUser(Astro);
+if (!user) {
   return Astro.redirect('/login');
 }
-
-const session = JSON.parse(sessionCookie.value);
 ---
 
 <ProtectedLayout title="Neuer Aufenthalt - Nutzerkosten">
@@ -37,7 +36,7 @@ const session = JSON.parse(sessionCookie.value);
       <div class="card-body">
           <form id="aufenthalt-form" class="space-y-6">
             <!-- Benutzer-Auswahl (nur für Admins) -->
-            {session.role === 'ADMIN' && (
+            {user.role === 'ADMIN' && (
               <div>
                 <h3 class="text-lg font-semibold flex items-center gap-2 mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -58,8 +57,8 @@ const session = JSON.parse(sessionCookie.value);
             )}
             
             <!-- Verstecktes Feld für normale Benutzer -->
-            {session.role !== 'ADMIN' && (
-              <input type="hidden" id="userId" name="userId" value={session.userId} />
+            {user.role !== 'ADMIN' && (
+              <input type="hidden" id="userId" name="userId" value={user.id} />
             )}
 
             <!-- Aufenthaltsdaten -->
@@ -941,17 +940,9 @@ const session = JSON.parse(sessionCookie.value);
     await loadTankfuellungen();
 
     // Für normale Benutzer: letzten Zählerstand laden
-    const sessionCookie = document.cookie.split(';').find(c => c.trim().startsWith('session='));
-    if (sessionCookie) {
-      try {
-        const session = JSON.parse(decodeURIComponent(sessionCookie.split('=')[1]));
-        if (session.userId) {
-          selectedUserId = session.userId;
-          await loadLastZaehlerstand(session.userId);
-        }
-      } catch (error) {
-        console.error('Fehler beim Laden der Session:', error);
-      }
+    if (currentUser?.id) {
+      selectedUserId = currentUser.id;
+      await loadLastZaehlerstand(currentUser.id);
     }
     
     // Aktuelles Datum setzen

@@ -33,6 +33,7 @@ model User {
   magicLinkTokens    MagicLinkToken[]
   pushSubscriptions  PushSubscription[]
   checklistProgress  UserChecklistProgress[]
+  sessions           Session[]
 }
 
 model Aufenthalt {
@@ -123,10 +124,10 @@ model UserJahresabschluss {
 model TerminPlanung {
   id           Int                @id @default(autoincrement())
   userId       Int
-  titel        String
+  titel        String             @db.VarChar(500)
   startDatum   DateTime
   endDatum     DateTime
-  beschreibung String?
+  beschreibung String?            @db.Text
   status       TerminStatus       @default(PENDING)
   version      Int                @default(1)
   createdAt    DateTime           @default(now())
@@ -145,7 +146,7 @@ model TerminAbstimmung {
   terminPlanungId Int
   userId          Int
   stimme          AbstimmungsTyp
-  kommentar       String?
+  kommentar       String?        @db.Text
   version         Int
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -160,7 +161,7 @@ model TerminKommentar {
   id              Int               @id @default(autoincrement())
   terminPlanungId Int
   userId          Int
-  inhalt          String
+  inhalt          String            @db.Text
   version         Int
   createdAt       DateTime          @default(now())
   parentId        Int?
@@ -182,7 +183,7 @@ model TerminAenderung {
   alteEndDatum    DateTime
   neueStartDatum  DateTime
   neueEndDatum    DateTime
-  grund           String?
+  grund           String?           @db.Text
   version         Int
   createdAt       DateTime      @default(now())
   terminPlanung   TerminPlanung @relation(fields: [terminPlanungId], references: [id])
@@ -328,6 +329,19 @@ model MagicLinkToken {
 
   @@index([token])
   @@index([userId], map: "MagicLinkToken_userId_fkey")
+  @@index([expiresAt])
+}
+
+// Server-side session storage for secure authentication
+model Session {
+  id        String   @id @default(uuid())
+  userId    Int
+  csrfToken String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
   @@index([expiresAt])
 }
 

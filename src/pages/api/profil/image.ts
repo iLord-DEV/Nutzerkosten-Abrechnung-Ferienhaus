@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
 
 const prisma = new PrismaClient();
 import { writeFile, unlink, mkdir } from 'fs/promises';
@@ -16,6 +17,7 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'im
 
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await requireAuth(context);
 
     // FormData parsen
@@ -97,6 +99,10 @@ export const POST: APIRoute = async (context) => {
   } catch (error) {
     console.error('Fehler beim Hochladen des Profilbilds:', error);
 
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
+
     if (error instanceof Error && error.name === 'AuthenticationError') {
       return new Response(
         JSON.stringify({ error: 'Nicht authentifiziert' }),
@@ -113,6 +119,7 @@ export const POST: APIRoute = async (context) => {
 
 export const DELETE: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await requireAuth(context);
 
     // Aktuelles Profilbild holen
@@ -147,6 +154,10 @@ export const DELETE: APIRoute = async (context) => {
 
   } catch (error) {
     console.error('Fehler beim Löschen des Profilbilds:', error);
+
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
 
     if (error instanceof Error && error.name === 'AuthenticationError') {
       return new Response(

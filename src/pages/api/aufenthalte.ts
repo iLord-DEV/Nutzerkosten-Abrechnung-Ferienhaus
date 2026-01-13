@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../utils/auth';
 import { validateAufenthaltData, type AufenthaltData } from '../../utils/aufenthaltValidation';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../utils/csrf';
 
 const prisma = new PrismaClient();
 
@@ -72,6 +73,9 @@ export const GET: APIRoute = async (context) => {
 
 export const POST: APIRoute = async (context) => {
   try {
+    // CSRF-Validierung
+    await validateCsrf(context);
+
     // Authentifizierung prüfen
     const user = await requireAuth(context);
     const { request } = context;
@@ -209,15 +213,18 @@ export const POST: APIRoute = async (context) => {
       },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Erstellen des Aufenthalts:', error);
     console.error('Error details:', {
       message: error.message,
       stack: error.stack,
       name: error.name
     });
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: 'Fehler beim Erstellen des Aufenthalts',
-      details: error.message 
+      details: error.message
     }), {
       status: 500,
       headers: {

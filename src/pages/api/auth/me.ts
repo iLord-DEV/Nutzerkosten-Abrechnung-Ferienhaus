@@ -1,25 +1,15 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import { getSession } from '../../../utils/session';
 
 const prisma = new PrismaClient();
 
 export const GET: APIRoute = async ({ cookies }) => {
   try {
-    const sessionCookie = cookies.get('session');
+    const session = await getSession(cookies);
 
-    if (!sessionCookie || !sessionCookie.value) {
+    if (!session) {
       return new Response(JSON.stringify({ error: 'Nicht eingeloggt' }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    }
-
-    const sessionData = JSON.parse(sessionCookie.value);
-
-    if (!sessionData.loggedIn) {
-      return new Response(JSON.stringify({ error: 'Session abgelaufen' }), {
         status: 401,
         headers: {
           'Content-Type': 'application/json',
@@ -29,7 +19,7 @@ export const GET: APIRoute = async ({ cookies }) => {
 
     // User aus Datenbank holen für aktuelle Daten (inkl. profileImage)
     const user = await prisma.user.findUnique({
-      where: { id: sessionData.userId },
+      where: { id: session.userId },
       select: {
         id: true,
         name: true,
@@ -53,7 +43,11 @@ export const GET: APIRoute = async ({ cookies }) => {
       });
     }
 
-    return new Response(JSON.stringify(user), {
+    return new Response(JSON.stringify({
+      ...user,
+      // Include CSRF token for frontend forms
+      csrfToken: session.csrfToken,
+    }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

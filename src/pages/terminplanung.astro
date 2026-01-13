@@ -198,6 +198,17 @@ if (!user) {
   let aufenthalte = [];
   let currentUser = null;
 
+  // XSS-Schutz: HTML-Entities escapen
+  function escapeHtml(str: string | null | undefined): string {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   // Toast Notification System
   function showToast(type, title, message) {
     const toast = document.getElementById('toast');
@@ -437,7 +448,7 @@ if (!user) {
       terminElement.innerHTML = `
         <div class="card-body">
           <div class="flex justify-between items-start mb-2">
-            <h3 class="card-title">${termin.titel}</h3>
+            <h3 class="card-title">${escapeHtml(termin.titel)}</h3>
             <span class="badge ${statusBadge}">${statusText}</span>
           </div>
           <div class="text-sm opacity-70 mb-2">
@@ -445,9 +456,9 @@ if (!user) {
             ${new Date(termin.endDatum).toLocaleDateString('de-DE')}
           </div>
           <div class="text-sm opacity-70 mb-3">
-            von ${termin.user.name}
+            von ${escapeHtml(termin.user.name)}
           </div>
-          ${termin.beschreibung ? `<p class="text-sm mb-3">${termin.beschreibung}</p>` : ''}
+          ${termin.beschreibung ? `<p class="text-sm mb-3">${escapeHtml(termin.beschreibung)}</p>` : ''}
           <div class="card-actions mb-3">
             <a
               href="/terminplanung/${termin.id}"
@@ -503,7 +514,7 @@ if (!user) {
                 .filter(a => a.version === termin.version)
                 .map(abstimmung => `
                   <span class="badge ${abstimmung.stimme === 'APPROVE' ? 'badge-success' : 'badge-warning'}">
-                    ${abstimmung.userId === currentUser?.id ? 'Du' : abstimmung.user.name}: ${abstimmung.stimme === 'APPROVE' ? '✅' : '❓'}
+                    ${abstimmung.userId === currentUser?.id ? 'Du' : escapeHtml(abstimmung.user.name)}: ${abstimmung.stimme === 'APPROVE' ? '✅' : '❓'}
                   </span>
                 `).join('')}
               ${termin.abstimmungen.filter(a => a.version === termin.version).length === 0 ?
@@ -519,12 +530,12 @@ if (!user) {
                     <div class="text-xs bg-base-200 p-2 rounded">
                       <div class="flex justify-between items-start">
                         <div>
-                          <strong>${kommentar.user.name}:</strong> ${kommentar.inhalt}
+                          <strong>${escapeHtml(kommentar.user.name)}:</strong> ${escapeHtml(kommentar.inhalt)}
                           ${kommentar.replies.length > 0 ? `
                             <div class="mt-1 ml-4 space-y-1">
                               ${kommentar.replies.map(reply => `
                                 <div class="text-xs opacity-70 bg-base-300 p-1 rounded">
-                                  <strong>${reply.user.name}:</strong> ${reply.inhalt}
+                                  <strong>${escapeHtml(reply.user.name)}:</strong> ${escapeHtml(reply.inhalt)}
                                 </div>
                               `).join('')}
                             </div>

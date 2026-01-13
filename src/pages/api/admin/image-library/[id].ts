@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin } from '../../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../../utils/csrf';
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
@@ -96,6 +97,7 @@ export const PUT: APIRoute = async (context) => {
 // DELETE: Bild löschen
 export const DELETE: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     await requireAdmin(context);
 
     const id = parseInt(context.params.id || '');
@@ -150,6 +152,9 @@ export const DELETE: APIRoute = async (context) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Löschen:', error);
     return new Response(JSON.stringify({ error: 'Interner Serverfehler' }), {
       status: 500,

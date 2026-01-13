@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin } from '../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
@@ -74,6 +75,7 @@ export const GET: APIRoute = async (context) => {
 // POST: Bild oder Video hochladen
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     await requireAdmin(context);
 
     const formData = await context.request.formData();
@@ -177,6 +179,9 @@ export const POST: APIRoute = async (context) => {
       { status: 201, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Hochladen:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return new Response(JSON.stringify({ error: `Interner Serverfehler: ${errorMessage}` }), {

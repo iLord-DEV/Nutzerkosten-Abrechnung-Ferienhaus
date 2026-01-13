@@ -1,5 +1,5 @@
 ---
-import { getUser } from '../utils/auth';
+import { getSessionData } from '../utils/auth';
 import '../styles/global.css';
 
 export interface Props {
@@ -9,13 +9,15 @@ export interface Props {
 
 const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" } = Astro.props;
 
-// Authentifizierung prüfen
-const user = await getUser(Astro);
-if (!user) {
+// Authentifizierung prüfen (mit Session für CSRF-Token)
+const session = await getSessionData(Astro);
+if (!session) {
   return Astro.redirect('/login');
 }
 
+const user = session.user;
 const isAdmin = user.role === 'ADMIN';
+const csrfToken = session.csrfToken;
 ---
 
 <!DOCTYPE html>
@@ -26,12 +28,13 @@ const isAdmin = user.role === 'ADMIN';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
+    <meta name="csrf-token" content={csrfToken} />
     <title>{title}</title>
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#2563eb" />
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Wüstenstein" />
 
@@ -318,7 +321,7 @@ const isAdmin = user.role === 'ADMIN';
   // Logout handler
   async function logout() {
     try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      const response = await csrfFetch('/api/auth/logout', { method: 'POST' });
       if (response.ok) {
         window.location.href = '/';
       }
@@ -394,6 +397,34 @@ const isAdmin = user.role === 'ADMIN';
       // Badge-Fehler ist nicht kritisch
     }
   }
+
+  // CSRF-geschützter Fetch - nutze diese Funktion für alle state-ändernden Requests
+  function getCsrfToken(): string {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta?.getAttribute('content') || '';
+  }
+
+  // Globale Fetch-Funktion mit CSRF-Token für POST/PUT/DELETE
+  async function csrfFetch(url: string, options: RequestInit = {}): Promise<Response> {
+    const method = options.method?.toUpperCase() || 'GET';
+
+    // CSRF-Token nur für state-ändernde Requests hinzufügen
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+      const headers = new Headers(options.headers);
+      headers.set('X-CSRF-Token', getCsrfToken());
+      // Content-Type nur setzen wenn kein FormData (Browser setzt boundary automatisch)
+      if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
+        headers.set('Content-Type', 'application/json');
+      }
+      options.headers = headers;
+    }
+
+    return fetch(url, options);
+  }
+
+  // Global verfügbar machen
+  (window as any).csrfFetch = csrfFetch;
+  (window as any).getCsrfToken = getCsrfToken;
 
   // Service Worker registrieren (für PWA + Push Notifications) - nur in Production
   async function registerServiceWorker() {

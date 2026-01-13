@@ -1,14 +1,13 @@
 ---
 import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
 import Card from '../../components/ui/Card.astro';
+import { getUser } from '../../utils/auth';
 
 // Zugriffskontrolle
-const sessionCookie = Astro.cookies.get('session');
-if (!sessionCookie) {
+const user = await getUser(Astro);
+if (!user) {
   return Astro.redirect('/login');
 }
-
-const session = JSON.parse(sessionCookie.value);
 ---
 
 <ProtectedLayout title="Aufenthalte - Nutzerkosten">
@@ -17,10 +16,10 @@ const session = JSON.parse(sessionCookie.value);
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
       <div>
         <h1 class="text-3xl font-bold mb-2">
-          {session.role === 'ADMIN' ? 'Alle Aufenthalte' : 'Meine Aufenthalte'}
+          {user.role === 'ADMIN' ? 'Alle Aufenthalte' : 'Meine Aufenthalte'}
         </h1>
         <p class="text-base-content/70">
-          {session.role === 'ADMIN'
+          {user.role === 'ADMIN'
             ? 'Übersicht aller Aufenthalte und Überlappungsberechnung.'
             : 'Übersicht deiner Aufenthalte und Kostenberechnung.'}
         </p>
@@ -70,7 +69,7 @@ const session = JSON.parse(sessionCookie.value);
             <option value="abgeschlossen">Abgeschlossen</option>
           </select>
         </div>
-        {session.role === 'ADMIN' && (
+        {user.role === 'ADMIN' && (
           <div class="form-control w-full">
             <label class="label" for="benutzer">
               <span class="label-text flex items-center gap-2">
@@ -97,7 +96,7 @@ const session = JSON.parse(sessionCookie.value);
         <table class="table table-zebra table-responsive w-full">
           <thead>
             <tr>
-              {session.role === 'ADMIN' && <th>Benutzer</th>}
+              {user.role === 'ADMIN' && <th>Benutzer</th>}
               <th>Zeitraum</th>
               <th>Zählerstand</th>
               <th>Gesamtkosten</th>
@@ -127,7 +126,7 @@ const session = JSON.parse(sessionCookie.value);
     </Card>
 
     <!-- Admin: Bezahlt-Status für abgeschlossene Jahre -->
-    {session.role === 'ADMIN' && (
+    {user.role === 'ADMIN' && (
       <Card title="Bezahlt-Status verwalten" className="mt-6" id="admin-bezahlt-card" style="display: none;">
         <p class="text-sm text-base-content/70 mb-4">
           Markiere Benutzer als bezahlt für das abgeschlossene Jahr <span id="bezahlt-jahr-display" class="font-semibold"></span>
@@ -261,7 +260,7 @@ const session = JSON.parse(sessionCookie.value);
     </dialog>
 
     <!-- Session-Info für JavaScript -->
-    <script id="session-data" type="application/json" set:html={JSON.stringify({ isAdmin: session.role === 'ADMIN' })} />
+    <script id="session-data" type="application/json" set:html={JSON.stringify({ isAdmin: user.role === 'ADMIN' })} />
   </div>
 </ProtectedLayout>
 

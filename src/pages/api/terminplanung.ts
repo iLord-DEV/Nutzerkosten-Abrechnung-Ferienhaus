@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../utils/auth';
 import { sendNewTerminEmail } from '../../utils/email';
 import { sendPushForNewTermin } from '../../utils/pushNotification';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../utils/csrf';
 
 const prisma = new PrismaClient();
 
@@ -119,6 +120,7 @@ export const GET: APIRoute = async (context) => {
 // POST /api/terminplanung - Neue Terminplanung erstellen
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await requireAuth(context);
     const body = await context.request.json();
     
@@ -194,6 +196,9 @@ export const POST: APIRoute = async (context) => {
       }
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Erstellen der Terminplanung:', error);
     return new Response(JSON.stringify({ error: 'Fehler beim Erstellen der Terminplanung' }), {
       status: 500,

@@ -1,12 +1,14 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { getUser } from '../../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../../utils/csrf';
 
 const prisma = new PrismaClient();
 
 // POST: Checkliste zurücksetzen
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await getUser(context);
     if (!user) {
       return new Response(JSON.stringify({ error: 'Nicht autorisiert' }), {
@@ -51,6 +53,9 @@ export const POST: APIRoute = async (context) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler:', error);
     return new Response(JSON.stringify({ error: 'Interner Serverfehler' }), {
       status: 500,

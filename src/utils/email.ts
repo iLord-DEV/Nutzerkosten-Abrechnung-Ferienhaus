@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { escapeHtml } from './escapeHtml';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const APP_URL = process.env.APP_URL || 'http://localhost:4321';
@@ -105,13 +106,13 @@ export async function sendNewCommentEmail(
   const htmlContent = wrapInTemplate(
     '💬 Neuer Kommentar',
     `
-      <p>Hallo ${recipientName},</p>
-      <p><strong>${authorName}</strong> hat einen neuen Kommentar zum Termin geschrieben:</p>
+      <p>Hallo ${escapeHtml(recipientName)},</p>
+      <p><strong>${escapeHtml(authorName)}</strong> hat einen neuen Kommentar zum Termin geschrieben:</p>
       <div class="info-box">
-        <strong>📅 ${terminTitel}</strong>
+        <strong>📅 ${escapeHtml(terminTitel)}</strong>
       </div>
       <div class="quote">
-        ${kommentarInhalt}
+        ${escapeHtml(kommentarInhalt)}
       </div>
       <div style="text-align: center;">
         <a href="${terminUrl}" class="button">Termin ansehen</a>
@@ -159,12 +160,12 @@ export async function sendNewTerminEmail(
   const htmlContent = wrapInTemplate(
     '📅 Neuer Termin',
     `
-      <p>Hallo ${recipientName},</p>
-      <p><strong>${authorName}</strong> hat einen neuen Termin erstellt:</p>
+      <p>Hallo ${escapeHtml(recipientName)},</p>
+      <p><strong>${escapeHtml(authorName)}</strong> hat einen neuen Termin erstellt:</p>
       <div class="info-box">
-        <strong>${terminTitel}</strong><br>
+        <strong>${escapeHtml(terminTitel)}</strong><br>
         📆 ${formatDate(startDatum)} - ${formatDate(endDatum)}
-        ${beschreibung ? `<br><br>${beschreibung}` : ''}
+        ${beschreibung ? `<br><br>${escapeHtml(beschreibung)}` : ''}
       </div>
       <p>Bitte stimme ab, ob der Termin für dich passt.</p>
       <div style="text-align: center;">

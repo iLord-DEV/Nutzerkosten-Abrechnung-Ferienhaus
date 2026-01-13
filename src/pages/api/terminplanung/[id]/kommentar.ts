@@ -3,12 +3,14 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../../../utils/auth';
 import { sendNewCommentEmail } from '../../../../utils/email';
 import { sendPushForNewComment } from '../../../../utils/pushNotification';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../../utils/csrf';
 
 const prisma = new PrismaClient();
 
 // POST /api/terminplanung/[id]/kommentar - Kommentar hinzufügen
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await requireAuth(context);
     const terminplanungId = parseInt(context.params.id!);
     const body = await context.request.json();
@@ -143,8 +145,11 @@ export const POST: APIRoute = async (context) => {
       }
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Erstellen des Kommentars:', error);
-    
+
     // Prüfen ob es ein Authentifizierungsfehler ist
     if (error.name === 'AuthenticationError' || error.message === 'Nicht authentifiziert') {
       return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
@@ -154,7 +159,7 @@ export const POST: APIRoute = async (context) => {
         }
       });
     }
-    
+
     return new Response(JSON.stringify({ error: 'Fehler beim Erstellen des Kommentars: ' + error.message }), {
       status: 500,
       headers: {

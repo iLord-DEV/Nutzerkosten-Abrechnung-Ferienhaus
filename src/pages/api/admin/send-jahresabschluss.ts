@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin } from '../../../utils/auth';
 import { sendJahresabschlussEmail } from '../../../utils/email';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
 
 const prisma = new PrismaClient();
 
@@ -97,6 +98,7 @@ async function calculateUserStatistik(userId: number, jahr: number): Promise<Use
  */
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     await requireAdmin(context);
 
     const body = await context.request.json();
@@ -188,6 +190,10 @@ export const POST: APIRoute = async (context) => {
     });
 
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
+
     console.error('Fehler beim Versenden der Jahresabschluss-Emails:', error);
 
     if (error instanceof Error && error.message === 'Keine Berechtigung') {

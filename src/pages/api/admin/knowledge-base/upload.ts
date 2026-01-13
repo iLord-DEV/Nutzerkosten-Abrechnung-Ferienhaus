@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin } from '../../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../../utils/csrf';
 import { parseDocument, truncateText } from '../../../../utils/pdfParser';
 
 const prisma = new PrismaClient();
@@ -8,6 +9,7 @@ const prisma = new PrismaClient();
 // POST: Datei hochladen und Text extrahieren
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     await requireAdmin(context);
 
     const formData = await context.request.formData();
@@ -81,6 +83,9 @@ export const POST: APIRoute = async (context) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     if (error instanceof Error && error.message === 'Nicht authentifiziert') {
       return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
         status: 401,

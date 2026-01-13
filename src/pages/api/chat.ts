@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../utils/csrf';
 import { chat, buildSystemPrompt, type ChatMessage } from '../../utils/claude';
 import { userTools, handleUserTool } from '../../utils/chatTools';
 import { adminTools, handleAdminTool } from '../../utils/adminChatTools';
@@ -9,6 +10,7 @@ const prisma = new PrismaClient();
 
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await requireAuth(context);
 
     const body = await context.request.json();
@@ -83,6 +85,9 @@ export const POST: APIRoute = async (context) => {
       }
     );
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     if (error instanceof Error && error.message === 'Nicht authentifiziert') {
       return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
         status: 401,

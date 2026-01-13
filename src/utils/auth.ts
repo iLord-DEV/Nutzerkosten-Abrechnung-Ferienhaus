@@ -1,38 +1,50 @@
 import type { APIContext } from 'astro';
+import { getSession, type SessionUser, type SessionData } from './session';
 
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: 'ADMIN' | 'USER';
+// Re-export SessionUser as User for backwards compatibility
+export type User = SessionUser;
+
+// Extended user with session info (includes CSRF token)
+export interface AuthenticatedUser extends SessionUser {
+  sessionId: string;
+  csrfToken: string;
 }
 
+/**
+ * Get the current user from session
+ * Returns null if not authenticated
+ */
 export async function getUser(context: APIContext): Promise<User | null> {
   try {
-    const sessionCookie = context.cookies.get('session');
-    
-    if (!sessionCookie || !sessionCookie.value) {
+    const session = await getSession(context.cookies);
+
+    if (!session) {
       return null;
     }
 
-    const sessionData = JSON.parse(sessionCookie.value);
-    
-    if (!sessionData.loggedIn) {
-      return null;
-    }
-
-    return {
-      id: sessionData.userId,
-      name: sessionData.name,
-      email: sessionData.email,
-      role: sessionData.role,
-    };
+    return session.user;
   } catch (error) {
     console.error('Fehler beim Abrufen der Benutzer-Informationen:', error);
     return null;
   }
 }
 
+/**
+ * Get full session data including CSRF token
+ * For use in layouts that need to expose CSRF token to frontend
+ */
+export async function getSessionData(context: APIContext): Promise<SessionData | null> {
+  try {
+    return await getSession(context.cookies);
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Session:', error);
+    return null;
+  }
+}
+
+/**
+ * Require authentication - throws if not logged in
+ */
 export async function requireAuth(context: APIContext): Promise<User> {
   const user = await getUser(context);
   if (!user) {
@@ -43,6 +55,9 @@ export async function requireAuth(context: APIContext): Promise<User> {
   return user;
 }
 
+/**
+ * Require admin role - throws if not admin
+ */
 export async function requireAdmin(context: APIContext): Promise<User> {
   const user = await requireAuth(context);
   if (user.role !== 'ADMIN') {

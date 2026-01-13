@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../../utils/auth';
 import { validateAufenthaltData, type AufenthaltData } from '../../../utils/aufenthaltValidation';
 import { canEditJahr } from '../../../utils/jahresabschluss';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
 
 const prisma = new PrismaClient();
 
@@ -66,6 +67,9 @@ export const GET: APIRoute = async (context) => {
 
 export const PUT: APIRoute = async (context) => {
   try {
+    // CSRF-Validierung
+    await validateCsrf(context);
+
     // Authentifizierung prüfen
     const user = await requireAuth(context);
     const { params, request } = context;
@@ -208,6 +212,9 @@ export const PUT: APIRoute = async (context) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Aktualisieren des Aufenthalts:', error);
     console.error('Error details:', {
       message: error.message,
@@ -226,6 +233,9 @@ export const PUT: APIRoute = async (context) => {
 
 export const DELETE: APIRoute = async (context) => {
   try {
+    // CSRF-Validierung
+    await validateCsrf(context);
+
     // Authentifizierung prüfen
     const user = await requireAuth(context);
     const { params } = context;
@@ -285,6 +295,9 @@ export const DELETE: APIRoute = async (context) => {
       },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Löschen des Aufenthalts:', error);
     return new Response(JSON.stringify({ error: 'Interner Server-Fehler' }), {
       status: 500,

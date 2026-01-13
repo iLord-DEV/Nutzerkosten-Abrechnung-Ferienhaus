@@ -1,11 +1,13 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../utils/csrf';
 
 const prisma = new PrismaClient();
 
 export const PUT: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await requireAuth(context);
 
     const data = await context.request.json();
@@ -97,20 +99,8 @@ export const PUT: APIRoute = async (context) => {
       }
     });
 
-    // Session-Cookie aktualisieren
-    const sessionCookie = context.cookies.get('session');
-    if (sessionCookie) {
-      const sessionData = JSON.parse(sessionCookie.value);
-      sessionData.email = updatedUser.email;
-
-      context.cookies.set('session', JSON.stringify(sessionData), {
-        httpOnly: true,
-        secure: import.meta.env.PROD,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7 // 7 Tage
-      });
-    }
+    // Session muss nicht aktualisiert werden - User-Daten werden bei jedem Request
+    // aus der DB geladen (server-side sessions)
 
     return new Response(JSON.stringify(updatedUser), {
       status: 200,
@@ -119,6 +109,10 @@ export const PUT: APIRoute = async (context) => {
 
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Profils:', error);
+
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
 
     if (error instanceof Error && error.name === 'AuthenticationError') {
       return new Response(

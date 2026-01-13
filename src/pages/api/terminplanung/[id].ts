@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
 
 const prisma = new PrismaClient();
 
@@ -105,6 +106,7 @@ export const GET: APIRoute = async (context) => {
 // PUT /api/terminplanung/[id] - Terminplanung aktualisieren (Datum ändern)
 export const PUT: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await requireAuth(context);
     const id = parseInt(context.params.id!);
     const body = await context.request.json();
@@ -207,6 +209,9 @@ export const PUT: APIRoute = async (context) => {
       }
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Aktualisieren der Terminplanung:', error);
     return new Response(JSON.stringify({ error: 'Fehler beim Aktualisieren der Terminplanung' }), {
       status: 500,
@@ -220,6 +225,7 @@ export const PUT: APIRoute = async (context) => {
 // DELETE /api/terminplanung/[id] - Terminplanung komplett löschen
 export const DELETE: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     const user = await requireAuth(context);
     const id = parseInt(context.params.id!);
     
@@ -276,6 +282,9 @@ export const DELETE: APIRoute = async (context) => {
       }
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Löschen der Terminplanung:', error);
     return new Response(JSON.stringify({ error: 'Fehler beim Löschen der Terminplanung' }), {
       status: 500,

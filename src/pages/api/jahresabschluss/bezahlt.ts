@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth, requireAdmin } from '../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
 
 const prisma = new PrismaClient();
 
@@ -106,6 +107,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     await requireAdmin(context);
 
     const body = await context.request.json();
@@ -143,10 +145,13 @@ export const POST: APIRoute = async (context) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Setzen des Bezahlt-Status:', error);
     return new Response(JSON.stringify({
       error: 'Interner Server-Fehler',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Unbekannt'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

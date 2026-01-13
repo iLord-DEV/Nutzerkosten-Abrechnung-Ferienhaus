@@ -190,6 +190,17 @@ if (!user) {
   let terminplanung = null;
   let currentUser = null;
 
+  // XSS-Schutz: HTML-Entities escapen
+  function escapeHtml(str: string | null | undefined): string {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   // Toast Notification System
   function showToast(type, title, message) {
     const toast = document.getElementById('toast');
@@ -327,9 +338,9 @@ if (!user) {
           <!-- Header -->
           <div class="flex justify-between items-start mb-6">
             <div>
-              <h1 class="card-title text-3xl mb-2">${terminplanung.titel}</h1>
+              <h1 class="card-title text-3xl mb-2">${escapeHtml(terminplanung.titel)}</h1>
               <div class="flex items-center gap-4 text-sm opacity-70">
-                <span>von ${terminplanung.user.name}</span>
+                <span>von ${escapeHtml(terminplanung.user.name)}</span>
                 <span>•</span>
                 <span>Version ${terminplanung.version}</span>
               </div>
@@ -348,7 +359,7 @@ if (!user) {
               ${terminplanung.beschreibung ? `
                 <div class="mt-2">
                   <strong>Beschreibung:</strong><br>
-                  ${terminplanung.beschreibung}
+                  ${escapeHtml(terminplanung.beschreibung)}
                 </div>
               ` : ''}
             </div>
@@ -403,7 +414,7 @@ if (!user) {
               .map(abstimmung => `
                 <div class="flex items-center justify-between p-3 bg-base-200 rounded">
                   <div class="flex items-center gap-3">
-                    <span class="font-medium">${abstimmung.userId === currentUser?.id ? 'Du' : abstimmung.user.name}</span>
+                    <span class="font-medium">${abstimmung.userId === currentUser?.id ? 'Du' : escapeHtml(abstimmung.user.name)}</span>
                     <span class="badge ${abstimmung.stimme === 'APPROVE' ? 'badge-success' : 'badge-warning'}">
                       ${abstimmung.stimme === 'APPROVE' ? `✅ ${abstimmung.userId === currentUser?.id ? 'hast' : 'hat'} zugestimmt` : '❓ Mehr Infos'}
                     </span>
@@ -414,7 +425,7 @@ if (!user) {
                 </div>
                 ${abstimmung.kommentar ? `
                   <div class="ml-6 p-2 bg-base-100 rounded text-sm italic">
-                    "${abstimmung.kommentar}"
+                    "${escapeHtml(abstimmung.kommentar)}"
                   </div>
                 ` : ''}
               `).join('')}
@@ -452,13 +463,13 @@ if (!user) {
               .map(kommentar => `
                 <div class="p-3 bg-base-200 rounded">
                   <div class="flex items-center justify-between mb-1">
-                    <span class="font-medium text-sm">${kommentar.user.name}</span>
+                    <span class="font-medium text-sm">${escapeHtml(kommentar.user.name)}</span>
                     <span class="text-xs opacity-60">
                       ${new Date(kommentar.createdAt).toLocaleDateString('de-DE')}
                       ${new Date(kommentar.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <p>${kommentar.inhalt}</p>
+                  <p>${escapeHtml(kommentar.inhalt)}</p>
 
                   <!-- Antworten anzeigen -->
                   ${kommentar.replies && kommentar.replies.length > 0 ? `
@@ -466,13 +477,13 @@ if (!user) {
                       ${kommentar.replies.map(reply => `
                         <div class="bg-base-300 p-2 rounded">
                           <div class="flex items-center justify-between mb-1">
-                            <span class="font-medium text-xs">${reply.user.name}</span>
+                            <span class="font-medium text-xs">${escapeHtml(reply.user.name)}</span>
                             <span class="text-xs opacity-60">
                               ${new Date(reply.createdAt).toLocaleDateString('de-DE')}
                               ${new Date(reply.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
-                          <p class="text-xs">${reply.inhalt}</p>
+                          <p class="text-xs">${escapeHtml(reply.inhalt)}</p>
                         </div>
                       `).join('')}
                     </div>
@@ -498,7 +509,7 @@ if (!user) {
               ${terminplanung.aenderungen.map(aenderung => `
                 <div class="alert alert-info">
                   <div class="w-full">
-                    <div class="font-medium">${aenderung.user.name} hat die Termine geändert</div>
+                    <div class="font-medium">${escapeHtml(aenderung.user.name)} hat die Termine geändert</div>
                     <div class="text-sm mt-1">
                       <strong>Von:</strong> ${new Date(aenderung.alteStartDatum).toLocaleDateString('de-DE')} -
                       ${new Date(aenderung.alteEndDatum).toLocaleDateString('de-DE')}<br>
@@ -506,7 +517,7 @@ if (!user) {
                       ${new Date(aenderung.neueEndDatum).toLocaleDateString('de-DE')}
                     </div>
                     ${aenderung.grund ? `
-                      <div class="mt-1">"${aenderung.grund}"</div>
+                      <div class="mt-1">"${escapeHtml(aenderung.grund)}"</div>
                     ` : ''}
                     <div class="text-xs opacity-60 mt-1">
                       ${new Date(aenderung.createdAt).toLocaleDateString('de-DE')}

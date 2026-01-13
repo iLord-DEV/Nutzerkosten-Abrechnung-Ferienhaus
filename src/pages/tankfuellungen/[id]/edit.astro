@@ -1,14 +1,13 @@
 ---
 import ProtectedLayout from '../../../layouts/ProtectedLayout.astro';
+import { getUser } from '../../../utils/auth';
 
 // Zugriffskontrolle: Nur Admins
-const sessionCookie = Astro.cookies.get('session');
-if (!sessionCookie) {
+const user = await getUser(Astro);
+if (!user) {
   return Astro.redirect('/login');
 }
-
-const session = JSON.parse(sessionCookie.value);
-if (session.role !== 'ADMIN') {
+if (user.role !== 'ADMIN') {
   return Astro.redirect('/dashboard');
 }
 

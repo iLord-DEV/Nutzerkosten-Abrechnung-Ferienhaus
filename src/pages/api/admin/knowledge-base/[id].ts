@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { PrismaClient } from '@prisma/client';
 import { requireAdmin } from '../../../../utils/auth';
+import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../../utils/csrf';
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
@@ -68,6 +69,7 @@ export const GET: APIRoute = async (context) => {
 // PUT: Eintrag aktualisieren
 export const PUT: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     await requireAdmin(context);
 
     const id = parseInt(context.params.id!);
@@ -99,6 +101,9 @@ export const PUT: APIRoute = async (context) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     if (error instanceof Error && error.message === 'Nicht authentifiziert') {
       return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
         status: 401,
@@ -122,6 +127,7 @@ export const PUT: APIRoute = async (context) => {
 // DELETE: Eintrag löschen
 export const DELETE: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     await requireAdmin(context);
 
     const id = parseInt(context.params.id!);
@@ -161,6 +167,9 @@ export const DELETE: APIRoute = async (context) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     if (error instanceof Error && error.message === 'Nicht authentifiziert') {
       return new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
         status: 401,
