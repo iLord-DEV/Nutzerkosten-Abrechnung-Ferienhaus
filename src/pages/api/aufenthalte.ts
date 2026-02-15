@@ -223,8 +223,7 @@ export const POST: APIRoute = async (context) => {
       name: error.name
     });
     return new Response(JSON.stringify({
-      error: 'Fehler beim Erstellen des Aufenthalts',
-      details: error.message
+      error: 'Fehler beim Erstellen des Aufenthalts'
     }), {
       status: 500,
       headers: {

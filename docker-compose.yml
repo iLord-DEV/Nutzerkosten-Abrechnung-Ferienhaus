@@ -10,8 +10,8 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
+    # NOTE: No ports exposed! MySQL is only accessible via internal Docker network.
+    # For emergency DB access use: docker compose exec mysql mysql -u root -p
     networks:
       - wuestenstein-nutzerkosten-network
     healthcheck:
@@ -52,6 +52,8 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       # Brave Search API (Web-Recherche)
       BRAVE_API_KEY: ${BRAVE_API_KEY}
+      # Cron-Job Authentication
+      CRON_ADMIN_TOKEN: ${CRON_ADMIN_TOKEN}
     depends_on:
       mysql:
         condition: service_healthy

@@ -102,7 +102,7 @@ export const POST: APIRoute = async (context) => {
     console.error('Fehler beim Verarbeiten der Datei:', error);
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Fehler beim Verarbeiten der Datei',
+        error: 'Fehler beim Verarbeiten der Datei',
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );

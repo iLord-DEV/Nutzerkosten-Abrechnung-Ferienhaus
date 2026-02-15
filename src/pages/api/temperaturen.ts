@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 
 // Weather Cache Service Configuration
-const WEATHER_CACHE_URL = process.env.WEATHER_CACHE_URL || 'http://100.102.83.46:3003/api';
+const WEATHER_CACHE_URL = process.env.WEATHER_CACHE_URL || 'http://localhost:3003/api';
 
 interface SensorResponse {
   temp: number | null;
@@ -47,7 +47,7 @@ export const GET: APIRoute = async () => {
 
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        error: 'Interner Serverfehler',
         bad: null,
         wohnzimmer: null
       }),

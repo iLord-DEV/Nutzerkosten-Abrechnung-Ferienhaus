@@ -61,9 +61,54 @@ export async function webSearch(query: string, count: number = 5): Promise<Searc
 }
 
 /**
+ * Checks if a URL is safe to fetch (no internal/private IPs, no file:// protocol)
+ */
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+
+    // Only allow http(s)
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return false;
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Block localhost and loopback
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]') {
+      return false;
+    }
+
+    // Block private/internal IP ranges
+    const parts = hostname.split('.').map(Number);
+    if (parts.length === 4 && parts.every(p => !isNaN(p))) {
+      if (parts[0] === 10) return false;                                     // 10.0.0.0/8
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false; // 172.16.0.0/12
+      if (parts[0] === 192 && parts[1] === 168) return false;                // 192.168.0.0/16
+      if (parts[0] === 169 && parts[1] === 254) return false;                // 169.254.0.0/16 (link-local)
+      if (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) return false; // 100.64.0.0/10 (CGNAT/Tailscale)
+      if (parts[0] === 0) return false;                                      // 0.0.0.0/8
+    }
+
+    // Block common internal hostnames
+    if (hostname.endsWith('.local') || hostname.endsWith('.internal')) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Ruft eine Webseite ab und extrahiert den Text
  */
 export async function fetchWebPage(url: string): Promise<{ url: string; title: string; content: string }> {
+  if (!isSafeUrl(url)) {
+    throw new Error('URL nicht erlaubt: Interne oder private Adressen sind blockiert');
+  }
+
   try {
     const response = await fetch(url, {
       headers: {

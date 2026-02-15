@@ -1,5 +1,6 @@
 import type { APIRoute, APIContext } from 'astro';
 import { PrismaClient } from '@prisma/client';
+import { timingSafeEqual } from 'crypto';
 import { requireAdmin } from '../../../utils/auth';
 import { sendJahresabschlussEmail } from '../../../utils/email';
 import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
@@ -14,9 +15,13 @@ async function validateAdminOrToken(context: APIContext): Promise<boolean> {
   const cronToken = context.request.headers.get('X-Cron-Token');
   const expectedToken = import.meta.env.CRON_ADMIN_TOKEN;
 
-  // Token auth for cron jobs
-  if (cronToken && expectedToken && cronToken === expectedToken) {
-    return true; // Authenticated via token
+  // Token auth for cron jobs (timing-safe comparison)
+  if (cronToken && expectedToken) {
+    const a = Buffer.from(cronToken, 'utf8');
+    const b = Buffer.from(expectedToken, 'utf8');
+    if (a.length === b.length && timingSafeEqual(a, b)) {
+      return true; // Authenticated via token
+    }
   }
 
   // Fallback to session auth

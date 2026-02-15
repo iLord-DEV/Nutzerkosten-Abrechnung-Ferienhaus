@@ -161,7 +161,7 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Fehler beim Abgeben der Abstimmung: ' + error.message }), {
+    return new Response(JSON.stringify({ error: 'Fehler beim Abgeben der Abstimmung' }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json'
@@ -227,7 +227,7 @@ export const DELETE: APIRoute = async (context) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Fehler beim Entziehen der Zustimmung: ' + error.message }), {
+    return new Response(JSON.stringify({ error: 'Fehler beim Entziehen der Zustimmung' }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json'

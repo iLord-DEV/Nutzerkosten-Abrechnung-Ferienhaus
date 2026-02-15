@@ -160,7 +160,7 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Fehler beim Erstellen des Kommentars: ' + error.message }), {
+    return new Response(JSON.stringify({ error: 'Fehler beim Erstellen des Kommentars' }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json'

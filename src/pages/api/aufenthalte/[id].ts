@@ -222,8 +222,7 @@ export const PUT: APIRoute = async (context) => {
       name: error.name
     });
     return new Response(JSON.stringify({
-      error: 'Interner Server-Fehler',
-      details: error.message
+      error: 'Interner Server-Fehler'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

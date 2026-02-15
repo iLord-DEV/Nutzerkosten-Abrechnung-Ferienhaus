@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "start": "HOST=0.0.0.0 node dist/server/entry.mjs",
+    "start": "HOST=0.0.0.0 node server.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
@@ -31,6 +31,7 @@
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "chart.js": "^4.5.0",
+    "node-cron": "^4.2.1",
     "nodemailer": "^7.0.10",
     "pdf-parse": "^2.4.5",
     "qrcode": "^1.5.4",
@@ -41,6 +42,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.3",
     "daisyui": "^4.12.24",
     "prisma": "^6.15.0",

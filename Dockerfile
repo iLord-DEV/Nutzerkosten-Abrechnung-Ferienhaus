@@ -44,6 +44,14 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/server.mjs ./server.mjs
+
+# Ensure upload directory exists and is writable
+RUN mkdir -p /app/dist/client/uploads
+
+# Run as unprivileged user (node user is built into node:alpine)
+RUN chown -R node:node /app
+USER node
 
 # Expose port
 EXPOSE 3002

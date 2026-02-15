@@ -91,8 +91,7 @@ export const GET: APIRoute = async (context) => {
   } catch (error) {
     console.error('Fehler beim Laden des Bezahlt-Status:', error);
     return new Response(JSON.stringify({
-      error: 'Interner Server-Fehler',
-      details: error.message
+      error: 'Interner Server-Fehler'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -150,8 +149,7 @@ export const POST: APIRoute = async (context) => {
     }
     console.error('Fehler beim Setzen des Bezahlt-Status:', error);
     return new Response(JSON.stringify({
-      error: 'Interner Server-Fehler',
-      details: error instanceof Error ? error.message : 'Unbekannt'
+      error: 'Interner Server-Fehler'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

@@ -219,6 +219,12 @@ if (!user) {
   // Benutzer-Dashboard Funktionalität
   let currentUser: any = null;
 
+  // Escape HTML to prevent XSS from external API data
+  function escapeHtml(str: string): string {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
   // Benutzer-Informationen laden
   async function loadUserInfo() {
     try {
@@ -516,14 +522,14 @@ if (!user) {
                 minute: '2-digit'
               });
 
-              // Ersten Buchstaben des Events großschreiben
-              const eventName = alert.event.charAt(0).toUpperCase() + alert.event.slice(1);
+              // Ersten Buchstaben des Events großschreiben + escape for XSS safety
+              const eventName = escapeHtml(alert.event.charAt(0).toUpperCase() + alert.event.slice(1));
 
               return `
                 <div>
                   <div class="font-semibold">${eventName} (Warnung ${index + 1}/${data.alerts.length})</div>
                   <div class="text-xs opacity-70 mb-1">${formatDate(startDate)} - ${formatDate(endDate)}</div>
-                  <div class="text-sm">${alert.description}</div>
+                  <div class="text-sm">${escapeHtml(alert.description)}</div>
                 </div>
               `;
             }).join('<div class="divider my-2"></div>');
@@ -604,7 +610,7 @@ if (!user) {
                 <div class="flex items-center gap-3 flex-1">
                   <div class="w-16 text-sm font-semibold">${weekday}, ${date.getDate()}.${date.getMonth() + 1}.</div>
                   <i class="wi ${getWeatherIconClass(day.icon)} text-2xl w-8" style="color: ${getTempColor(avgTemp)}"></i>
-                  <div class="flex-1 text-sm opacity-70">${day.description.charAt(0).toUpperCase() + day.description.slice(1)}</div>
+                  <div class="flex-1 text-sm opacity-70">${escapeHtml(day.description.charAt(0).toUpperCase() + day.description.slice(1))}</div>
                 </div>
                 <div class="flex items-center gap-4">
                   ${day.pop > 0 ? `<div class="text-sm text-info">${day.pop}%</div>` : ''}

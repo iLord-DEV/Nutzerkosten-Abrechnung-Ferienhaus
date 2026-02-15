@@ -56,6 +56,7 @@ export const GET: APIRoute = async (context) => {
 // PUT: Bild-Metadaten aktualisieren
 export const PUT: APIRoute = async (context) => {
   try {
+    await validateCsrf(context);
     await requireAdmin(context);
 
     const id = parseInt(context.params.id || '');
@@ -86,6 +87,9 @@ export const PUT: APIRoute = async (context) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    if (error instanceof CsrfError) {
+      return csrfErrorResponse(error);
+    }
     console.error('Fehler beim Aktualisieren:', error);
     return new Response(JSON.stringify({ error: 'Interner Serverfehler' }), {
       status: 500,

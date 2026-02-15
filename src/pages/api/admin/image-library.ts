@@ -183,8 +183,7 @@ export const POST: APIRoute = async (context) => {
       return csrfErrorResponse(error);
     }
     console.error('Fehler beim Hochladen:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-    return new Response(JSON.stringify({ error: `Interner Serverfehler: ${errorMessage}` }), {
+    return new Response(JSON.stringify({ error: 'Interner Serverfehler' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

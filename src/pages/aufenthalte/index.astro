@@ -269,6 +269,12 @@ if (!user) {
   import { isJahrAbgeschlossen, canEditJahr, formatJahrMitStatus } from '../../utils/jahresabschluss';
   import { generateGiroCodeQR } from '../../utils/giroCode';
 
+  // Escape user-supplied strings to prevent XSS when used in innerHTML
+  function escapeHtml(str: string | null | undefined): string {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
   let isAdminUser = false;
 
   let currentAufenthalte: Array<{
@@ -772,16 +778,16 @@ if (!user) {
               <div class="avatar ${aufenthalt.user.profileImage ? '' : 'placeholder'}">
                 ${aufenthalt.user.profileImage
                   ? `<div class="w-10 h-10 rounded-full overflow-hidden">
-                      <img src="${aufenthalt.user.profileImage}" alt="${aufenthalt.user.name}" class="w-full h-full object-cover" />
+                      <img src="${escapeHtml(aufenthalt.user.profileImage)}" alt="${escapeHtml(aufenthalt.user.name)}" class="w-full h-full object-cover" />
                     </div>`
                   : `<div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
-                      <span class="text-sm">${aufenthalt.user.name.charAt(0)}</span>
+                      <span class="text-sm">${escapeHtml(aufenthalt.user.name.charAt(0))}</span>
                     </div>`
                 }
               </div>
               <div>
-                <div class="font-medium">${aufenthalt.user.name}</div>
-                <div class="text-sm text-base-content/70">${aufenthalt.user.email}</div>
+                <div class="font-medium">${escapeHtml(aufenthalt.user.name)}</div>
+                <div class="text-sm text-base-content/70">${escapeHtml(aufenthalt.user.email)}</div>
               </div>
             </div>
           </td>
@@ -1161,7 +1167,7 @@ if (!user) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   <div class="flex-1">
-                    <div class="font-semibold">${overlap.user.name}</div>
+                    <div class="font-semibold">${escapeHtml(overlap.user.name)}</div>
                     <div class="text-sm text-base-content/70">
                       ${startZaehler}h - ${endZaehler}h (${overlapHours}h gemeinsam)
                     </div>
@@ -1538,8 +1544,8 @@ if (!user) {
     users.forEach(user => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td class="font-medium">${user.name}</td>
-        <td>${user.email}</td>
+        <td class="font-medium">${escapeHtml(user.name)}</td>
+        <td>${escapeHtml(user.email)}</td>
         <td class="text-center">
           <input
             type="checkbox"

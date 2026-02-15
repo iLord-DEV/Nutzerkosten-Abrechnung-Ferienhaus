@@ -80,8 +80,7 @@ export const GET: APIRoute = async (context) => {
   } catch (error) {
     console.error('Fehler beim Laden des Zählers:', error);
     return new Response(JSON.stringify({
-      error: 'Fehler beim Laden der Daten',
-      details: error instanceof Error ? error.message : String(error)
+      error: 'Fehler beim Laden der Daten'
     }), {
       status: 500,
       headers: {
@@ -145,8 +144,7 @@ export const DELETE: APIRoute = async (context) => {
     }
     console.error('Fehler beim Löschen des Zählers:', error);
     return new Response(JSON.stringify({
-      error: 'Fehler beim Löschen',
-      details: error instanceof Error ? error.message : String(error)
+      error: 'Fehler beim Löschen'
     }), {
       status: 500,
       headers: {

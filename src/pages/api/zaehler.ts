@@ -138,8 +138,7 @@ export const POST: APIRoute = async (context) => {
     }
     console.error('Fehler beim Erstellen des Zählers:', error);
     return new Response(JSON.stringify({
-      error: 'Fehler beim Erstellen des Zählers',
-      details: error instanceof Error ? error.message : String(error)
+      error: 'Fehler beim Erstellen des Zählers'
     }), {
       status: 500,
       headers: {

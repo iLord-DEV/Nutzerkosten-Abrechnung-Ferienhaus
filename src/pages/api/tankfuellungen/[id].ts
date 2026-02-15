@@ -115,8 +115,7 @@ export const PUT: APIRoute = async (context) => {
     }
     console.error('Fehler beim Aktualisieren der Tankfüllung:', error);
     return new Response(JSON.stringify({
-      error: 'Fehler beim Aktualisieren der Tankfüllung',
-      details: error instanceof Error ? error.message : String(error)
+      error: 'Fehler beim Aktualisieren der Tankfüllung'
     }), {
       status: 500,
       headers: {

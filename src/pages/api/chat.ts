@@ -99,7 +99,6 @@ export const POST: APIRoute = async (context) => {
     return new Response(
       JSON.stringify({
         error: 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.',
-        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
       }),
       {
         status: 500,
