@@ -389,7 +389,7 @@ if (!user) {
     // console.log('🗑️ Führe Löschung durch für ID:', id);
 
     try {
-      const response = await fetch(`/api/aufenthalte/${id}`, {
+      const response = await (window as any).csrfFetch(`/api/aufenthalte/${id}`, {
         method: 'DELETE',
       });
 
@@ -416,7 +416,7 @@ if (!user) {
     // console.log('🗑️ Direkte Löschung für ID:', id);
 
     try {
-      const response = await fetch(`/api/aufenthalte/${id}`, {
+      const response = await (window as any).csrfFetch(`/api/aufenthalte/${id}`, {
         method: 'DELETE',
       });
 
@@ -940,7 +940,7 @@ if (!user) {
                       confirmBtn.onclick = async () => {
                         modal.close();
                         try {
-                          const response = await fetch('/api/aufenthalte/' + aufenthaltId, { method: 'DELETE' });
+                          const response = await (window as any).csrfFetch('/api/aufenthalte/' + aufenthaltId, { method: 'DELETE' });
                           if (response.ok) {
                             if (typeof clearAllCaches === 'function') clearAllCaches();
                             if (typeof showToast === 'function') showToast('Aufenthalt erfolgreich gelöscht!', 'success');
@@ -1571,9 +1571,8 @@ if (!user) {
   // Bezahlt-Status aktualisieren
   async function updateBezahltStatus(userId: number, jahr: number, bezahlt: boolean) {
     try {
-      const response = await fetch('/api/jahresabschluss/bezahlt', {
+      const response = await (window as any).csrfFetch('/api/jahresabschluss/bezahlt', {
         method: 'POST',
-        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
         },
