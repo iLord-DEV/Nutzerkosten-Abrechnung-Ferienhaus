@@ -325,8 +325,9 @@ DATABASE_URL="mysql://user:password@localhost:3306/nutzerkosten_db"
 **Middleware** (`src/middleware.ts`): Sets security headers on all responses (X-Frame-Options, X-Content-Type-Options, HSTS in production, Referrer-Policy, Permissions-Policy).
 
 **Key security patterns:**
-- **XSS prevention**: Always use `escapeHtml()` (from `src/utils/escapeHtml.ts`) when inserting dynamic data into `innerHTML`. Prefer `textContent` where possible.
-- **CSRF**: All state-changing endpoints (POST/PUT/DELETE) must call `validateCsrf(context)`. Exception: Cron-token-authenticated requests skip CSRF.
+- **XSS prevention**: Always use `escapeHtml()` when inserting dynamic data into `innerHTML`. Prefer `textContent` where possible. Each `<script>` block that uses `innerHTML` with user/DB data must define its own inline `escapeHtml()` function (client-side scripts cannot import from server utils). Never use inline `onclick` with interpolated user data — use `data-` attributes + `addEventListener` instead.
+- **CSRF (Backend)**: All state-changing endpoints (POST/PUT/DELETE) must call `validateCsrf(context)`. Exception: Cron-token-authenticated requests skip CSRF.
+- **CSRF (Frontend)**: All frontend `fetch()` calls for POST/PUT/DELETE must use `(window as any).csrfFetch()` (provided by `ProtectedLayout.astro`). Plain `fetch()` is only allowed for GET requests and unauthenticated pages (login, verify).
 - **API error responses**: Never expose `error.message` to clients — log it server-side with `console.error`, return generic error to client.
 - **Token comparison**: Use `crypto.timingSafeEqual()` for secret token validation, never `===`.
 - **SSRF protection**: `src/utils/braveSearch.ts` validates URLs before fetching (blocks internal IPs, localhost, file://, private ranges including Tailscale 100.64/10).
