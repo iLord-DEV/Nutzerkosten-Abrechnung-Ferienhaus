@@ -184,6 +184,16 @@ try {
     thumbnailUrl: string | null;
   }
 
+  function escapeHtml(str: string | null | undefined): string {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   let mediaItems: LibraryMedia[] = [];
   let selectedFile: File | null = null;
   let searchTimeout: number;
@@ -249,15 +259,15 @@ try {
         <div class="card bg-base-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
              onclick="editMedia(${media.id})">
           <figure class="aspect-square relative">
-            <img src="${thumbnailSrc}" alt="${media.title}" class="w-full h-full object-cover" loading="lazy" />
+            <img src="${thumbnailSrc}" alt="${escapeHtml(media.title)}" class="w-full h-full object-cover" loading="lazy" />
             ${playOverlay}
           </figure>
           <div class="p-2">
             <div class="flex items-center gap-1">
-              <p class="font-medium text-sm truncate flex-1">${media.title}</p>
+              <p class="font-medium text-sm truncate flex-1">${escapeHtml(media.title)}</p>
               ${mediaTypeLabel}
             </div>
-            <p class="text-xs text-base-content/60 truncate">${media.tags}</p>
+            <p class="text-xs text-base-content/60 truncate">${escapeHtml(media.tags)}</p>
           </div>
         </div>
       `;
@@ -376,7 +386,7 @@ try {
       formData.append('description', (document.getElementById('upload-description') as HTMLTextAreaElement).value);
 
       try {
-        const response = await fetch('/api/admin/image-library', {
+        const response = await (window as any).csrfFetch('/api/admin/image-library', {
           method: 'POST',
           body: formData,
         });
@@ -403,7 +413,7 @@ try {
       const id = (document.getElementById('edit-id') as HTMLInputElement).value;
 
       try {
-        const response = await fetch(`/api/admin/image-library/${id}`, {
+        const response = await (window as any).csrfFetch(`/api/admin/image-library/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -512,7 +522,7 @@ try {
     const id = (document.getElementById('edit-id') as HTMLInputElement).value;
 
     try {
-      const response = await fetch(`/api/admin/image-library/${id}`, {
+      const response = await (window as any).csrfFetch(`/api/admin/image-library/${id}`, {
         method: 'DELETE',
       });
 

@@ -117,6 +117,16 @@ try {
     items: ChecklistItem[];
   }
 
+  function escapeHtml(str: string | null | undefined): string {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   let checklists: Checklist[] = [];
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -158,10 +168,10 @@ try {
               <span class="text-base-content/40 select-none text-xl drag-handle">⋮⋮</span>
               <div>
                 <div class="flex items-center gap-2">
-                  <h2 class="card-title">${checklist.title}</h2>
+                  <h2 class="card-title">${escapeHtml(checklist.title)}</h2>
                   ${!checklist.isActive ? '<span class="badge badge-ghost">Inaktiv</span>' : ''}
                 </div>
-                ${checklist.description ? `<p class="text-base-content/70 text-sm mt-1">${checklist.description}</p>` : ''}
+                ${checklist.description ? `<p class="text-base-content/70 text-sm mt-1">${escapeHtml(checklist.description)}</p>` : ''}
               </div>
             </div>
             <div class="flex gap-2">
@@ -189,10 +199,10 @@ try {
                     data-item-id="${item.id}">
                   <div class="flex items-center gap-2">
                     <span class="text-base-content/40 select-none">⋮⋮</span>
-                    <span class="text-sm">${item.text}</span>
+                    <span class="text-sm">${escapeHtml(item.text)}</span>
                   </div>
                   <div class="flex gap-1">
-                    <button class="btn btn-xs btn-ghost" onclick="editItem(${item.id}, ${checklist.id}, '${item.text.replace(/'/g, "\\'")}')">
+                    <button class="btn btn-xs btn-ghost" data-edit-item="${item.id}" data-checklist-id="${checklist.id}" data-item-text="${escapeHtml(item.text)}">
                       ✏️
                     </button>
                     <button class="btn btn-xs btn-ghost text-error" onclick="deleteItem(${item.id})">
@@ -207,6 +217,16 @@ try {
         </div>
       </div>
     `).join('');
+
+    // Attach edit-item handlers via event delegation (safe, no inline onclick with user data)
+    container.querySelectorAll('[data-edit-item]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const itemId = parseInt(btn.getAttribute('data-edit-item')!);
+        const checklistId = parseInt(btn.getAttribute('data-checklist-id')!);
+        const text = btn.getAttribute('data-item-text') || '';
+        editItem(itemId, checklistId, text);
+      });
+    });
   }
 
   function setupForms() {
@@ -223,7 +243,7 @@ try {
         const url = id ? `/api/admin/checklists/${id}` : '/api/admin/checklists';
         const method = id ? 'PUT' : 'POST';
 
-        const response = await fetch(url, {
+        const response = await (window as any).csrfFetch(url, {
           method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, description, isActive }),
@@ -254,7 +274,7 @@ try {
         const url = id ? `/api/admin/checklists/items/${id}` : `/api/admin/checklists/${checklistId}/items`;
         const method = id ? 'PUT' : 'POST';
 
-        const response = await fetch(url, {
+        const response = await (window as any).csrfFetch(url, {
           method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text }),
@@ -304,7 +324,7 @@ try {
     if (!confirm('Checkliste wirklich löschen? Alle Punkte und User-Fortschritte werden gelöscht.')) return;
 
     try {
-      const response = await fetch(`/api/admin/checklists/${id}`, { method: 'DELETE' });
+      const response = await (window as any).csrfFetch(`/api/admin/checklists/${id}`, { method: 'DELETE' });
       if (response.ok) {
         loadChecklists();
       } else {
@@ -341,7 +361,7 @@ try {
     if (!confirm('Punkt wirklich löschen?')) return;
 
     try {
-      const response = await fetch(`/api/admin/checklists/items/${id}`, { method: 'DELETE' });
+      const response = await (window as any).csrfFetch(`/api/admin/checklists/items/${id}`, { method: 'DELETE' });
       if (response.ok) {
         loadChecklists();
       } else {
@@ -469,7 +489,7 @@ try {
     }));
 
     try {
-      const response = await fetch('/api/admin/checklists/reorder', {
+      const response = await (window as any).csrfFetch('/api/admin/checklists/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'checklists', items: orderedChecklists }),
@@ -562,7 +582,7 @@ try {
     }));
 
     try {
-      const response = await fetch('/api/admin/checklists/reorder', {
+      const response = await (window as any).csrfFetch('/api/admin/checklists/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'items', items: orderedItems }),

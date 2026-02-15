@@ -184,7 +184,7 @@ if (user.role !== 'ADMIN') {
     };
 
     try {
-      const response = await fetch('/api/tankfuellungen', {
+      const response = await (window as any).csrfFetch('/api/tankfuellungen', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

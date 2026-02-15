@@ -47,6 +47,16 @@ try {
     totalCount: number;
   }
 
+  function escapeHtml(str: string | null | undefined): string {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   let checklists: Checklist[] = [];
   let activeChecklistId: number | null = null;
 
@@ -85,7 +95,7 @@ try {
         class="tab ${checklist.id === activeChecklistId ? 'tab-active' : ''}"
         onclick="selectChecklist(${checklist.id})"
       >
-        ${checklist.title}
+        ${escapeHtml(checklist.title)}
         <span class="badge badge-sm ml-2 ${checklist.completedCount === checklist.totalCount && checklist.totalCount > 0 ? 'badge-success' : 'badge-ghost'}">
           ${checklist.completedCount}/${checklist.totalCount}
         </span>
@@ -109,8 +119,8 @@ try {
     container.innerHTML = `
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h2 class="text-xl font-bold">${checklist.title}</h2>
-          ${checklist.description ? `<p class="text-base-content/70 text-sm mt-1">${checklist.description}</p>` : ''}
+          <h2 class="text-xl font-bold">${escapeHtml(checklist.title)}</h2>
+          ${checklist.description ? `<p class="text-base-content/70 text-sm mt-1">${escapeHtml(checklist.description)}</p>` : ''}
         </div>
         <button
           class="btn btn-sm btn-outline"
@@ -141,7 +151,7 @@ try {
               ${item.isChecked ? 'checked' : ''}
               onclick="event.stopPropagation(); toggleItem(${item.id})"
             />
-            <span class="${item.isChecked ? 'line-through text-base-content/50' : ''}">${item.text}</span>
+            <span class="${item.isChecked ? 'line-through text-base-content/50' : ''}">${escapeHtml(item.text)}</span>
           </li>
         `).join('')}
         ${checklist.items.length === 0 ? `
@@ -181,7 +191,7 @@ try {
 
   async function toggleItem(itemId: number) {
     try {
-      const response = await fetch(`/api/checklists/${itemId}/toggle`, {
+      const response = await (window as any).csrfFetch(`/api/checklists/${itemId}/toggle`, {
         method: 'PUT',
       });
 
@@ -210,7 +220,7 @@ try {
     if (!confirm('Checkliste wirklich zurücksetzen?')) return;
 
     try {
-      const response = await fetch(`/api/checklists/${checklistId}/reset`, {
+      const response = await (window as any).csrfFetch(`/api/checklists/${checklistId}/reset`, {
         method: 'POST',
       });
 

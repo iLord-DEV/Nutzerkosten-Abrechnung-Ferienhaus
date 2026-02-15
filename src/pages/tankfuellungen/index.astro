@@ -493,7 +493,7 @@ if (user.role !== 'ADMIN') {
     }
     
     try {
-      const response = await fetch(`/api/tankfuellungen/${id}`, {
+      const response = await (window as any).csrfFetch(`/api/tankfuellungen/${id}`, {
         method: 'DELETE',
       });
       

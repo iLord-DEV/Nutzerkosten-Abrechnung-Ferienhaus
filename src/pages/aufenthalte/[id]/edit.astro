@@ -546,7 +546,7 @@ if (!aufenthalt) {
     }
 
     try {
-      const response = await fetch(`/api/aufenthalte/${formData.id}`, {
+      const response = await (window as any).csrfFetch(`/api/aufenthalte/${formData.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

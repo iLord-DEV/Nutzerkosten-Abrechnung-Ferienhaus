@@ -909,7 +909,7 @@ if (!user) {
     };
     
     try {
-      const response = await fetch('/api/aufenthalte', {
+      const response = await (window as any).csrfFetch('/api/aufenthalte', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

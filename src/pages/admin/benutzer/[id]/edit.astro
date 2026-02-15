@@ -336,7 +336,7 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
     };
 
     try {
-      const response = await fetch('/api/users', {
+      const response = await (window as any).csrfFetch('/api/users', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -463,7 +463,7 @@ const createdAt = new Date(user.createdAt).toLocaleDateString('de-DE', {
     }
 
     try {
-      const response = await fetch(`/api/users/${userId}/password`, {
+      const response = await (window as any).csrfFetch(`/api/users/${userId}/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

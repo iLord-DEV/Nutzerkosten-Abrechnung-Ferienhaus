@@ -591,7 +591,7 @@ if (!user) {
     };
     
     try {
-      const response = await fetch('/api/terminplanung', {
+      const response = await (window as any).csrfFetch('/api/terminplanung', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -621,12 +621,12 @@ if (!user) {
     const parentId = formData.get('parentId');
     
     try {
-      const response = await fetch(`/api/terminplanung/${terminplanungId}/kommentar`, {
+      const response = await (window as any).csrfFetch(`/api/terminplanung/${terminplanungId}/kommentar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           inhalt,
           parentId: parentId ? parseInt(parentId) : null
         })
@@ -649,7 +649,7 @@ if (!user) {
   // Funktionen für Zustimmung und Kommentare
   window.zustimmen = async function(terminplanungId) {
     try {
-      const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
+      const response = await (window as any).csrfFetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -676,7 +676,7 @@ if (!user) {
 
   window.zustimmungEntziehen = async function(terminplanungId) {
     try {
-      const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
+      const response = await (window as any).csrfFetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'

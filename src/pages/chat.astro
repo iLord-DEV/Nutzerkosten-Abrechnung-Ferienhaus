@@ -111,7 +111,7 @@ const isAdmin = fullUser?.role === 'ADMIN';
     const loadingId = addLoadingIndicator();
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await (window as any).csrfFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

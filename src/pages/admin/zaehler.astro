@@ -246,7 +246,7 @@ try {
   // Neuen Zähler erstellen
   async function createZaehler(formData) {
     try {
-      const response = await fetch('/api/zaehler', {
+      const response = await (window as any).csrfFetch('/api/zaehler', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -491,7 +491,7 @@ try {
     }
 
     try {
-      const response = await fetch(`/api/zaehler/${zaehlerId}`, {
+      const response = await (window as any).csrfFetch(`/api/zaehler/${zaehlerId}`, {
         method: 'DELETE',
       });
 

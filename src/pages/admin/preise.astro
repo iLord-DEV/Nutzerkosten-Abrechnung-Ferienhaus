@@ -328,7 +328,7 @@ try {
     };
 
     try {
-      const response = await fetch('/api/preise', {
+      const response = await (window as any).csrfFetch('/api/preise', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -385,7 +385,7 @@ try {
     };
 
     try {
-      const response = await fetch(`/api/preise?jahr=${new Date(data.gueltigAb).getFullYear()}`, {
+      const response = await (window as any).csrfFetch(`/api/preise?jahr=${new Date(data.gueltigAb).getFullYear()}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -421,7 +421,7 @@ try {
       const preis = allPreise.find(p => p.jahr === jahr);
       if (!preis) return;
       
-      const response = await fetch(`/api/preise?jahr=${preis.jahr}`, {
+      const response = await (window as any).csrfFetch(`/api/preise?jahr=${preis.jahr}`, {
         method: 'DELETE'
       });
 

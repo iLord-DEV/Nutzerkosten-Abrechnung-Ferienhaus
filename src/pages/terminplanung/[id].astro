@@ -291,7 +291,7 @@ if (!user) {
         if (detailsEl) {
           detailsEl.innerHTML = `
             <div class="text-center py-8">
-              <p class="text-red-600">Fehler: ${error.error}</p>
+              <p class="text-red-600">Fehler: ${escapeHtml(error.error)}</p>
             </div>
           `;
         }
@@ -564,7 +564,7 @@ if (!user) {
 
   window.zustimmen = async function(terminplanungId) {
     try {
-      const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
+      const response = await (window as any).csrfFetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stimme: 'APPROVE', kommentar: '' })
@@ -585,7 +585,7 @@ if (!user) {
 
   window.zustimmungEntziehen = async function(terminplanungId) {
     try {
-      const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
+      const response = await (window as any).csrfFetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -623,7 +623,7 @@ if (!user) {
   window.cancelTerminplanung = async function() {
     if (confirm('Möchtest du diese Terminplanung wirklich stornieren? Diese Aktion kann nicht rückgängig gemacht werden und löscht alle Kommentare und Abstimmungen.')) {
       try {
-        const response = await fetch(`/api/terminplanung/${terminplanung.id}`, {
+        const response = await (window as any).csrfFetch(`/api/terminplanung/${terminplanung.id}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' }
         });
@@ -680,7 +680,7 @@ if (!user) {
         kommentar: formData.get('kommentar')
       };
       try {
-        const response = await fetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
+        const response = await (window as any).csrfFetch(`/api/terminplanung/${terminplanungId}/abstimmung`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -710,7 +710,7 @@ if (!user) {
         parentId: formData.get('parentId') ? parseInt(formData.get('parentId')) : null
       };
       try {
-        const response = await fetch(`/api/terminplanung/${terminplanungId}/kommentar`, {
+        const response = await (window as any).csrfFetch(`/api/terminplanung/${terminplanungId}/kommentar`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -742,7 +742,7 @@ if (!user) {
         beschreibung: formData.get('beschreibung')
       };
       try {
-        const response = await fetch(`/api/terminplanung/${terminplanung.id}`, {
+        const response = await (window as any).csrfFetch(`/api/terminplanung/${terminplanung.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)

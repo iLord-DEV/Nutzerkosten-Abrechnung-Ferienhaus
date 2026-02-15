@@ -130,6 +130,16 @@ try {
     }
   }
 
+  function escapeHtml(str: string | null | undefined): string {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   // Benutzer laden
   async function loadBenutzer() {
     try {
@@ -167,9 +177,9 @@ try {
 
       row.innerHTML = `
         <td>
-          ${nameBadge ? `<span class="${nameBadge}">${user.name}</span>` : user.name}
+          ${nameBadge ? `<span class="${nameBadge}">${escapeHtml(user.name)}</span>` : escapeHtml(user.name)}
         </td>
-        <td>${user.email}</td>
+        <td>${escapeHtml(user.email)}</td>
         <td>
           <span class="badge ${user.role === 'ADMIN' ? 'badge-secondary' : 'badge-ghost'}">
             ${user.role}
@@ -215,7 +225,7 @@ try {
     };
 
     try {
-      const response = await fetch('/api/users', {
+      const response = await (window as any).csrfFetch('/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +255,7 @@ try {
     }
 
     try {
-      const response = await fetch('/api/users', {
+      const response = await (window as any).csrfFetch('/api/users', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

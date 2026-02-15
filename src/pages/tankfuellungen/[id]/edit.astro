@@ -214,7 +214,7 @@ if (!tankfuellung) {
       console.log('🚀 Sende Daten an API:', data);
 
       try {
-        const response = await fetch(`/api/tankfuellungen/${tankfuellungId}`, {
+        const response = await (window as any).csrfFetch(`/api/tankfuellungen/${tankfuellungId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

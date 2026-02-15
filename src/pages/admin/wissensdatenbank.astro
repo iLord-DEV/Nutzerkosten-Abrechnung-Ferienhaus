@@ -233,6 +233,16 @@ try {
 </ProtectedLayout>
 
 <script>
+  function escapeHtml(str: string | null | undefined): string {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   let entries: any[] = [];
   let categories: string[] = [];
   let uploadedText: string = '';
@@ -264,13 +274,13 @@ try {
     const select = document.getElementById('category-filter') as HTMLSelectElement;
     select.innerHTML = '<option value="">Alle Kategorien</option>';
     categories.forEach(cat => {
-      select.innerHTML += `<option value="${cat}">${cat}</option>`;
+      select.innerHTML += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
     });
   }
 
   function updateCategorySuggestions() {
     const datalist = document.getElementById('category-suggestions') as HTMLDataListElement;
-    datalist.innerHTML = categories.map(cat => `<option value="${cat}">`).join('');
+    datalist.innerHTML = categories.map(cat => `<option value="${escapeHtml(cat)}">`).join('');
   }
 
   async function loadEntries() {
@@ -323,7 +333,7 @@ try {
     list.innerHTML = Object.entries(grouped).map(([category, items]) => `
       <div class="card-container">
         <h3 class="font-semibold text-lg mb-3 flex items-center gap-2">
-          <span class="badge badge-primary">${category}</span>
+          <span class="badge badge-primary">${escapeHtml(category)}</span>
           <span class="text-sm text-base-content/60">${items.length} Einträge</span>
         </h3>
         <div class="space-y-2">
@@ -332,19 +342,19 @@ try {
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   ${entry.priority >= 2 ? '<span class="text-warning">⚠️</span>' : entry.priority === 1 ? '<span class="text-info">📌</span>' : ''}
-                  <span class="font-medium truncate">${entry.title}</span>
+                  <span class="font-medium truncate">${escapeHtml(entry.title)}</span>
                   ${entry.sourceType !== 'manual' ? `
                     <span class="badge badge-sm badge-ghost">${entry.sourceType === 'upload' ? '📄' : '🌐'}</span>
                   ` : ''}
                   ${!entry.isActive ? '<span class="badge badge-sm badge-warning">Inaktiv</span>' : ''}
                 </div>
-                <p class="text-sm text-base-content/60 truncate">${entry.content.substring(0, 100)}...</p>
+                <p class="text-sm text-base-content/60 truncate">${escapeHtml(entry.content.substring(0, 100))}...</p>
               </div>
               <div class="flex items-center gap-2 ml-4">
                 <button class="btn btn-ghost btn-sm" onclick="editEntry(${entry.id})">
                   ✏️
                 </button>
-                <button class="btn btn-ghost btn-sm text-error" onclick="deleteEntry(${entry.id}, '${entry.title.replace(/'/g, "\\'")}')">
+                <button class="btn btn-ghost btn-sm text-error" data-delete-entry="${entry.id}" data-entry-title="${escapeHtml(entry.title)}">
                   🗑️
                 </button>
               </div>
@@ -353,6 +363,15 @@ try {
         </div>
       </div>
     `).join('');
+
+    // Attach delete handlers via event delegation (safe, no inline onclick with user data)
+    list.querySelectorAll('[data-delete-entry]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.getAttribute('data-delete-entry')!);
+        const title = btn.getAttribute('data-entry-title') || '';
+        deleteEntry(id, title);
+      });
+    });
   }
 
   function openCreateModal() {
@@ -434,7 +453,7 @@ try {
         const url = id ? `/api/admin/knowledge-base/${id}` : '/api/admin/knowledge-base';
         const method = id ? 'PUT' : 'POST';
 
-        const response = await fetch(url, {
+        const response = await (window as any).csrfFetch(url, {
           method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
@@ -469,7 +488,7 @@ try {
     const id = (document.getElementById('delete-id') as HTMLInputElement).value;
 
     try {
-      const response = await fetch(`/api/admin/knowledge-base/${id}`, {
+      const response = await (window as any).csrfFetch(`/api/admin/knowledge-base/${id}`, {
         method: 'DELETE',
       });
 
@@ -540,7 +559,7 @@ try {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/admin/knowledge-base/upload', {
+      const response = await (window as any).csrfFetch('/api/admin/knowledge-base/upload', {
         method: 'POST',
         body: formData,
       });
@@ -579,7 +598,7 @@ try {
     }
 
     try {
-      const response = await fetch('/api/admin/knowledge-base', {
+      const response = await (window as any).csrfFetch('/api/admin/knowledge-base', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -617,7 +636,7 @@ try {
       }
 
       try {
-        const response = await fetch(`/api/admin/knowledge-base/${currentEntryId}/images`, {
+        const response = await (window as any).csrfFetch(`/api/admin/knowledge-base/${currentEntryId}/images`, {
           method: 'POST',
           body: formData,
         });
@@ -651,7 +670,7 @@ try {
       <div class="relative group" data-image-id="${img.id}">
         <img
           src="/uploads/knowledge/${img.fileName}"
-          alt="${img.alt || img.originalName}"
+          alt="${escapeHtml(img.alt || img.originalName)}"
           class="w-24 h-24 object-cover rounded-lg border border-base-300"
         />
         <button
@@ -662,7 +681,7 @@ try {
           ✕
         </button>
         <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 rounded-b-lg truncate">
-          ${img.alt || img.originalName}
+          ${escapeHtml(img.alt || img.originalName)}
         </div>
       </div>
     `).join('');
@@ -673,7 +692,7 @@ try {
     if (!confirm('Bild wirklich löschen?')) return;
 
     try {
-      const response = await fetch(`/api/admin/knowledge-base/${currentEntryId}/images?imageId=${imageId}`, {
+      const response = await (window as any).csrfFetch(`/api/admin/knowledge-base/${currentEntryId}/images?imageId=${imageId}`, {
         method: 'DELETE',
       });
 
