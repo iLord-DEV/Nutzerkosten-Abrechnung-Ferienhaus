@@ -116,8 +116,9 @@ docker exec wuestenstein-nutzerkosten-mysql mysqldump ... # Database backup
 **Yearly Summary Email (Jahresabschluss):**
 - Admin endpoint: `POST /api/admin/send-jahresabschluss`
 - Preview: `GET /api/admin/send-jahresabschluss?jahr=2024`
-- Cron script: `scripts/send-jahresabschluss.sh`
-- Schedule: Run on February 1st at 9:00 AM (`0 9 1 2 *`)
+- **Automatic:** `server.mjs` registers `node-cron` job (Feb 1st, 09:00 Europe/Berlin) — runs only in production
+- Manual fallback: `scripts/send-jahresabschluss.sh`
+- Auth: Session (admin UI) or `X-Cron-Token` header (timing-safe comparison)
 
 ### Database Architecture (Prisma)
 
@@ -165,7 +166,9 @@ docker exec wuestenstein-nutzerkosten-mysql mysqldump ... # Database backup
 ### Project Structure
 
 ```
+server.mjs                                # Production wrapper: starts Astro + node-cron jobs
 src/
+├── middleware.ts                         # Security headers (HSTS, X-Frame-Options, etc.)
 ├── layouts/
 │   ├── Layout.astro                  # Base layout
 │   ├── ProtectedLayout.astro         # Auth-required pages
