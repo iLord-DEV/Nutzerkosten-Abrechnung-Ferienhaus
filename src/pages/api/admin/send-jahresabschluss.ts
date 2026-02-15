@@ -4,6 +4,7 @@ import { timingSafeEqual } from 'crypto';
 import { requireAdmin } from '../../../utils/auth';
 import { sendJahresabschlussEmail } from '../../../utils/email';
 import { validateCsrf, CsrfError, csrfErrorResponse } from '../../../utils/csrf';
+import { berechneOelkostenNachZaehlerstand, type Tankfuellung } from '../../../utils/kostenberechnung';
 
 const prisma = new PrismaClient();
 
@@ -42,9 +43,15 @@ interface UserStatistik {
 }
 
 /**
- * Berechnet die Statistiken für einen einzelnen User
+ * Berechnet die Statistiken für einen einzelnen User.
+ * Nutzt berechneOelkostenNachZaehlerstand() für korrekte, segment-basierte
+ * Ölkostenberechnung (identisch zur Admin-Ansicht und Statistiken-Seite).
  */
-async function calculateUserStatistik(userId: number, jahr: number): Promise<UserStatistik | null> {
+async function calculateUserStatistik(
+  userId: number,
+  jahr: number,
+  tankfuellungen: Tankfuellung[]
+): Promise<UserStatistik | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, name: true, email: true, beguenstigt: true }
@@ -54,9 +61,6 @@ async function calculateUserStatistik(userId: number, jahr: number): Promise<Use
 
   const aufenthalte = await prisma.aufenthalt.findMany({
     where: { userId, jahr },
-    include: {
-      user: { select: { beguenstigt: true } }
-    }
   });
 
   if (aufenthalte.length === 0) return null;
@@ -66,7 +70,6 @@ async function calculateUserStatistik(userId: number, jahr: number): Promise<Use
   });
 
   const verbrauchProStunde = preise?.verbrauchProStunde || 5.5;
-  const oelpreisProLiter = preise?.oelpreisProLiter || 1.01;
   const uebernachtungMitglied = preise?.uebernachtungMitglied || 5;
   const uebernachtungGast = preise?.uebernachtungGast || 10;
 
@@ -76,20 +79,22 @@ async function calculateUserStatistik(userId: number, jahr: number): Promise<Use
   let gesamtTage = 0;
 
   for (const aufenthalt of aufenthalte) {
-    // Brennerstunden und Verbrauch
     const brennerstunden = aufenthalt.zaehlerAbreise - aufenthalt.zaehlerAnkunft;
-    const verbrauch = brennerstunden * verbrauchProStunde;
-    gesamtVerbrauch += verbrauch;
-    oelKosten += verbrauch * oelpreisProLiter;
+    gesamtVerbrauch += brennerstunden * verbrauchProStunde;
 
-    // Tage
+    // Segment-basierte Ölkosten (wie Admin-Ansicht)
+    oelKosten += berechneOelkostenNachZaehlerstand(
+      aufenthalt.zaehlerAnkunft,
+      aufenthalt.zaehlerAbreise,
+      tankfuellungen
+    );
+
     const tage = Math.ceil(
       (new Date(aufenthalt.abreise).getTime() - new Date(aufenthalt.ankunft).getTime()) /
       (1000 * 60 * 60 * 24)
     );
     gesamtTage += tage;
 
-    // Übernachtungskosten (nur wenn naechteBerechnen nicht explizit false)
     const naechteBerechnen = aufenthalt.naechteBerechnen ?? !user.beguenstigt;
     if (naechteBerechnen) {
       uebernachtungKosten +=
@@ -137,6 +142,18 @@ export const POST: APIRoute = async (context) => {
       );
     }
 
+    // Tankfüllungen für segment-basierte Ölkostenberechnung laden
+    const tankfuellungenRaw = await prisma.tankfuellung.findMany({
+      orderBy: { zaehlerstand: 'asc' },
+    });
+    const tankfuellungen: Tankfuellung[] = tankfuellungenRaw.map(tf => ({
+      id: tf.id,
+      zaehlerstand: tf.zaehlerstand,
+      liter: tf.liter,
+      preisProLiter: tf.preisProLiter,
+      datum: tf.datum,
+    }));
+
     // Alle User mit Aufenthalten im Jahr holen
     const usersWithAufenthalte = await prisma.user.findMany({
       where: {
@@ -154,7 +171,7 @@ export const POST: APIRoute = async (context) => {
     };
 
     for (const { id: userId } of usersWithAufenthalte) {
-      const statistik = await calculateUserStatistik(userId, parseInt(jahr));
+      const statistik = await calculateUserStatistik(userId, parseInt(jahr), tankfuellungen);
 
       if (!statistik) {
         results.skipped.push(`User ${userId}: Keine Daten`);
@@ -247,6 +264,18 @@ export const GET: APIRoute = async (context) => {
     const url = new URL(context.request.url);
     const jahr = url.searchParams.get('jahr') || String(new Date().getFullYear() - 1);
 
+    // Tankfüllungen laden
+    const tankfuellungenRaw = await prisma.tankfuellung.findMany({
+      orderBy: { zaehlerstand: 'asc' },
+    });
+    const tankfuellungen: Tankfuellung[] = tankfuellungenRaw.map(tf => ({
+      id: tf.id,
+      zaehlerstand: tf.zaehlerstand,
+      liter: tf.liter,
+      preisProLiter: tf.preisProLiter,
+      datum: tf.datum,
+    }));
+
     // Alle User mit Aufenthalten im Jahr holen
     const usersWithAufenthalte = await prisma.user.findMany({
       where: {
@@ -260,7 +289,7 @@ export const GET: APIRoute = async (context) => {
     const preview: UserStatistik[] = [];
 
     for (const { id: userId } of usersWithAufenthalte) {
-      const statistik = await calculateUserStatistik(userId, parseInt(jahr));
+      const statistik = await calculateUserStatistik(userId, parseInt(jahr), tankfuellungen);
       if (statistik && statistik.gesamtKosten > 0) {
         preview.push(statistik);
       }
