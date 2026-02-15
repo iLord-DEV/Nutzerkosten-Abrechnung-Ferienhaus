@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
  */
 async function validateAdminOrToken(context: APIContext): Promise<boolean> {
   const cronToken = context.request.headers.get('X-Cron-Token');
-  const expectedToken = import.meta.env.CRON_ADMIN_TOKEN;
+  const expectedToken = process.env.CRON_ADMIN_TOKEN;
 
   // Token auth for cron jobs (timing-safe comparison)
   if (cronToken && expectedToken) {
