@@ -119,6 +119,7 @@ docker exec wuestenstein-nutzerkosten-mysql mysqldump ... # Database backup
 - **Automatic:** `server.mjs` registers `node-cron` job (Feb 1st, 09:00 Europe/Berlin) — runs only in production
 - Manual fallback: `scripts/send-jahresabschluss.sh`
 - Auth: Session (admin UI) or `X-Cron-Token` header (timing-safe comparison)
+- **IMPORTANT:** Uses `berechneOelkostenNachZaehlerstand()` for correct segment-based oil cost calculation (identical to admin UI and statistics page). Uses `process.env.CRON_ADMIN_TOKEN` (NOT `import.meta.env` — Astro replaces that at build time)
 
 ### Database Architecture (Prisma)
 
@@ -318,6 +319,19 @@ DATABASE_URL="mysql://user:password@localhost:3306/nutzerkosten_db"
 4. **Password Security**: Passwords must be 8+ characters with uppercase, lowercase, numbers, and special characters
 5. **Meter Tracking**: Each stay (Aufenthalt) references two meters - one for arrival and one for departure readings
 6. **German Language**: Application is in German - all user-facing text, comments, and variable names
+
+## Security
+
+**Middleware** (`src/middleware.ts`): Sets security headers on all responses (X-Frame-Options, X-Content-Type-Options, HSTS in production, Referrer-Policy, Permissions-Policy).
+
+**Key security patterns:**
+- **XSS prevention**: Always use `escapeHtml()` (from `src/utils/escapeHtml.ts`) when inserting dynamic data into `innerHTML`. Prefer `textContent` where possible.
+- **CSRF**: All state-changing endpoints (POST/PUT/DELETE) must call `validateCsrf(context)`. Exception: Cron-token-authenticated requests skip CSRF.
+- **API error responses**: Never expose `error.message` to clients — log it server-side with `console.error`, return generic error to client.
+- **Token comparison**: Use `crypto.timingSafeEqual()` for secret token validation, never `===`.
+- **SSRF protection**: `src/utils/braveSearch.ts` validates URLs before fetching (blocks internal IPs, localhost, file://, private ranges including Tailscale 100.64/10).
+- **Docker**: Container runs as unprivileged `node` user. MySQL port is NOT exposed externally (internal Docker network only).
+- **Runtime env vars**: In API routes, use `process.env.VAR` for runtime secrets (NOT `import.meta.env.VAR` which is replaced at build time).
 
 ## Business Logic & Calculations
 
