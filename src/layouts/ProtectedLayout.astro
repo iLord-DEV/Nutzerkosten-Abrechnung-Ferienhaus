@@ -318,16 +318,14 @@ const csrfToken = session.csrfToken;
     });
   }
 
-  // Logout handler
+  // Logout handler — always redirect, even if session expired
   async function logout() {
     try {
-      const response = await csrfFetch('/api/auth/logout', { method: 'POST' });
-      if (response.ok) {
-        window.location.href = '/';
-      }
+      await csrfFetch('/api/auth/logout', { method: 'POST' });
     } catch (error) {
       console.error('Logout error:', error);
     }
+    window.location.href = '/';
   }
 
   // Font Size Logic

@@ -261,16 +261,14 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
     }
   }
 
-  // Logout handler
+  // Logout handler — always redirect, even if session expired
   async function logout() {
     try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
-      if (response.ok) {
-        window.location.href = '/';
-      }
+      await fetch('/api/auth/logout', { method: 'POST' });
     } catch (error) {
       console.error('Logout error:', error);
     }
+    window.location.href = '/';
   }
 
   // Service Worker registrieren (für PWA + Push Notifications) - nur in Production
