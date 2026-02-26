@@ -129,12 +129,12 @@ if [ "$QUICK_MODE" = "true" ]; then
     echo "⏭️  Überspringe Migrationen (--quick Mode)"
 else
     echo "🔄 Migrationen..."
-    ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose run -T --rm app npx prisma migrate deploy"
+    ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose run -T --rm app pnpm exec prisma migrate deploy"
 fi
 
 if [ "$SEED_DB" = "true" ]; then
     echo "🌱 Seeding..."
-    if ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose run -T --rm app npm run db:seed"; then
+    if ssh -p $PI_PORT $PI_USER@$PI_HOST "cd $PI_APP_DIR && docker compose run -T --rm app pnpm run db:seed"; then
         echo "✓ Seeding erfolgreich"
     else
         echo "⚠️ Seeding fehlgeschlagen (nicht kritisch, fahre fort)"

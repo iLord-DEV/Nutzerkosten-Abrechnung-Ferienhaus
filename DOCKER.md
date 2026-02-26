@@ -8,7 +8,7 @@ Diese Anleitung beschreibt, wie du die Nutzerkosten-App auf einem Raspberry Pi m
 
 1. **Lokal entwickeln** mit Hot Module Reloading (HMR) und lokaler Datenbank
    ```bash
-   npm run dev  # Läuft auf http://localhost:4321
+   pnpm dev  # Läuft auf http://localhost:4321
    ```
 
 2. **Auf Raspberry Pi deployen** mit einem Befehl
@@ -205,10 +205,10 @@ docker compose up -d mysql
 sleep 10
 
 # Datenbank-Migrationen
-docker compose run --rm app npx prisma migrate deploy
+docker compose run --rm app pnpm exec prisma migrate deploy
 
 # Optional: Testdaten einfügen
-docker compose run --rm app npm run db:seed
+docker compose run --rm app pnpm run db:seed
 
 # Anwendung starten
 docker compose up -d app
@@ -267,7 +267,7 @@ docker compose logs --tail=100
 
 ```bash
 # Prisma Studio (GUI)
-docker compose exec app npx prisma studio
+docker compose exec app pnpm exec prisma studio
 
 # Datenbank-Backup
 docker exec wuestenstein-nutzerkosten-mysql mysqldump \
@@ -280,10 +280,10 @@ docker exec -i wuestenstein-nutzerkosten-mysql mysql \
   nutzerkosten_db < backup.sql
 
 # Migrations neu ausführen
-docker compose run --rm app npx prisma migrate deploy
+docker compose run --rm app pnpm exec prisma migrate deploy
 
 # Prisma Client regenerieren
-docker compose run --rm app npx prisma generate
+docker compose run --rm app pnpm exec prisma generate
 ```
 
 ### Updates deployen
@@ -296,7 +296,7 @@ git pull
 docker compose up -d --build
 
 # Migrations ausführen
-docker compose run --rm app npx prisma migrate deploy
+docker compose run --rm app pnpm exec prisma migrate deploy
 ```
 
 ## Ressourcen-Limits

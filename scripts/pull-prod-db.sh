@@ -3,7 +3,7 @@
 # Production DB Pull Script
 # Holt die Production-Datenbank vom Pi und importiert sie lokal
 #
-# Usage: npm run db:pull:prod
+# Usage: pnpm run db:pull:prod
 
 set -e
 
@@ -124,7 +124,7 @@ echo "🗑️  Temp-Dateien gelöscht"
 # Prisma Client regenerieren (DB-Schema könnte sich geändert haben)
 echo ""
 echo "🔄 Regeneriere Prisma Client..."
-npx prisma generate
+pnpm exec prisma generate
 
 echo ""
 echo "✅ Production DB erfolgreich nach lokal synchronisiert!"

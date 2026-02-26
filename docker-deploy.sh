@@ -39,13 +39,13 @@ sleep 10
 
 echo ""
 echo "🔄 Führe Datenbank-Migrationen aus..."
-docker compose run --rm app npx prisma migrate deploy
+docker compose run --rm app pnpm exec prisma migrate deploy
 
 echo ""
 echo "🌱 Möchtest du die Datenbank mit Testdaten füllen? (j/n)"
 read -r SEED_DB
 if [ "$SEED_DB" = "j" ] || [ "$SEED_DB" = "J" ]; then
-    docker compose run --rm app npm run db:seed
+    docker compose run --rm app pnpm run db:seed
     echo "✅ Datenbank wurde mit Testdaten gefüllt"
 fi
 

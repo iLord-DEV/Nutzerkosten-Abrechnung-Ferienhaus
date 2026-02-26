@@ -2,6 +2,7 @@
   "name": "wuestenstein-nutzerkosten",
   "type": "module",
   "version": "0.0.1",
+  "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev": "astro dev",
     "start": "HOST=0.0.0.0 node server.mjs",
@@ -47,5 +48,15 @@
     "daisyui": "^4.12.24",
     "prisma": "^6.15.0",
     "tsx": "^4.20.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "bcrypt",
+      "esbuild",
+      "sharp"
+    ]
   }
 }

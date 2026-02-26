@@ -5,7 +5,7 @@
 #
 # ⚠️  NUR IN NOTFÄLLEN VERWENDEN!
 #
-# Usage: npm run db:push:prod
+# Usage: pnpm run db:push:prod
 
 set -e
 
@@ -22,7 +22,7 @@ echo "gehen VERLOREN!"
 echo ""
 echo "Nutze stattdessen normalerweise:"
 echo "  - Daten direkt auf Pi eingeben (www.schloss-wuestenstein.de)"
-echo "  - Oder 'npm run db:pull:prod' um Pi-Daten zu holen"
+echo "  - Oder 'pnpm run db:pull:prod' um Pi-Daten zu holen"
 echo ""
 
 # Erste Bestätigung

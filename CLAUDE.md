@@ -20,30 +20,30 @@ This is a **vacation home cost tracking and billing application** (Nutzerkosten-
 ## Development Commands
 
 ```bash
-# Development
-npm run dev                    # Start dev server (default: http://localhost:4321)
-npm run build                  # Production build
-npm run preview                # Preview production build
-npm start                      # Start production server (HOST=0.0.0.0)
+# Development (uses pnpm as package manager)
+pnpm dev                       # Start dev server (default: http://localhost:4321)
+pnpm build                     # Production build
+pnpm preview                   # Preview production build
+pnpm start                     # Start production server (HOST=0.0.0.0)
 
 # Database
-npx prisma migrate dev         # Create and apply migration
-npx prisma migrate dev --name <name>  # Named migration
-npx prisma db push             # Sync schema without migration
-npx prisma generate            # Generate Prisma Client
-npx prisma studio              # Open Prisma Studio GUI
-npm run db:seed                # Seed database with test data
+pnpm exec prisma migrate dev         # Create and apply migration
+pnpm exec prisma migrate dev --name <name>  # Named migration
+pnpm exec prisma db push             # Sync schema without migration
+pnpm exec prisma generate            # Generate Prisma Client
+pnpm exec prisma studio              # Open Prisma Studio GUI
+pnpm run db:seed                     # Seed database with test data
 
 # Database Backup/Restore
-npm run db:backup              # Local database backup
-npm run db:restore             # Shows restore command
+pnpm run db:backup             # Local database backup
+pnpm run db:restore            # Shows restore command
 
 # Database Synchronization (Local ↔ Production)
-npm run db:pull:prod           # Pull Production DB from Pi to local (OVERWRITES LOCAL!)
-npm run db:push:prod           # Push local DB to Pi (DANGEROUS! OVERWRITES PROD!)
+pnpm run db:pull:prod          # Pull Production DB from Pi to local (OVERWRITES LOCAL!)
+pnpm run db:push:prod          # Push local DB to Pi (DANGEROUS! OVERWRITES PROD!)
 
 # Deployment (Uberspace)
-npx prisma migrate deploy      # Apply migrations in production
+pnpm exec prisma migrate deploy      # Apply migrations in production
 
 # Docker Deployment (Raspberry Pi)
 ./deploy-to-pi.sh              # Deploy from Mac to Raspberry Pi (recommended!)
@@ -52,7 +52,7 @@ docker compose down            # Stop all containers (on Pi)
 docker compose logs -f         # View logs (on Pi)
 docker compose ps              # Check status (on Pi)
 docker compose build --no-cache # Rebuild images (on Pi)
-docker compose exec app npx prisma studio  # Open Prisma Studio (on Pi)
+docker compose exec app pnpm exec prisma studio  # Open Prisma Studio (on Pi)
 
 # Docker Management (on Pi)
 docker compose restart         # Restart containers
@@ -61,7 +61,7 @@ docker exec wuestenstein-nutzerkosten-mysql mysqldump ... # Database backup
 ```
 
 **Development Workflow:**
-1. Develop locally: `npm run dev` (with HMR and local MySQL)
+1. Develop locally: `pnpm dev` (with HMR and local MySQL)
 2. Deploy to Pi: `./deploy-to-pi.sh` (copies files via rsync, builds Docker, runs migrations)
 
 **Database Workflow (Hybrid Approach):**
@@ -70,13 +70,13 @@ docker exec wuestenstein-nutzerkosten-mysql mysqldump ... # Database backup
   - Production data is the authoritative version
 
 - **Local Development:**
-  - Weekly refresh: `npm run db:pull:prod` → Pulls fresh production data to local
+  - Weekly refresh: `pnpm run db:pull:prod` → Pulls fresh production data to local
   - Use for testing with real data
   - Local changes are typically discarded on next pull
 
 - **Data Entry:**
   - **Preferred:** Enter data directly on production (www.schloss-wuestenstein.de)
-  - **Alternative:** Enter locally, then `npm run db:push:prod` (with extreme caution!)
+  - **Alternative:** Enter locally, then `pnpm run db:push:prod` (with extreme caution!)
 
 - **Code Deployment:**
   - `./deploy-to-pi.sh` → Deploys code + migrations (does NOT sync data)
@@ -315,7 +315,7 @@ DATABASE_URL="mysql://user:password@localhost:3306/nutzerkosten_db"
 
 1. **Tailwind CSS 3 + DaisyUI 4**: Nutze DaisyUI-Klassen (`btn`, `input`, `card`, etc.) - KEINE Custom-Overrides in global.css!
 2. **Server Mode**: App uses `output: 'server'` with Node.js adapter in standalone mode for SSR
-3. **Database Migrations**: Always use `npx prisma migrate deploy` in production (not `migrate dev`)
+3. **Database Migrations**: Always use `pnpm exec prisma migrate deploy` in production (not `migrate dev`)
 4. **Password Security**: Passwords must be 8+ characters with uppercase, lowercase, numbers, and special characters
 5. **Meter Tracking**: Each stay (Aufenthalt) references two meters - one for arrival and one for departure readings
 6. **German Language**: Application is in German - all user-facing text, comments, and variable names
