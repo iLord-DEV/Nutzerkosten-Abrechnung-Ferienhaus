@@ -80,6 +80,12 @@ importers:
       web-push:
         specifier: ^3.6.7
         version: 3.6.7
+      workbox-core:
+        specifier: ^7.4.0
+        version: 7.4.0
+      workbox-precaching:
+        specifier: ^7.4.0
+        version: 7.4.0
     devDependencies:
       '@types/node-cron':
         specifier: ^3.0.11
