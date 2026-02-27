@@ -318,14 +318,21 @@ const csrfToken = session.csrfToken;
     });
   }
 
-  // Logout handler — always redirect, even if session expired
+  // Logout handler — clear caches and redirect to login
   async function logout() {
     try {
       await csrfFetch('/api/auth/logout', { method: 'POST' });
     } catch (error) {
       console.error('Logout error:', error);
     }
-    window.location.href = '/';
+
+    // Clear Service Worker caches so cached pages don't persist after logout
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+    }
+
+    window.location.href = '/login';
   }
 
   // Font Size Logic
