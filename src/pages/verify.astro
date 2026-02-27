@@ -64,6 +64,12 @@ if (!token) {
           const data = await response.json();
 
           if (data.success) {
+            // Other tabs (e.g. /magic-link-gesendet) should redirect too
+            if ('BroadcastChannel' in window) {
+              const channel = new BroadcastChannel('auth');
+              channel.postMessage({ type: 'login-success', redirectTo: data.redirectTo });
+              channel.close();
+            }
             // Erfolg - Redirect (replace um Login aus History zu entfernen)
             window.location.replace(data.redirectTo);
           } else {

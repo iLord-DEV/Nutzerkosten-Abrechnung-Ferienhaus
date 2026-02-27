@@ -64,10 +64,10 @@ import '../styles/global.css';
 
             <div class="divider"></div>
 
-            <!-- Token-Eingabe für PWA -->
-            <div class="bg-base-200 rounded-lg p-4 mb-4">
+            <!-- Token-Eingabe nur für PWA sichtbar -->
+            <div id="pwa-token-section" class="hidden bg-base-200 rounded-lg p-4 mb-4">
               <p class="text-sm font-medium text-base-content mb-2">
-                📱 Code aus E-Mail einfügen:
+                Code aus E-Mail einfügen:
               </p>
               <div class="flex gap-2">
                 <input
@@ -115,6 +115,15 @@ import '../styles/global.css';
     </div>
 
     <script>
+      // PWA-Erkennung — Token-Sektion nur in PWA anzeigen
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches
+                 || (window.navigator as any).standalone === true;
+
+      const pwaTokenSection = document.getElementById('pwa-token-section');
+      if (isPWA && pwaTokenSection) {
+        pwaTokenSection.classList.remove('hidden');
+      }
+
       // Token-Eingabe Handler
       const pasteTokenInput = document.getElementById('paste-token-input') as HTMLInputElement;
       const pasteTokenBtn = document.getElementById('paste-token-btn') as HTMLButtonElement;
@@ -157,6 +166,17 @@ import '../styles/global.css';
         // Fehler ausblenden bei Eingabe
         pasteTokenInput.addEventListener('input', () => {
           pasteTokenError.classList.add('hidden');
+        });
+      }
+
+      // BroadcastChannel: Login-Erfolg aus anderem Tab empfangen
+      if ('BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('auth');
+        channel.addEventListener('message', (event) => {
+          if (event.data?.type === 'login-success') {
+            channel.close();
+            window.location.replace(event.data.redirectTo || '/dashboard');
+          }
         });
       }
 
