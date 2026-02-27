@@ -1,0 +1,8 @@
+---
+import { deleteSession } from '../utils/session';
+
+// Server-side logout: delete session and redirect to login
+await deleteSession(Astro.cookies);
+
+return Astro.redirect('/login');
+---

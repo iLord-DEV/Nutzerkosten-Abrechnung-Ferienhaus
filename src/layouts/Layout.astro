@@ -225,7 +225,7 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
                 </div>
                 <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
                   <li><a href="/profil">Profil</a></li>
-                  <li><button id="logout-btn-desktop" class="text-error">Abmelden</button></li>
+                  <li><a href="/logout" class="text-error">Abmelden</a></li>
                 </ul>
               </div>
             `;
@@ -240,7 +240,7 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
                 <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
                   <li class="menu-title">${escapeHtml(user.name)}</li>
                   <li><a href="/profil">Profil</a></li>
-                  <li><button id="logout-btn-desktop" class="text-error">Abmelden</button></li>
+                  <li><a href="/logout" class="text-error">Abmelden</a></li>
                 </ul>
               </div>
             `;
@@ -251,7 +251,7 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
         if (mobileAuth) {
           mobileAuth.innerHTML = `
             <div class="text-sm mb-2">Angemeldet als: <strong>${escapeHtml(user.name)}</strong></div>
-            <button id="logout-btn-mobile" class="btn btn-error btn-block btn-sm">Abmelden</button>
+            <a href="/logout" class="btn btn-error btn-block btn-sm">Abmelden</a>
           `;
         }
       }
@@ -259,23 +259,6 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
       // Not logged in - keep default state
       console.log('User not authenticated');
     }
-  }
-
-  // Logout handler — clear caches and redirect to login
-  async function logout() {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-
-    // Clear Service Worker caches so cached pages don't persist after logout
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(name => caches.delete(name)));
-    }
-
-    window.location.href = '/login';
   }
 
   // Service Worker registrieren (für PWA + Push Notifications) - nur in Production
@@ -295,13 +278,5 @@ const { title, description = "Nutzerkosten-Abrechnung für Wohngemeinschaften" }
     initTheme();
     updateNavigation();
     registerServiceWorker();
-
-    // Logout button handlers
-    document.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      if (target.id === 'logout-btn-desktop' || target.id === 'logout-btn-mobile') {
-        logout();
-      }
-    });
   });
 </script>
