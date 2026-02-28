@@ -49,7 +49,8 @@ export default defineConfig({
         ]
       },
       injectManifest: {
-        globPatterns: ['**/*.{css,js,html,svg,png,ico,txt,woff,woff2}']
+        globPatterns: ['**/*.{css,js,html,svg,png,ico,txt,woff,woff2}'],
+        globIgnores: ['uploads/**']
       },
       devOptions: {
         enabled: false // Dev-Modus deaktiviert (PWA nur in Production)

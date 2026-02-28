@@ -186,13 +186,14 @@ MYSQL_PASSWORD=dein_sicheres_user_passwort
 
 ### 3. Deployment ausführen
 
-**Option A: Automatisches Deployment (empfohlen)**
+**Vom Mac aus (empfohlen):**
 
 ```bash
-./docker-deploy.sh
+./deploy-to-pi.sh           # Standard (mit Migrationen)
+./deploy-to-pi.sh --quick   # Schnell (ohne Migrationen, mit Cache)
 ```
 
-**Option B: Manuelles Deployment**
+**Manuell auf dem Pi:**
 
 ```bash
 # Images bauen
